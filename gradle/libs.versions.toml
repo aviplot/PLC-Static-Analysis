@@ -10,6 +10,8 @@ checkstyle = "14.3.0"
 woodstox = "7.3.0"
 jazzer = "0.30.0"
 jmh = "1.37"
+jackson = "3.2.3"
+json-schema-validator = "3.0.8"
 
 [libraries]
 antlr-tool = { module = "org.antlr:antlr4", version.ref = "antlr" }
@@ -19,5 +21,7 @@ woodstox = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "woo
 jazzer-junit = { module = "com.code-intelligence:jazzer-junit", version.ref = "jazzer" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 spotless-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }

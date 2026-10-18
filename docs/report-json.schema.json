@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://plca.dev/schemas/report-json-1.schema.json",
+  "title": "plca JSON report, schemaVersion 1",
+  "description": "Output of `plca analyze --format json`. Fields may be added within schemaVersion 1; none are renamed or removed.",
+  "type": "object",
+  "required": ["schemaVersion", "tool", "root", "rules", "findings", "diagnostics", "stats"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": { "name": { "type": "string" }, "version": { "type": "string" } }
+    },
+    "root": { "type": "string", "description": "file: URI of the analysed directory; paths are relative to it" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "category", "tags"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^PLCA-[QPS][0-9]{3}$" },
+          "title": { "type": "string" },
+          "severity": { "$ref": "#/$defs/severity" },
+          "category": { "enum": ["quality", "plc", "security"] },
+          "plcopen": { "type": "string", "description": "PLCopen Coding Guidelines v1.0 rule id" },
+          "cwe": { "type": "string", "pattern": "^CWE-[0-9]+$" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ruleId", "severity", "message", "location", "related", "fingerprint"],
+        "properties": {
+          "ruleId": { "type": "string" },
+          "severity": { "$ref": "#/$defs/severity" },
+          "message": { "type": "string" },
+          "pou": { "type": "string", "description": "qualified name of the POU, absent outside POUs" },
+          "location": { "$ref": "#/$defs/location" },
+          "related": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["message", "location"],
+              "properties": { "message": { "type": "string" }, "location": { "$ref": "#/$defs/location" } }
+            }
+          },
+          "fingerprint": { "type": "string", "description": "line-independent identity, for baselines" }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "description": "problems reading, parsing or modelling the input, and rule failures",
+      "items": {
+        "type": "object",
+        "required": ["code", "severity", "message", "location"],
+        "properties": {
+          "code": { "type": "string" },
+          "severity": { "$ref": "#/$defs/severity" },
+          "message": { "type": "string" },
+          "location": { "$ref": "#/$defs/location" }
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["files", "lines", "pous", "findings", "findingsBySeverity", "timeMillis", "resolutionRate", "skippedFiles"],
+      "properties": {
+        "files": { "type": "integer" },
+        "lines": { "type": "integer" },
+        "pous": { "type": "integer" },
+        "findings": { "type": "integer" },
+        "findingsBySeverity": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" }
+        },
+        "timeMillis": {
+          "type": "object",
+          "required": ["parse", "model", "rules"],
+          "additionalProperties": { "type": "integer" }
+        },
+        "resolutionRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "skippedFiles": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "severity": { "enum": ["error", "warning", "info", "hint"] },
+    "location": {
+      "type": "object",
+      "description": "1-based lines and UTF-16 columns in the physical file; endColumn is exclusive",
+      "required": ["path", "startLine", "startColumn", "endLine", "endColumn"],
+      "properties": {
+        "path": { "type": "string" },
+        "startLine": { "type": "integer", "minimum": 1 },
+        "startColumn": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "endColumn": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

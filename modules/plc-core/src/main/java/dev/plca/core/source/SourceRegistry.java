@@ -1,6 +1,12 @@
 package dev.plca.core.source;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,6 +46,18 @@ public final class SourceRegistry {
 
     public int size() {
         return texts.size();
+    }
+
+    /** The distinct physical files of all registered texts, in registration order. */
+    public List<SourceFile> files() {
+        Set<SourceFile> files = Collections.newSetFromMap(new IdentityHashMap<>());
+        List<SourceFile> r = new ArrayList<>();
+        texts.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> {
+            if (files.add(e.getValue().file())) {
+                r.add(e.getValue().file());
+            }
+        });
+        return r;
     }
 
     /** Maps a span to the physical file and converts it to lines and columns. */

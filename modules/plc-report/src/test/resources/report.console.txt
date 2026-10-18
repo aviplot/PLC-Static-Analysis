@@ -1,0 +1,48 @@
+with space.st:2:16: error: PLC-SYN-001 unexpected ';'
+    2 | F_Broken := 1 +;
+      |                ^
+
+FB_Valve.TcPOU:13:2: warning: PLCA-P001 'bIsOpen' is written unconditionally more than once in FB_Valve; only the last write takes effect (double coil)
+   13 | 	bIsOpen := NOT bOpen;
+      | 	^^^^^^^
+      FB_Valve.TcPOU:12:20 previous write
+
+FB_Valve.TcPOU:14:1: warning: PLCA-Q006 Input 'bOpen' of FB_Valve is written inside the POU; inputs should only be read (copy it to a local)
+   14 | bOpen := FALSE;]]></ST>
+      | ^^^^^
+
+MAIN.st:6:5: warning: PLCA-Q001 Variable 'sPassword' is declared but never used
+    6 |     sPassword : STRING := 'secret1';
+      |     ^^^^^^^^^
+
+MAIN.st:6:27: warning: PLCA-S001 Hard-coded credential: string literal used for 'sPassword'; keep secrets out of the PLC program
+    6 |     sPassword : STRING := 'secret1';
+      |                           ^^^^^^^^^
+
+MAIN.st:9:10: warning: PLCA-Q003 Exact floating-point comparison with '='; compare the difference against a tolerance, e.g. ABS(a - b) < eps
+    9 | qPump := rLevel = 100.0;
+      |          ^^^^^^^^^^^^^^
+
+MAIN.st:10:1: warning: PLCA-Q002 CASE statement has no ELSE branch
+   10 | CASE nStep OF
+      | ^^^^^^^^^^
+
+MAIN.st:13:1: warning: PLCA-P001 'qPump' is written unconditionally more than once in MAIN; only the last write takes effect (double coil)
+   13 | qPump := %IX0.1;
+      | ^^^^^
+      MAIN.st:9:1 previous write
+
+MAIN.st:13:10: info: PLCA-P002 Direct address %IX0.1 used in code; declare a variable AT %IX0.1 and use its name
+   13 | qPump := %IX0.1;
+      |          ^^^^^^
+
+8 findings (7 warnings, 1 info) in 3 files, 37 lines, 3 POUs
+  PLCA-Q001  Unused variable                                   1
+  PLCA-Q002  CASE without ELSE                                 1
+  PLCA-Q003  Equality comparison of floating-point values      1
+  PLCA-Q006  Write to a VAR_INPUT                              1
+  PLCA-P001  Double coil                                       2
+  PLCA-P002  Direct addressing in code                         1
+  PLCA-S001  Hard-coded credential or IP address               1
+1 input problem (syntax errors, unreadable files): results in those places may be incomplete
+Analysed in 0.0 s (parse 0.0 s, model 0.0 s, rules 0.0 s)

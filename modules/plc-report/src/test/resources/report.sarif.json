@@ -1,0 +1,503 @@
+{
+  "$schema" : "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version" : "2.1.0",
+  "runs" : [ {
+    "tool" : {
+      "driver" : {
+        "name" : "plca",
+        "version" : "0.1.0-SNAPSHOT",
+        "rules" : [ {
+          "id" : "PLCA-Q001",
+          "name" : "UnusedVariable",
+          "shortDescription" : {
+            "text" : "Unused variable"
+          },
+          "fullDescription" : {
+            "text" : "A local variable (VAR, VAR_TEMP, VAR_STAT, VAR_INST) is declared but never read or written by any code, initial value or declaration in the project."
+          },
+          "help" : {
+            "text" : "A local variable (VAR, VAR_TEMP, VAR_STAT, VAR_INST) is declared but never read or written by any code, initial value or declaration in the project.",
+            "markdown" : "## Description\n\nA local variable (VAR, VAR_TEMP, VAR_STAT, VAR_INST) is declared but never read or written by any code, initial\nvalue or declaration in the project.\n\n## Rationale\n\nUnused declarations make a POU harder to read and suggest unfinished or dead logic; they also use memory. PLCopen\nCoding Guidelines rule CP24 *Do not declare variables that are not used*.\n\nNot reported, because something outside the parsed code may use the variable: variables with an attribute pragma\n(HMI, OPC UA or ADS exposure), variables with an `AT` address (I/O mapping), names matching `sparePattern`, and every\nvariable of a POU with a graphical or unparsable body. Inputs and outputs are interface, not locals, and are not\nchecked here.\n\n## Noncompliant\n\n```st\nFUNCTION_BLOCK FB_Pump\nVAR_INPUT\n    bStart : BOOL;\nEND_VAR\nVAR\n    bRunning : BOOL;\n    nOldCounter : INT;\nEND_VAR\nbRunning := bStart;\nEND_FUNCTION_BLOCK\n```\n\n## Compliant\n\n```st\nFUNCTION_BLOCK FB_Pump\nVAR_INPUT\n    bStart : BOOL;\nEND_VAR\nVAR\n    bRunning : BOOL;\n    nSpare1 : INT;\nEND_VAR\nbRunning := bStart;\nEND_FUNCTION_BLOCK\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "unused-code", "external/cwe/cwe-563" ],
+            "plcopen" : "CP24"
+          }
+        }, {
+          "id" : "PLCA-Q002",
+          "name" : "CaseWithoutElse",
+          "shortDescription" : {
+            "text" : "CASE without ELSE"
+          },
+          "fullDescription" : {
+            "text" : "A CASE statement has no ELSE branch, so an unexpected selector value silently does nothing."
+          },
+          "help" : {
+            "text" : "A CASE statement has no ELSE branch, so an unexpected selector value silently does nothing.",
+            "markdown" : "## Description\n\nA CASE statement has no ELSE branch, so an unexpected selector value silently does nothing.\n\n## Rationale\n\nState machines are usually written as CASE statements. If the state variable takes a value no branch handles (a new\nstate, a corrupted value, a bad HMI write), the machine stops in an undefined state without any alarm. An ELSE branch\nmakes that case explicit: raise an error or go to a safe state. PLCopen rule L17 asks the same for IF; the guidelines\nhave no CASE rule, so no PLCopen id is given.\n\nA CASE on an enumeration that handles every value is not reported by default.\n\n## Noncompliant\n\n```st\nPROGRAM P_Sequence\nVAR\n    nStep : INT;\nEND_VAR\nCASE nStep OF\n    0: nStep := 10;\n    10: nStep := 0;\nEND_CASE\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Sequence\nVAR\n    nStep : INT;\n    bFault : BOOL;\nEND_VAR\nCASE nStep OF\n    0: nStep := 10;\n    10: nStep := 0;\nELSE\n    bFault := TRUE;\nEND_CASE\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "defensive-programming", "reliability", "external/cwe/cwe-478" ]
+          }
+        }, {
+          "id" : "PLCA-Q003",
+          "name" : "EqualityComparisonOfFloatingPointValues",
+          "shortDescription" : {
+            "text" : "Equality comparison of floating-point values"
+          },
+          "fullDescription" : {
+            "text" : "A REAL or LREAL value is compared with `=` or `<>`."
+          },
+          "help" : {
+            "text" : "A REAL or LREAL value is compared with `=` or `<>`.",
+            "markdown" : "## Description\n\nA REAL or LREAL value is compared with `=` or `<>`.\n\n## Rationale\n\nFloating-point values carry rounding errors, so a computed value is rarely exactly equal to another; the comparison\nmay never become TRUE (a sequence that never advances) or flicker. Compare the difference against a tolerance\ninstead. PLCopen Coding Guidelines rule CP8 *Floating point comparison shall not be equality or inequality*.\n\n## Noncompliant\n\n```st\nFUNCTION F_AtTarget : BOOL\nVAR_INPUT\n    rPosition : REAL;\n    rTarget : REAL;\nEND_VAR\nF_AtTarget := rPosition = rTarget;\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nFUNCTION F_AtTarget : BOOL\nVAR_INPUT\n    rPosition : REAL;\n    rTarget : REAL;\nEND_VAR\nF_AtTarget := ABS(rPosition - rTarget) < 0.001;\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "reliability", "numerics", "external/cwe/cwe-1077" ],
+            "plcopen" : "CP8"
+          }
+        }, {
+          "id" : "PLCA-Q004",
+          "name" : "DivisionByZero",
+          "shortDescription" : {
+            "text" : "Division by zero"
+          },
+          "fullDescription" : {
+            "text" : "The divisor of `/`, `MOD`, `DIV(…)` or `MOD(…)` is a literal or constant that evaluates to zero."
+          },
+          "help" : {
+            "text" : "The divisor of `/`, `MOD`, `DIV(…)` or `MOD(…)` is a literal or constant that evaluates to zero.",
+            "markdown" : "## Description\n\nThe divisor of `/`, `MOD`, `DIV(…)` or `MOD(…)` is a literal or constant that evaluates to zero.\n\n## Rationale\n\nAn integer division by zero raises an exception on most runtimes and stops the PLC; a REAL division yields infinity\nor NaN that spreads through the calculation. A divisor that is always zero is a bug, often a constant that was\nchanged or not yet set.\n\n## Noncompliant\n\n```st\nFUNCTION F_Average : INT\nVAR_INPUT\n    nSum : INT;\nEND_VAR\nVAR CONSTANT\n    cSamples : INT := 0;\nEND_VAR\nF_Average := nSum / cSamples;\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nFUNCTION F_Average : INT\nVAR_INPUT\n    nSum : INT;\nEND_VAR\nVAR CONSTANT\n    cSamples : INT := 8;\nEND_VAR\nF_Average := nSum / cSamples;\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "error"
+          },
+          "properties" : {
+            "tags" : [ "quality", "reliability", "runtime-error", "external/cwe/cwe-369" ]
+          }
+        }, {
+          "id" : "PLCA-Q005",
+          "name" : "ForLoopVariableModifiedInTheLoopBody",
+          "shortDescription" : {
+            "text" : "FOR loop variable modified in the loop body"
+          },
+          "fullDescription" : {
+            "text" : "The control variable of a FOR loop is assigned inside the loop body, passed to an output or VAR_IN_OUT parameter, or reused as the control variable of a nested FOR."
+          },
+          "help" : {
+            "text" : "The control variable of a FOR loop is assigned inside the loop body, passed to an output or VAR_IN_OUT parameter, or reused as the control variable of a nested FOR.",
+            "markdown" : "## Description\n\nThe control variable of a FOR loop is assigned inside the loop body, passed to an output or VAR_IN_OUT parameter, or\nreused as the control variable of a nested FOR.\n\n## Rationale\n\nIEC 61131-3 says the control variable shall not be altered by the repeated statements. Changing it makes the number\nof iterations unpredictable and can cause an endless loop, which trips the task watchdog. Use WHILE or REPEAT when\nthe iteration count is not known in advance. PLCopen Coding Guidelines rule *Loop variables should not be modified\ninside a FOR loop*: the rule section says L12, the document's table of contents says L22.\n\n## Noncompliant\n\n```st\nFUNCTION F_FindFirst : INT\nVAR_INPUT\n    aValues : ARRAY[1..10] OF INT;\nEND_VAR\nVAR\n    i : INT;\nEND_VAR\nF_FindFirst := 0;\nFOR i := 1 TO 10 DO\n    IF aValues[i] > 0 THEN\n        F_FindFirst := i;\n        i := 10;\n    END_IF\nEND_FOR\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nFUNCTION F_FindFirst : INT\nVAR_INPUT\n    aValues : ARRAY[1..10] OF INT;\nEND_VAR\nVAR\n    i : INT;\nEND_VAR\nF_FindFirst := 0;\nFOR i := 1 TO 10 DO\n    IF aValues[i] > 0 THEN\n        F_FindFirst := i;\n        EXIT;\n    END_IF\nEND_FOR\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "reliability", "loops" ],
+            "plcopen" : "L12"
+          }
+        }, {
+          "id" : "PLCA-Q006",
+          "name" : "WriteToAVarInput",
+          "shortDescription" : {
+            "text" : "Write to a VAR_INPUT"
+          },
+          "fullDescription" : {
+            "text" : "A VAR_INPUT of a function, function block or method is written inside that POU (or a method or action of it)."
+          },
+          "help" : {
+            "text" : "A VAR_INPUT of a function, function block or method is written inside that POU (or a method or action of it).",
+            "markdown" : "## Description\n\nA VAR_INPUT of a function, function block or method is written inside that POU (or a method or action of it).\n\n## Rationale\n\nInputs are set by the caller on every call. Overwriting one inside the POU hides the caller's value, and the effect\ndepends on whether the caller passes the input on the next call; for function blocks the changed value can also be\nread back from outside. Copy the input to a local variable and change that. PLCopen Coding Guidelines rule CP17\n*Usage of parameters shall match their declaration mode* (\"each input parameter should not be written\"). Writes\nthrough a POINTER or REFERENCE input change the caller's data and are not reported.\n\n## Noncompliant\n\n```st\nFUNCTION_BLOCK FB_Scale\nVAR_INPUT\n    rRaw : REAL;\nEND_VAR\nVAR_OUTPUT\n    rScaled : REAL;\nEND_VAR\nIF rRaw < 0.0 THEN\n    rRaw := 0.0;\nEND_IF\nrScaled := rRaw * 0.1;\nEND_FUNCTION_BLOCK\n```\n\n## Compliant\n\n```st\nFUNCTION_BLOCK FB_Scale\nVAR_INPUT\n    rRaw : REAL;\nEND_VAR\nVAR_OUTPUT\n    rScaled : REAL;\nEND_VAR\nVAR\n    rClamped : REAL;\nEND_VAR\nrClamped := MAX(rRaw, 0.0);\nrScaled := rClamped * 0.1;\nEND_FUNCTION_BLOCK\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "interface" ],
+            "plcopen" : "CP17"
+          }
+        }, {
+          "id" : "PLCA-Q007",
+          "name" : "Recursion",
+          "shortDescription" : {
+            "text" : "Recursion"
+          },
+          "fullDescription" : {
+            "text" : "A POU calls itself, directly or through a chain of other POUs (functions, methods, actions, FB bodies, property accessors)."
+          },
+          "help" : {
+            "text" : "A POU calls itself, directly or through a chain of other POUs (functions, methods, actions, FB bodies, property accessors).",
+            "markdown" : "## Description\n\nA POU calls itself, directly or through a chain of other POUs (functions, methods, actions, FB bodies, property\naccessors).\n\n## Rationale\n\nEach recursive call uses stack space, and PLC stacks are small and fixed; deep recursion can stop the controller.\nSupport for recursion also differs between vendors, so the code is less portable. Replace the recursion with a loop.\nPLCopen Coding Guidelines rule CP13 *POUs shall not call themselves directly or indirectly*.\n\n## Noncompliant\n\n```st\nFUNCTION F_Factorial : DINT\nVAR_INPUT\n    n : DINT;\nEND_VAR\nIF n <= 1 THEN\n    F_Factorial := 1;\nELSE\n    F_Factorial := n * F_Factorial(n - 1);\nEND_IF\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nFUNCTION F_Factorial : DINT\nVAR_INPUT\n    n : DINT;\nEND_VAR\nVAR\n    i : DINT;\nEND_VAR\nF_Factorial := 1;\nFOR i := 2 TO n DO\n    F_Factorial := F_Factorial * i;\nEND_FOR\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "error"
+          },
+          "properties" : {
+            "tags" : [ "quality", "reliability", "stack", "external/cwe/cwe-674" ],
+            "plcopen" : "CP13"
+          }
+        }, {
+          "id" : "PLCA-P001",
+          "name" : "DoubleCoil",
+          "shortDescription" : {
+            "text" : "Double coil"
+          },
+          "fullDescription" : {
+            "text" : "An output-like variable — a physical output (`AT %Q…`), a global variable, or the POU's own VAR_OUTPUT — is written unconditionally in more than one place, so only the last write of each cycle takes effect."
+          },
+          "help" : {
+            "text" : "An output-like variable — a physical output (`AT %Q…`), a global variable, or the POU's own VAR_OUTPUT — is written unconditionally in more than one place, so only the last write of each cycle takes effect.",
+            "markdown" : "## Description\n\nAn output-like variable — a physical output (`AT %Q…`), a global variable, or the POU's own VAR_OUTPUT — is written\nunconditionally in more than one place, so only the last write of each cycle takes effect.\n\n## Rationale\n\nThis is the structured-text form of the ladder \"double coil\": two rungs driving the same coil. The earlier write is\ndead, the behaviour depends on execution order, and the logic that decides the output is spread over the\napplication. Compute the value once, in one place. PLCopen Coding Guidelines rule CP12 *Physical outputs shall be\nwritten once per PLC cycle* covers physical outputs; this rule also checks globals and FB outputs.\n\nTo stay quiet on correct code, only unconditional writes count (`:=` or `=>` in a top-level statement of a body),\n`S=`/`R=` latches and writes inside IF/CASE/loops are ignored, and a second write in the same body is not reported\nwhen the variable is read in between (sequential use of a working variable).\n\n## Noncompliant\n\n```st\nPROGRAM P_Conveyor\nVAR\n    bStart : BOOL;\n    bJog : BOOL;\n    qMotor AT %QX0.0 : BOOL;\nEND_VAR\nqMotor := bStart;\nqMotor := bJog;\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Conveyor\nVAR\n    bStart : BOOL;\n    bJog : BOOL;\n    qMotor AT %QX0.0 : BOOL;\nEND_VAR\nqMotor := bStart OR bJog;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "plc", "outputs", "determinism" ],
+            "plcopen" : "CP12"
+          }
+        }, {
+          "id" : "PLCA-P002",
+          "name" : "DirectAddressingInCode",
+          "shortDescription" : {
+            "text" : "Direct addressing in code"
+          },
+          "fullDescription" : {
+            "text" : "A direct address such as `%IX0.1`, `%QW4` or `%MD10` is used in code instead of a symbolic variable."
+          },
+          "help" : {
+            "text" : "A direct address such as `%IX0.1`, `%QW4` or `%MD10` is used in code instead of a symbolic variable.",
+            "markdown" : "## Description\n\nA direct address such as `%IX0.1`, `%QW4` or `%MD10` is used in code instead of a symbolic variable.\n\n## Rationale\n\nA bare address says nothing about what it is, makes the code depend on one hardware layout, and is easily missed when\nthe I/O configuration changes. Declare a variable with `AT %…` once and use its name. PLCopen Coding Guidelines rule\nN1 *Avoid physical addresses*.\n\n## Noncompliant\n\n```st\nPROGRAM P_Lamp\n%QX0.1 := %IX0.0;\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Lamp\nVAR\n    iButton AT %IX0.0 : BOOL;\n    qLamp AT %QX0.1 : BOOL;\nEND_VAR\nqLamp := iButton;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "plc", "portability", "readability" ],
+            "plcopen" : "N1"
+          }
+        }, {
+          "id" : "PLCA-S001",
+          "name" : "HardCodedCredentialOrIpAddress",
+          "shortDescription" : {
+            "text" : "Hard-coded credential or IP address"
+          },
+          "fullDescription" : {
+            "text" : "A string literal is used as a password, token or other secret (assigned to, initialising, passed as or compared with a variable or parameter whose name matches `namePattern`), or a string literal is an IPv4 address."
+          },
+          "help" : {
+            "text" : "A string literal is used as a password, token or other secret (assigned to, initialising, passed as or compared with a variable or parameter whose name matches `namePattern`), or a string literal is an IPv4 address.",
+            "markdown" : "## Description\n\nA string literal is used as a password, token or other secret (assigned to, initialising, passed as or compared with\na variable or parameter whose name matches `namePattern`), or a string literal is an IPv4 address.\n\n## Rationale\n\nCredentials in the PLC program are visible to anyone who can read the project or upload it from the controller,\ncannot be rotated without a program change, and are often identical across machines. A password check against a\nliteral is a back door. Hard-coded IP addresses tie the program to one network layout and hide communication\npartners from reviews. Keep secrets in a protected store and network settings in configuration.\n\n## Noncompliant\n\n```st\nFUNCTION_BLOCK FB_Login\nVAR_INPUT\n    sUser : STRING;\n    sPassword : STRING;\nEND_VAR\nVAR_OUTPUT\n    bAuthorized : BOOL;\nEND_VAR\nVAR\n    sServerIp : STRING := '192.168.10.20';\nEND_VAR\nbAuthorized := sUser = 'service' AND sPassword = 'Service#2024';\nEND_FUNCTION_BLOCK\n```\n\n## Compliant\n\n```st\nFUNCTION_BLOCK FB_Login\nVAR_INPUT\n    sUser : STRING;\n    sPassword : STRING;\n    sExpectedHash : STRING;\nEND_VAR\nVAR_OUTPUT\n    bAuthorized : BOOL;\nEND_VAR\nbAuthorized := F_Hash(sPassword) = sExpectedHash;\nEND_FUNCTION_BLOCK\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "security", "credentials", "configuration", "external/cwe/cwe-798" ]
+          }
+        } ]
+      }
+    },
+    "originalUriBaseIds" : {
+      "SRCROOT" : {
+        "uri" : "file:///project/"
+      }
+    },
+    "columnKind" : "utf16CodeUnits",
+    "invocations" : [ {
+      "executionSuccessful" : true,
+      "toolExecutionNotifications" : [ {
+        "level" : "error",
+        "message" : {
+          "text" : "unexpected ';'"
+        },
+        "descriptor" : {
+          "id" : "PLC-SYN-001"
+        },
+        "locations" : [ {
+          "physicalLocation" : {
+            "artifactLocation" : {
+              "uri" : "with%20space.st",
+              "uriBaseId" : "SRCROOT"
+            },
+            "region" : {
+              "startLine" : 2,
+              "startColumn" : 16,
+              "endLine" : 2,
+              "endColumn" : 17
+            }
+          }
+        } ]
+      } ]
+    } ],
+    "results" : [ {
+      "ruleId" : "PLCA-P001",
+      "ruleIndex" : 7,
+      "level" : "warning",
+      "message" : {
+        "text" : "'bIsOpen' is written unconditionally more than once in FB_Valve; only the last write takes effect (double coil)"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "FB_Valve.TcPOU",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 13,
+            "startColumn" : 2,
+            "endLine" : 13,
+            "endColumn" : 9
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "FB_Valve",
+          "kind" : "function"
+        } ]
+      } ],
+      "relatedLocations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "FB_Valve.TcPOU",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 12,
+            "startColumn" : 20,
+            "endLine" : 12,
+            "endColumn" : 27
+          }
+        },
+        "message" : {
+          "text" : "previous write"
+        },
+        "id" : 1
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "93b99844fd61f6fad371e1fdc5543155"
+      }
+    }, {
+      "ruleId" : "PLCA-Q006",
+      "ruleIndex" : 5,
+      "level" : "warning",
+      "message" : {
+        "text" : "Input 'bOpen' of FB_Valve is written inside the POU; inputs should only be read (copy it to a local)"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "FB_Valve.TcPOU",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 14,
+            "startColumn" : 1,
+            "endLine" : 14,
+            "endColumn" : 6
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "FB_Valve",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "ce76169a862cc6062091c4c258b84b2c"
+      }
+    }, {
+      "ruleId" : "PLCA-Q001",
+      "ruleIndex" : 0,
+      "level" : "warning",
+      "message" : {
+        "text" : "Variable 'sPassword' is declared but never used"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 6,
+            "startColumn" : 5,
+            "endLine" : 6,
+            "endColumn" : 14
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "MAIN",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "b78a9efa13ca9a1bb264b507b943f35c"
+      }
+    }, {
+      "ruleId" : "PLCA-S001",
+      "ruleIndex" : 9,
+      "level" : "warning",
+      "message" : {
+        "text" : "Hard-coded credential: string literal used for 'sPassword'; keep secrets out of the PLC program"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 6,
+            "startColumn" : 27,
+            "endLine" : 6,
+            "endColumn" : 36
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "MAIN",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "81e1aa0324e3b797991732e68c309cb3"
+      }
+    }, {
+      "ruleId" : "PLCA-Q003",
+      "ruleIndex" : 2,
+      "level" : "warning",
+      "message" : {
+        "text" : "Exact floating-point comparison with '='; compare the difference against a tolerance, e.g. ABS(a - b) < eps"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 9,
+            "startColumn" : 10,
+            "endLine" : 9,
+            "endColumn" : 24
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "MAIN",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "3e64e1741b4db8ed7cd9f831f6c26ff1"
+      }
+    }, {
+      "ruleId" : "PLCA-Q002",
+      "ruleIndex" : 1,
+      "level" : "warning",
+      "message" : {
+        "text" : "CASE statement has no ELSE branch"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 10,
+            "startColumn" : 1,
+            "endLine" : 10,
+            "endColumn" : 11
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "MAIN",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "b6d64a1b5a3971272bfdbb1974b57524"
+      }
+    }, {
+      "ruleId" : "PLCA-P001",
+      "ruleIndex" : 7,
+      "level" : "warning",
+      "message" : {
+        "text" : "'qPump' is written unconditionally more than once in MAIN; only the last write takes effect (double coil)"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 13,
+            "startColumn" : 1,
+            "endLine" : 13,
+            "endColumn" : 6
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "MAIN",
+          "kind" : "function"
+        } ]
+      } ],
+      "relatedLocations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 9,
+            "startColumn" : 1,
+            "endLine" : 9,
+            "endColumn" : 6
+          }
+        },
+        "message" : {
+          "text" : "previous write"
+        },
+        "id" : 1
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "f95ab5614e9fde7ed2e709a554ed1c3e"
+      }
+    }, {
+      "ruleId" : "PLCA-P002",
+      "ruleIndex" : 8,
+      "level" : "note",
+      "message" : {
+        "text" : "Direct address %IX0.1 used in code; declare a variable AT %IX0.1 and use its name"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "MAIN.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 13,
+            "startColumn" : 10,
+            "endLine" : 13,
+            "endColumn" : 16
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "MAIN",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "ca7fe972b9b614d523b7a0a29f6960c0"
+      }
+    } ]
+  } ]
+}

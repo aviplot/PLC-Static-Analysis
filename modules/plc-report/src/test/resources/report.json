@@ -1,0 +1,244 @@
+{
+  "schemaVersion" : 1,
+  "tool" : {
+    "name" : "plca",
+    "version" : "0.1.0-SNAPSHOT"
+  },
+  "root" : "file:///project/",
+  "rules" : [ {
+    "id" : "PLCA-Q001",
+    "title" : "Unused variable",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP24",
+    "cwe" : "CWE-563",
+    "tags" : [ "maintainability", "unused-code" ]
+  }, {
+    "id" : "PLCA-Q002",
+    "title" : "CASE without ELSE",
+    "severity" : "warning",
+    "category" : "quality",
+    "cwe" : "CWE-478",
+    "tags" : [ "defensive-programming", "reliability" ]
+  }, {
+    "id" : "PLCA-Q003",
+    "title" : "Equality comparison of floating-point values",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP8",
+    "cwe" : "CWE-1077",
+    "tags" : [ "reliability", "numerics" ]
+  }, {
+    "id" : "PLCA-Q004",
+    "title" : "Division by zero",
+    "severity" : "error",
+    "category" : "quality",
+    "cwe" : "CWE-369",
+    "tags" : [ "reliability", "runtime-error" ]
+  }, {
+    "id" : "PLCA-Q005",
+    "title" : "FOR loop variable modified in the loop body",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "L12",
+    "tags" : [ "reliability", "loops" ]
+  }, {
+    "id" : "PLCA-Q006",
+    "title" : "Write to a VAR_INPUT",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP17",
+    "tags" : [ "maintainability", "interface" ]
+  }, {
+    "id" : "PLCA-Q007",
+    "title" : "Recursion",
+    "severity" : "error",
+    "category" : "quality",
+    "plcopen" : "CP13",
+    "cwe" : "CWE-674",
+    "tags" : [ "reliability", "stack" ]
+  }, {
+    "id" : "PLCA-P001",
+    "title" : "Double coil",
+    "severity" : "warning",
+    "category" : "plc",
+    "plcopen" : "CP12",
+    "tags" : [ "plc", "outputs", "determinism" ]
+  }, {
+    "id" : "PLCA-P002",
+    "title" : "Direct addressing in code",
+    "severity" : "info",
+    "category" : "plc",
+    "plcopen" : "N1",
+    "tags" : [ "plc", "portability", "readability" ]
+  }, {
+    "id" : "PLCA-S001",
+    "title" : "Hard-coded credential or IP address",
+    "severity" : "warning",
+    "category" : "security",
+    "cwe" : "CWE-798",
+    "tags" : [ "security", "credentials", "configuration" ]
+  } ],
+  "findings" : [ {
+    "ruleId" : "PLCA-P001",
+    "severity" : "warning",
+    "message" : "'bIsOpen' is written unconditionally more than once in FB_Valve; only the last write takes effect (double coil)",
+    "pou" : "FB_Valve",
+    "location" : {
+      "path" : "FB_Valve.TcPOU",
+      "startLine" : 13,
+      "startColumn" : 2,
+      "endLine" : 13,
+      "endColumn" : 9
+    },
+    "related" : [ {
+      "message" : "previous write",
+      "location" : {
+        "path" : "FB_Valve.TcPOU",
+        "startLine" : 12,
+        "startColumn" : 20,
+        "endLine" : 12,
+        "endColumn" : 27
+      }
+    } ],
+    "fingerprint" : "93b99844fd61f6fad371e1fdc5543155"
+  }, {
+    "ruleId" : "PLCA-Q006",
+    "severity" : "warning",
+    "message" : "Input 'bOpen' of FB_Valve is written inside the POU; inputs should only be read (copy it to a local)",
+    "pou" : "FB_Valve",
+    "location" : {
+      "path" : "FB_Valve.TcPOU",
+      "startLine" : 14,
+      "startColumn" : 1,
+      "endLine" : 14,
+      "endColumn" : 6
+    },
+    "related" : [ ],
+    "fingerprint" : "ce76169a862cc6062091c4c258b84b2c"
+  }, {
+    "ruleId" : "PLCA-Q001",
+    "severity" : "warning",
+    "message" : "Variable 'sPassword' is declared but never used",
+    "pou" : "MAIN",
+    "location" : {
+      "path" : "MAIN.st",
+      "startLine" : 6,
+      "startColumn" : 5,
+      "endLine" : 6,
+      "endColumn" : 14
+    },
+    "related" : [ ],
+    "fingerprint" : "b78a9efa13ca9a1bb264b507b943f35c"
+  }, {
+    "ruleId" : "PLCA-S001",
+    "severity" : "warning",
+    "message" : "Hard-coded credential: string literal used for 'sPassword'; keep secrets out of the PLC program",
+    "pou" : "MAIN",
+    "location" : {
+      "path" : "MAIN.st",
+      "startLine" : 6,
+      "startColumn" : 27,
+      "endLine" : 6,
+      "endColumn" : 36
+    },
+    "related" : [ ],
+    "fingerprint" : "81e1aa0324e3b797991732e68c309cb3"
+  }, {
+    "ruleId" : "PLCA-Q003",
+    "severity" : "warning",
+    "message" : "Exact floating-point comparison with '='; compare the difference against a tolerance, e.g. ABS(a - b) < eps",
+    "pou" : "MAIN",
+    "location" : {
+      "path" : "MAIN.st",
+      "startLine" : 9,
+      "startColumn" : 10,
+      "endLine" : 9,
+      "endColumn" : 24
+    },
+    "related" : [ ],
+    "fingerprint" : "3e64e1741b4db8ed7cd9f831f6c26ff1"
+  }, {
+    "ruleId" : "PLCA-Q002",
+    "severity" : "warning",
+    "message" : "CASE statement has no ELSE branch",
+    "pou" : "MAIN",
+    "location" : {
+      "path" : "MAIN.st",
+      "startLine" : 10,
+      "startColumn" : 1,
+      "endLine" : 10,
+      "endColumn" : 11
+    },
+    "related" : [ ],
+    "fingerprint" : "b6d64a1b5a3971272bfdbb1974b57524"
+  }, {
+    "ruleId" : "PLCA-P001",
+    "severity" : "warning",
+    "message" : "'qPump' is written unconditionally more than once in MAIN; only the last write takes effect (double coil)",
+    "pou" : "MAIN",
+    "location" : {
+      "path" : "MAIN.st",
+      "startLine" : 13,
+      "startColumn" : 1,
+      "endLine" : 13,
+      "endColumn" : 6
+    },
+    "related" : [ {
+      "message" : "previous write",
+      "location" : {
+        "path" : "MAIN.st",
+        "startLine" : 9,
+        "startColumn" : 1,
+        "endLine" : 9,
+        "endColumn" : 6
+      }
+    } ],
+    "fingerprint" : "f95ab5614e9fde7ed2e709a554ed1c3e"
+  }, {
+    "ruleId" : "PLCA-P002",
+    "severity" : "info",
+    "message" : "Direct address %IX0.1 used in code; declare a variable AT %IX0.1 and use its name",
+    "pou" : "MAIN",
+    "location" : {
+      "path" : "MAIN.st",
+      "startLine" : 13,
+      "startColumn" : 10,
+      "endLine" : 13,
+      "endColumn" : 16
+    },
+    "related" : [ ],
+    "fingerprint" : "ca7fe972b9b614d523b7a0a29f6960c0"
+  } ],
+  "diagnostics" : [ {
+    "code" : "PLC-SYN-001",
+    "severity" : "error",
+    "message" : "unexpected ';'",
+    "location" : {
+      "path" : "with space.st",
+      "startLine" : 2,
+      "startColumn" : 16,
+      "endLine" : 2,
+      "endColumn" : 17
+    }
+  } ],
+  "stats" : {
+    "files" : 3,
+    "lines" : 37,
+    "pous" : 3,
+    "findings" : 8,
+    "findingsBySeverity" : {
+      "error" : 0,
+      "warning" : 7,
+      "info" : 1,
+      "hint" : 0
+    },
+    "timeMillis" : {
+      "parse" : 0,
+      "model" : 0,
+      "rules" : 0
+    },
+    "resolutionRate" : 1.0,
+    "skippedFiles" : [ ]
+  }
+}
