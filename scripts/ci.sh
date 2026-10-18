@@ -17,7 +17,7 @@ echo "== tests on JDK 25"
 
 if [[ -f corpus/MANIFEST.csv ]]; then
   echo "== corpus check (accept rate vs baseline, SLL fallback rate)"
-  ./gradlew :frontend-st:corpusCheck
+  ./gradlew :plc-devtools:corpusCheck
 else
   echo "== corpus check skipped (no local corpus; run tools/corpus-harvester)"
 fi

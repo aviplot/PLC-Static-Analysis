@@ -1,4 +1,4 @@
-package dev.plca.frontend.st.corpus;
+package dev.plca.devtools;
 
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;

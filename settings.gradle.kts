@@ -12,6 +12,7 @@ rootProject.name = "plca"
 // Dependency direction (design rule 3: rules never see ANTLR parse trees):
 //   plc-core <- plc-ast <- plc-semantic <- plc-rules <- plc-report <- plc-cli
 //   plc-grammar <- frontend-* (implementation only) -> plc-ast
+//   plc-devtools: corpus check, parse debugging, JMH benchmarks (never shipped)
 listOf(
     "plc-core",
     "plc-grammar",
@@ -24,6 +25,7 @@ listOf(
     "plc-rules",
     "plc-report",
     "plc-cli",
+    "plc-devtools",
 ).forEach { name ->
     include(name)
     project(":$name").projectDir = file("modules/$name")

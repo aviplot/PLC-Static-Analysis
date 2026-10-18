@@ -155,7 +155,7 @@ the vendor documentation was not checked.
 | Bare variable as statement | `bSignal;` | **warning** `PLC-SYN-006` (no effect), not an error |
 
 ## 8. Known gaps (deliberate, M1)
-Measured on the corpus (`./gradlew :frontend-st:corpusCheck`): TwinCAT POU/DUT/GVL/Itf are 98.7–99.8% error-free
+Measured on the corpus (`./gradlew :plc-devtools:corpusCheck`): TwinCAT POU/DUT/GVL/Itf are 98.7–99.8% error-free
 (repo-weighted). Most of what remains, and most `.st` failures, falls into these groups:
 - **Other dialects in `.st` files**: Siemens SCL (`#local`, `"quoted"`; → M4), IEC textual SFC (`STEP`/`TRANSITION`),
   tool-specific test dialects (`TEST_PROGRAM`, `ASSERT_*`), proprietary blocks (`END_NATIVE`).
