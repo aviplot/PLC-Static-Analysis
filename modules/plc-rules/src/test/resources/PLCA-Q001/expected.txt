@@ -1,0 +1,6 @@
+noncompliant.st:6:5-6:15 PLCA-Q001 warning: Variable 'nNeverUsed' is declared but never used [FB_Unused]
+noncompliant.st:8:5-8:10 PLCA-Q001 warning: Variable 'rTemp' is declared but never used [FB_Unused]
+noncompliant.st:8:12-8:18 PLCA-Q001 warning: Variable 'rOther' is declared but never used [FB_Unused]
+noncompliant.st:11:5-11:13 PLCA-Q001 warning: Variable 'nScratch' is declared but never used [FB_Unused]
+noncompliant.st:19:5-19:16 PLCA-Q001 warning: Variable 'fbNotCalled' is declared but never used [P_Main]
+noncompliant.st:30:5-30:11 PLCA-Q001 warning: Variable 'nLocal' is declared but never used [F_Unused]

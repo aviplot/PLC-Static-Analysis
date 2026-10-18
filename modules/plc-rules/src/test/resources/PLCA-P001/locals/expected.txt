@@ -1,0 +1,2 @@
+locals.st:6:1-6:2 PLCA-P001 warning: 'n' is written unconditionally more than once in FB_L; only the last write takes effect (double coil) [FB_L]
+    locals.st:5:1-5:2 previous write

@@ -1,0 +1,38 @@
+---
+id: PLCA-P002
+title: Direct addressing in code
+severity: info
+category: plc
+dialects: all
+tags: [plc, portability, readability]
+plcopen: N1
+---
+## Description
+
+A direct address such as `%IX0.1`, `%QW4` or `%MD10` is used in code instead of a symbolic variable.
+
+## Rationale
+
+A bare address says nothing about what it is, makes the code depend on one hardware layout, and is easily missed when
+the I/O configuration changes. Declare a variable with `AT %…` once and use its name. PLCopen Coding Guidelines rule
+N1 *Avoid physical addresses*.
+
+## Noncompliant
+
+```st
+PROGRAM P_Lamp
+%QX0.1 := %IX0.0;
+END_PROGRAM
+```
+
+## Compliant
+
+```st
+PROGRAM P_Lamp
+VAR
+    iButton AT %IX0.0 : BOOL;
+    qLamp AT %QX0.1 : BOOL;
+END_VAR
+qLamp := iButton;
+END_PROGRAM
+```

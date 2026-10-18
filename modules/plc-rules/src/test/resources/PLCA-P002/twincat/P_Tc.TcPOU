@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="P_Tc" Id="{11111111-2222-3333-4444-555555555556}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM P_Tc
+VAR
+    b : BOOL;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF b THEN
+    %QX1.0 := TRUE; // PLCA-P002
+END_IF
+b := %IX1.1 AND b; // PLCA-P002]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

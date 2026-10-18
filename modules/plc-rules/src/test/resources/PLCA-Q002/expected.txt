@@ -1,0 +1,3 @@
+noncompliant.st:9:1-9:7 PLCA-Q002 warning: CASE statement has no ELSE branch [P_Case]
+noncompliant.st:12:1-12:12 PLCA-Q002 warning: CASE statement has no ELSE branch and does not handle E_State value Stop [P_Case]
+noncompliant.st:17:5-17:11 PLCA-Q002 warning: CASE statement has no ELSE branch [P_Case]

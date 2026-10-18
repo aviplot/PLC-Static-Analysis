@@ -1,0 +1,8 @@
+noncompliant.st:14:1-14:7 PLCA-P001 warning: 'qMotor' is written unconditionally more than once in P_A; only the last write takes effect (double coil) [P_A]
+    noncompliant.st:13:1-13:7 previous write
+noncompliant.st:23:1-23:6 PLCA-P001 warning: 'gLamp' is written unconditionally in both P_A and P_B; the POU that runs last wins (double coil) [P_B]
+    noncompliant.st:15:1-15:6 also written in P_A
+noncompliant.st:24:1-24:7 PLCA-P001 warning: 'gValve' is written unconditionally in both P_A and P_B; the POU that runs last wins (double coil) [P_B]
+    noncompliant.st:16:32-16:38 also written in P_A
+noncompliant.st:35:1-35:5 PLCA-P001 warning: 'bOut' is written unconditionally more than once in FB_Out; only the last write takes effect (double coil) [FB_Out]
+    noncompliant.st:34:1-34:5 previous write

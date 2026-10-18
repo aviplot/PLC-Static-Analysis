@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Tc" Id="{11111111-2222-3333-4444-555555555555}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Tc
+VAR_INPUT
+    bEnable : BOOL;
+END_VAR
+VAR
+    nValue : INT;
+    nForgotten : INT; // PLCA-Q001
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bEnable THEN
+    nValue := nValue + 1;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

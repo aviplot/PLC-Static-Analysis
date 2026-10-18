@@ -1,0 +1,8 @@
+noncompliant.st:2:25-2:36 PLCA-S001 warning: Hard-coded IP address '10.0.0.15'; read it from configuration instead
+noncompliant.st:3:28-3:39 PLCA-S001 warning: Hard-coded credential: string literal used for 'gsApiToken'; keep secrets out of the PLC program
+noncompliant.st:15:29-15:37 PLCA-S001 warning: Hard-coded credential: string literal used for 'wsKennwort'; keep secrets out of the PLC program [FB_Conn]
+noncompliant.st:17:9-17:18 PLCA-S001 warning: Hard-coded credential: string literal used for 'sPwd'; keep secrets out of the PLC program [FB_Conn]
+noncompliant.st:18:10-18:29 PLCA-S001 warning: Hard-coded IP address '192.168.1.100:502'; read it from configuration instead [FB_Conn]
+noncompliant.st:19:20-19:29 PLCA-S001 warning: Hard-coded credential: string literal used for 'sPassword'; keep secrets out of the PLC program [FB_Conn]
+noncompliant.st:20:25-20:37 PLCA-S001 warning: Hard-coded IP address '172.16.0.2'; read it from configuration instead [FB_Conn]
+noncompliant.st:20:52-20:59 PLCA-S001 warning: Hard-coded credential: string literal used for 'sPassword'; keep secrets out of the PLC program [FB_Conn]

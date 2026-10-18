@@ -1,0 +1,6 @@
+noncompliant.st:14:1-14:4 PLCA-Q006 warning: Input 'bIn' of FB_In is written inside the POU; inputs should only be read (copy it to a local) [FB_In]
+noncompliant.st:15:1-15:7 PLCA-Q006 warning: Input 'stIn' of FB_In is written inside the POU; inputs should only be read (copy it to a local) [FB_In]
+noncompliant.st:21:1-21:4 PLCA-Q006 warning: Input 'nIn' of FB_In is written inside the POU; inputs should only be read (copy it to a local) [FB_In.M]
+noncompliant.st:22:1-22:5 PLCA-Q006 warning: Input 'nArg' of FB_In.M is written inside the POU; inputs should only be read (copy it to a local) [FB_In.M]
+noncompliant.st:27:1-27:4 PLCA-Q006 warning: Input 'nIn' of FB_In is written inside the POU; inputs should only be read (copy it to a local) [FB_In2]
+noncompliant.st:34:1-34:2 PLCA-Q006 warning: Input 'n' of F_In is written inside the POU; inputs should only be read (copy it to a local) [F_In]

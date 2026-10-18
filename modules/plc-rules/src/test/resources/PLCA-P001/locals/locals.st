@@ -1,0 +1,16 @@
+FUNCTION_BLOCK FB_L
+VAR
+    n : INT;
+END_VAR
+n := 1;
+n := 2; // PLCA-P001
+END_FUNCTION_BLOCK
+
+FUNCTION F_L : INT
+VAR
+    n : INT;
+END_VAR
+n := 1;
+n := 2;
+F_L := n;
+END_FUNCTION

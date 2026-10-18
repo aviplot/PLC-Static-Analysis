@@ -1,0 +1,4 @@
+noncompliant.st:6:14-6:26 PLCA-Q007 error: F_Rec calls itself (recursion) [F_Rec]
+noncompliant.st:14:8-14:14 PLCA-Q007 error: Recursive call cycle: F_A -> F_B -> F_A [F_A]
+    noncompliant.st:21:8-21:14 F_B calls F_A
+noncompliant.st:26:10-26:23 PLCA-Q007 error: FB_Tree.Visit calls itself (recursion) [FB_Tree.Visit]

@@ -1,0 +1,1 @@
+strict.st:8:1-8:12 PLCA-Q002 warning: CASE statement has no ELSE branch [P_Strict]

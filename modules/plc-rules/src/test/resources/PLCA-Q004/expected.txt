@@ -1,0 +1,4 @@
+noncompliant.st:14:10-14:11 PLCA-Q004 error: Division by zero: the divisor is always 0 [FB_Div]
+noncompliant.st:15:12-15:17 PLCA-Q004 error: Modulo by zero: the divisor is always 0 [FB_Div]
+noncompliant.st:16:11-16:14 PLCA-Q004 error: Division by zero: the divisor is always 0 [FB_Div]
+noncompliant.st:17:13-17:21 PLCA-Q004 error: Division by zero: the divisor is always 0 [FB_Div]

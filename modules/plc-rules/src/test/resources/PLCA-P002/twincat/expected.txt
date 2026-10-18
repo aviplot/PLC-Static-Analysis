@@ -1,0 +1,2 @@
+P_Tc.TcPOU:10:5-10:11 PLCA-P002 info: Direct address %QX1.0 used in code; declare a variable AT %QX1.0 and use its name [P_Tc]
+P_Tc.TcPOU:12:6-12:12 PLCA-P002 info: Direct address %IX1.1 used in code; declare a variable AT %IX1.1 and use its name [P_Tc]

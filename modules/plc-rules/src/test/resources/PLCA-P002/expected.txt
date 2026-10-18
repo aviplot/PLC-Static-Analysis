@@ -1,0 +1,4 @@
+noncompliant.st:6:6-6:12 PLCA-P002 info: Direct address %IX0.0 used in code; declare a variable AT %IX0.0 and use its name [P_Io]
+noncompliant.st:7:1-7:7 PLCA-P002 info: Direct address %QX0.1 used in code; declare a variable AT %QX0.1 and use its name [P_Io]
+noncompliant.st:8:6-8:11 PLCA-P002 info: Direct address %MW10 used in code; declare a variable AT %MW10 and use its name [P_Io]
+noncompliant.st:8:14-8:18 PLCA-P002 info: Direct address %IW2 used in code; declare a variable AT %IW2 and use its name [P_Io]

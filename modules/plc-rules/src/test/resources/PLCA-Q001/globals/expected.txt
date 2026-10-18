@@ -1,0 +1,1 @@
+globals.st:3:5-3:19 PLCA-Q001 warning: Global variable 'gNotReferenced' is declared but never used

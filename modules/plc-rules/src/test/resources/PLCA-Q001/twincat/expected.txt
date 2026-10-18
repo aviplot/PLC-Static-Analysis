@@ -1,0 +1,1 @@
+FB_Tc.TcPOU:10:5-10:15 PLCA-Q001 warning: Variable 'nForgotten' is declared but never used [FB_Tc]

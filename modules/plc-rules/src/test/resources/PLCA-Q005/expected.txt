@@ -1,0 +1,6 @@
+noncompliant.st:15:9-15:10 PLCA-Q005 warning: FOR loop variable 'i' is modified inside the loop body [FB_Loop]
+    noncompliant.st:13:5-13:6 loop header
+noncompliant.st:17:9-17:10 PLCA-Q005 warning: FOR loop variable 'i' is modified inside the loop body [FB_Loop]
+    noncompliant.st:13:5-13:6 loop header
+noncompliant.st:20:19-20:20 PLCA-Q005 warning: FOR loop variable 'i' is modified inside the loop body [FB_Loop]
+    noncompliant.st:13:5-13:6 loop header
