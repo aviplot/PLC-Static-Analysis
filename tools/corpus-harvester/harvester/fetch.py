@@ -159,6 +159,19 @@ def _priority(rec: dict) -> int:
     return 2
 
 
+def mark_for_refetch(state: State, dialect: str) -> int:
+    """Resets done repos with files of `dialect` to pending (e.g. after a new extension was added)."""
+    n = 0
+    with state.lock:
+        for rec in state.repos.values():
+            if rec.get("status") == "done" and any(f["dialect"] == dialect for f in rec.get("files", [])):
+                rec["status"] = "pending"
+                rec["attempts"] = 0
+                n += 1
+        state.save()
+    return n
+
+
 def run(state: State, external: Path, workers: int, max_file_mb: int, budget_mb: int, min_free_mb: int,
         limit: int | None = None) -> None:
     tmp_root = external / ".tmp"

@@ -21,6 +21,7 @@ CANDIDATE_EXTENSIONS = {
     ".tcdut": "TcDUT",
     ".tcgvl": "TcGVL",
     ".tcio": "TcIO",
+    ".tctto": "TcTTO",
     ".plcproj": "plcproj",
     ".tsproj": "tsproj",
     ".st": "st",
@@ -109,7 +110,7 @@ def classify(path: str, data: bytes) -> Match | None:
     # XML formats: the root element appears near the top
     head = text[:4096]
 
-    if fmt in ("TcPOU", "TcDUT", "TcGVL", "TcIO"):
+    if fmt in ("TcPOU", "TcDUT", "TcGVL", "TcIO", "TcTTO"):
         return Match(TWINCAT, fmt) if "<TcPlcObject" in head else None
     if fmt == "plcproj":
         return Match(TWINCAT, fmt) if "<Project" in head else None

@@ -25,6 +25,10 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(c.classify("PLC/POUs/MAIN.TcPOU", src), c.Match(c.TWINCAT, "TcPOU"))
         self.assertIsNone(c.classify("x.TcPOU", b"<Other/>"))
 
+    def test_twincat_task(self):
+        src = b'<?xml version="1.0"?>\n<TcPlcObject Version="1.1.0.1">\n<Task Name="PlcTask"><CycleTime>10000</CycleTime>'
+        self.assertEqual(c.classify("PLC/PlcTask.TcTTO", src), c.Match(c.TWINCAT, "TcTTO"))
+
     def test_scl_db_udt(self):
         self.assertEqual(c.classify("a.scl", b'FUNCTION_BLOCK "FB1"\nBEGIN\nEND_FUNCTION_BLOCK').format, "scl")
         self.assertEqual(c.classify("a.db", b'DATA_BLOCK "D"\nBEGIN\nEND_DATA_BLOCK').dialect, c.SIEMENS)

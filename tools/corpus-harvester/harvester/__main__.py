@@ -37,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--budget-mb", type=int, default=2500, help="stop fetching when the corpus reaches this")
         p.add_argument("--min-free-mb", type=int, default=1000, help="stop fetching below this much free disk")
         p.add_argument("--limit", type=int, help="fetch at most N repos this run")
+        p.add_argument("--refetch-dialect", help="fetch again every done repo that has files of this dialect "
+                       "(after adding a file type), e.g. TwinCat")
     args = ap.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
@@ -49,6 +51,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd in ("discover", "all"):
         discover.run(state, os.environ.get("GITHUB_TOKEN"), os.environ.get("GITLAB_TOKEN"),
                      skip_code_search=args.skip_code_search)
+    if args.cmd in ("fetch", "all") and args.refetch_dialect:
+        n = fetch.mark_for_refetch(state, args.refetch_dialect)
+        logging.getLogger("harvester").info("marked %d repos with %s files for refetch", n, args.refetch_dialect)
     if args.cmd in ("fetch", "all"):
         fetch.run(state, external, args.workers, args.max_file_mb, args.budget_mb, args.min_free_mb, args.limit)
     if args.cmd in ("build", "all"):
