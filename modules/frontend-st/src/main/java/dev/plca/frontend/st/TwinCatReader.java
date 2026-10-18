@@ -57,7 +57,7 @@ final class TwinCatReader {
     private static final Set<String> OBJECTS = Set.of("POU", "DUT", "GVL", "Itf");
     private static final Set<String> MEMBERS = Set.of("Method", "Property", "Get", "Set", "Action", "Transition");
 
-    private static final XMLInputFactory FACTORY = createFactory();
+    static final XMLInputFactory FACTORY = createFactory();
 
     /**
      * Woodstox, instantiated reflectively: referencing its classes directly makes javac warn about OSGi annotations

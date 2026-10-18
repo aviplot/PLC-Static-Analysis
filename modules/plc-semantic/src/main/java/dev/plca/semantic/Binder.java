@@ -1,0 +1,571 @@
+package dev.plca.semantic;
+
+import dev.plca.ast.Declaration.PouKind;
+import dev.plca.ast.Expression;
+import dev.plca.ast.Expression.Argument;
+import dev.plca.ast.Initializer;
+import dev.plca.ast.Statement;
+import dev.plca.ast.TypeRef.PointerKind;
+import dev.plca.ast.VarBlock;
+import dev.plca.core.diag.DiagnosticSink;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
+/**
+ * Pass 3: binds every name, member access and call in every body to its {@link Symbol} and computes expression types.
+ * Scoping follows CODESYS: locals of the body, then the enclosing property (for accessors), then the instance the body
+ * runs in (FB/class/program, along EXTENDS) with its methods/actions/properties, then the global scope and builtins.
+ * Unknown library prefixes ({@code Tc2_MC2.MC_Power}) become {@link LibrarySymbol}s.
+ */
+final class Binder {
+
+    private final SemanticModel model;
+    private final GlobalScope global;
+    private int names;
+    private int resolved;
+    private int library;
+    private int unresolved;
+
+    Binder(SemanticModel model, DiagnosticSink sink) {
+        this.model = model;
+        this.global = model.global;
+    }
+
+    void bindAll() {
+        for (PouSymbol p : List.copyOf(model.pous)) {
+            for (VariableSymbol v : p.variables().values()) {
+                bindInitializer(v.initializer(), p);
+            }
+            if (p.declaration().body() != null) {
+                for (Statement s : p.declaration().body()) {
+                    statement(s, p);
+                }
+            }
+        }
+        for (GvlSymbol g : global.gvls()) {
+            for (VariableSymbol v : g.variables().values()) {
+                bindInitializer(v.initializer(), null);
+            }
+        }
+        model.stats = new SemanticModel.ResolutionStats(names, resolved, library, unresolved);
+    }
+
+    private void bindInitializer(Initializer init, PouSymbol pou) {
+        switch (init) {
+            case null -> {}
+            case Expression e -> expression(e, pou);
+            case Initializer.ArrayInit a -> a.elements().forEach(el -> bindInitializer(el.value(), pou));
+            case Initializer.StructInit s -> s.fields().forEach(f -> bindInitializer(f.value(), pou));
+        }
+    }
+
+    // ---- statements -----------------------------------------------------------------------------
+
+    private void statement(Statement s, PouSymbol pou) {
+        model.owners.put(s, pou);
+        switch (s) {
+            case Statement.Assignment a -> {
+                expression(a.target(), pou);
+                expression(a.value(), pou);
+            }
+            case Statement.CallStatement c -> expression(c.call(), pou);
+            case Statement.If i -> {
+                for (Statement.Branch b : i.branches()) {
+                    expression(b.condition(), pou);
+                    body(b.body(), pou);
+                }
+                body(i.elseBody(), pou);
+            }
+            case Statement.Case c -> {
+                expression(c.selector(), pou);
+                for (Statement.CaseBranch b : c.branches()) {
+                    for (Statement.CaseLabel l : b.labels()) {
+                        caseLabel(l.low(), c.selector(), pou);
+                        if (l.high() != null) {
+                            caseLabel(l.high(), c.selector(), pou);
+                        }
+                    }
+                    body(b.body(), pou);
+                }
+                body(c.elseBody(), pou);
+            }
+            case Statement.For f -> {
+                expression(f.variable(), pou);
+                expression(f.from(), pou);
+                expression(f.to(), pou);
+                if (f.by() != null) {
+                    expression(f.by(), pou);
+                }
+                body(f.body(), pou);
+            }
+            case Statement.While w -> {
+                expression(w.condition(), pou);
+                body(w.body(), pou);
+            }
+            case Statement.Repeat r -> {
+                body(r.body(), pou);
+                expression(r.condition(), pou);
+            }
+            case Statement.Return r -> {
+                if (r.value() != null) {
+                    expression(r.value(), pou);
+                }
+            }
+            case Statement.Try t -> {
+                body(t.body(), pou);
+                body(t.catchBody(), pou);
+                body(t.finallyBody(), pou);
+            }
+            default -> {}
+        }
+    }
+
+    private void body(List<Statement> body, PouSymbol pou) {
+        if (body != null) {
+            for (Statement s : body) {
+                statement(s, pou);
+            }
+        }
+    }
+
+    /** CASE labels may name values of the selector's enum without qualification even for strict enums. */
+    private void caseLabel(Expression label, Expression selector, PouSymbol pou) {
+        if (label instanceof Expression.NameRef n
+                && model.type(selector).resolved() instanceof Type.Enum en
+                && lookup(n.name().name(), pou).isEmpty()) {
+            Optional<EnumValueSymbol> v = en.symbol().value(n.name().name());
+            if (v.isPresent()) {
+                names++;
+                resolved++;
+                record(n, v.get(), new Type.Enum(en.symbol()));
+                return;
+            }
+        }
+        expression(label, pou);
+    }
+
+    // ---- expressions ----------------------------------------------------------------------------
+
+    private Type expression(Expression e, PouSymbol pou) {
+        Type t = switch (e) {
+            case Expression.Literal l -> literal(l);
+            case Expression.NameRef n -> name(n, pou);
+            case Expression.ThisRef t1 -> thisType(pou, false);
+            case Expression.SuperRef s -> thisType(pou, true);
+            case Expression.DirectAddress d -> directAddress(d.text());
+            case Expression.MemberAccess m -> member(m, pou);
+            case Expression.BitAccess b -> {
+                expression(b.target(), pou);
+                yield Type.BOOL;
+            }
+            case Expression.Deref d -> {
+                Type target = expression(d.target(), pou).resolved();
+                yield target instanceof Type.Pointer p ? p.target() : Type.UNKNOWN;
+            }
+            case Expression.Index i -> index(i, pou);
+            case Expression.Call c -> call(c, pou);
+            case Expression.Unary u -> unary(u, pou);
+            case Expression.Binary b -> binary(b, pou);
+            case Expression.TypeOperand t2 -> Type.UNKNOWN;
+            case Expression.Invalid inv -> Type.UNKNOWN;
+        };
+        model.types.put(e, t);
+        return t;
+    }
+
+    private void record(Expression e, Symbol s, Type t) {
+        if (s != null) {
+            model.symbols.put(e, s);
+        }
+        model.types.put(e, t);
+    }
+
+    private Type name(Expression.NameRef n, PouSymbol pou) {
+        names++;
+        String name = n.name().name();
+        Optional<Symbol> s = n.globalScope() ? global.lookup(name) : lookup(name, pou);
+        if (s.isEmpty()) {
+            unresolved++;
+            model.unresolved.add(n);
+            return new Type.Unknown(name);
+        }
+        resolved++;
+        model.symbols.put(n, s.get());
+        return typeOfSymbol(s.get());
+    }
+
+    /** CODESYS scope chain for an unqualified name used in the body of {@code pou}. */
+    Optional<Symbol> lookup(String name, PouSymbol pou) {
+        for (PouSymbol p = pou; p != null; p = p.owner()) {
+            Optional<VariableSymbol> v = p.isInstantiable() ? p.findVariable(name) : p.variable(name);
+            if (v.isPresent()) {
+                return Optional.of(v.get());
+            }
+            if (p.isInstantiable() || p.kind() == PouKind.INTERFACE) {
+                Optional<PouSymbol> m = p.findMember(name);
+                if (m.isPresent()) {
+                    return Optional.of(m.get());
+                }
+            }
+        }
+        return global.lookup(name);
+    }
+
+    private Type typeOfSymbol(Symbol s) {
+        return switch (s) {
+            case VariableSymbol v -> v.type();
+            case EnumValueSymbol v -> new Type.Enum(v.enumType());
+            case PouSymbol p ->
+                switch (p.kind()) {
+                    // a PROGRAM name is a global instance; a property name reads its value
+                    case PROGRAM, FUNCTION_BLOCK, CLASS, INTERFACE -> new Type.Instance(p);
+                    case PROPERTY -> p.returnType();
+                    default -> Type.VOID;
+                };
+            case TypeSymbol t -> t.type();
+            default -> Type.UNKNOWN;
+        };
+    }
+
+    private Type thisType(PouSymbol pou, boolean superRef) {
+        PouSymbol owner = pou == null ? null : pou.instanceOwner();
+        if (owner != null && superRef) {
+            owner = owner.extendsPou();
+        }
+        return owner == null ? Type.UNKNOWN : new Type.Pointer(PointerKind.POINTER, new Type.Instance(owner));
+    }
+
+    private Type member(Expression.MemberAccess m, PouSymbol pou) {
+        names++;
+        Type targetType = expression(m.target(), pou);
+        Symbol targetSymbol = model.symbols.get(m.target());
+        String name = m.member().name();
+        Symbol s = null;
+        if (targetSymbol instanceof GvlSymbol g) {
+            s = g.variable(name).orElse(null);
+        } else if (targetSymbol instanceof TypeSymbol ts && ts.kind() == TypeSymbol.Kind.ENUM) {
+            s = ts.value(name).orElse(null);
+        } else if (targetSymbol instanceof LibrarySymbol lib) {
+            s = new LibrarySymbol(lib.name() + "." + name);
+        } else if (targetSymbol == null && m.target() instanceof Expression.NameRef prefix) {
+            // unknown prefix: a namespace/library qualifier, or a typo
+            names--; // the prefix was already counted as unresolved
+            unresolved--;
+            if (!model.unresolved.isEmpty() && model.unresolved.getLast() == prefix) {
+                model.unresolved.removeLast();
+            }
+            s = qualified(prefix.name().name(), name);
+        } else {
+            s = memberOf(targetType, name);
+        }
+        if (s == null) {
+            if (Type.isUnknown(targetType)) {
+                library++; // member of a library (or otherwise unknown) type: cannot know
+            } else {
+                unresolved++;
+                model.unresolved.add(m);
+            }
+            return new Type.Unknown(name);
+        }
+        if (s instanceof LibrarySymbol) {
+            library++;
+        } else {
+            resolved++;
+        }
+        model.symbols.put(m, s);
+        return typeOfSymbol(s);
+    }
+
+    private Symbol qualified(String prefix, String name) {
+        Optional<Symbol> s = global.pou(prefix + "." + name).map(Symbol.class::cast);
+        if (s.isEmpty()) {
+            s = global.type(prefix + "." + name).map(Symbol.class::cast);
+        }
+        if (s.isEmpty()) {
+            s = global.pou(name).map(Symbol.class::cast);
+        }
+        if (s.isEmpty()) {
+            s = global.type(name).map(Symbol.class::cast);
+        }
+        if (s.isEmpty()) {
+            s = global.builtin(name);
+        }
+        return s.orElseGet(() -> new LibrarySymbol(prefix + "." + name));
+    }
+
+    /** Member of a value of type {@code t}: FB variables/members, struct members; references dereference. */
+    private Symbol memberOf(Type t, String name) {
+        Type r = t.resolved();
+        if (r instanceof Type.Pointer p && (p.kind() == PointerKind.REFERENCE || p.kind() == PointerKind.POINTER)) {
+            r = p.target().resolved(); // REFERENCE TO is implicit; tolerate missing ^ on pointers
+        }
+        if (r instanceof Type.Instance i) {
+            Optional<VariableSymbol> v = i.pou().findVariable(name);
+            if (v.isPresent()) {
+                return v.get();
+            }
+            return i.pou().findMember(name).orElse(null);
+        }
+        if (r instanceof Type.Struct s) {
+            return s.symbol().findMember(name).orElse(null);
+        }
+        return null;
+    }
+
+    private Type index(Expression.Index i, PouSymbol pou) {
+        Type target = expression(i.target(), pou).resolved();
+        for (Expression x : i.indices()) {
+            expression(x, pou);
+        }
+        if (target instanceof Type.Pointer p) {
+            target = p.target().resolved();
+        }
+        if (target instanceof Type.Array a) {
+            int n = i.indices().size();
+            if (n >= a.dimensions().size()) {
+                return a.element();
+            }
+            return new Type.Array(a.dimensions().subList(n, a.dimensions().size()), a.element());
+        }
+        if (target instanceof Type.StringType s) {
+            return Type.of(s.wide() ? ElementaryKind.WORD : ElementaryKind.BYTE);
+        }
+        return Type.UNKNOWN;
+    }
+
+    private Type call(Expression.Call c, PouSymbol pou) {
+        Type calleeType = expression(c.callee(), pou);
+        Symbol callee = model.symbols.get(c.callee());
+        // inside F, `F` is the result variable, but `F(...)` calls F (recursion)
+        if (callee instanceof VariableSymbol v && v.isResult() && v.owner() instanceof PouSymbol self) {
+            callee = self;
+            model.symbols.put(c.callee(), self);
+            calleeType = Type.VOID;
+        }
+        List<VariableSymbol> params = parameters(callee, calleeType);
+        List<Type> argTypes = new ArrayList<>();
+        int positional = 0;
+        for (Argument a : c.arguments()) {
+            Type t = a.value() == null ? Type.UNKNOWN : expression(a.value(), pou);
+            argTypes.add(t);
+            VariableSymbol param = null;
+            if (a.name() != null) {
+                for (VariableSymbol p : params) {
+                    if (p.name().equalsIgnoreCase(a.name().name())) {
+                        param = p;
+                        break;
+                    }
+                }
+            } else {
+                List<VariableSymbol> inputs = params.stream()
+                        .filter(p -> p.section() == VarBlock.Section.INPUT || p.section() == VarBlock.Section.IN_OUT)
+                        .toList();
+                if (positional < inputs.size()) {
+                    param = inputs.get(positional);
+                }
+                positional++;
+            }
+            if (param != null) {
+                model.parameters.put(a, param);
+            }
+        }
+        return switch (callee) {
+            case PouSymbol p when p.kind() == PouKind.FUNCTION || p.kind() == PouKind.METHOD -> p.returnType();
+            case BuiltinFunction f -> f.resultType().apply(argTypes);
+            case null, default -> Type.VOID; // FB instance, action, property: no value (or unknown)
+        };
+    }
+
+    /** Parameters of what is being called: a function/method, or the FB of a called instance. */
+    private static List<VariableSymbol> parameters(Symbol callee, Type calleeType) {
+        PouSymbol target = null;
+        if (callee instanceof PouSymbol p && (p.kind() == PouKind.FUNCTION || p.kind() == PouKind.METHOD)) {
+            target = p;
+        } else if (calleeType.resolved() instanceof Type.Instance i) {
+            target = i.pou();
+        }
+        if (target == null) {
+            return List.of();
+        }
+        List<VariableSymbol> out = new ArrayList<>();
+        // inherited parameters first, as in CODESYS
+        List<PouSymbol> chain = new ArrayList<>();
+        for (PouSymbol p = target; p != null && chain.size() < 64; p = p.extendsPou()) {
+            chain.addFirst(p);
+        }
+        for (PouSymbol p : chain) {
+            for (VariableSymbol v : p.variables().values()) {
+                if (!v.isResult()) {
+                    out.add(v);
+                }
+            }
+        }
+        return out;
+    }
+
+    private Type unary(Expression.Unary u, PouSymbol pou) {
+        Type t = expression(u.operand(), pou);
+        if (u.op() == Expression.UnaryOp.NEGATE) {
+            if (t instanceof Type.IntLiteral l) {
+                return new Type.IntLiteral(-l.value());
+            }
+            if (t instanceof Type.RealLiteral r) {
+                return new Type.RealLiteral(-r.value());
+            }
+        }
+        return t;
+    }
+
+    private Type binary(Expression.Binary b, PouSymbol pou) {
+        Type l = expression(b.left(), pou);
+        Type r = expression(b.right(), pou);
+        return switch (b.op()) {
+            case EQ, NE, LT, GT, LE, GE -> Type.BOOL;
+            case AND, OR, XOR, AND_THEN, OR_ELSE -> {
+                if (Type.elementary(l) == ElementaryKind.BOOL || Type.elementary(r) == ElementaryKind.BOOL) {
+                    yield Type.BOOL;
+                }
+                yield promote(l, r);
+            }
+            default -> {
+                Constant c = model.constants.evaluate(b, x -> model.symbols.get(x));
+                Type p = promote(l, r);
+                if (p instanceof Type.IntLiteral && c instanceof Constant.Int i) {
+                    yield new Type.IntLiteral(i.value());
+                }
+                if (p instanceof Type.RealLiteral && c != null && c.asDouble() != null) {
+                    yield new Type.RealLiteral(c.asDouble());
+                }
+                yield p;
+            }
+        };
+    }
+
+    /** IEC generic promotion: reals dominate integers, wider types dominate, untyped literals adapt. */
+    static Type promote(Type a, Type b) {
+        boolean aLit = a instanceof Type.IntLiteral || a instanceof Type.RealLiteral;
+        boolean bLit = b instanceof Type.IntLiteral || b instanceof Type.RealLiteral;
+        if (aLit && bLit) {
+            // stays an untyped literal; the value is filled in by the caller when it folds
+            return a instanceof Type.RealLiteral ? a : b instanceof Type.RealLiteral ? b : a;
+        }
+        if (a instanceof Type.IntLiteral || a instanceof Type.RealLiteral) {
+            if (b instanceof Type.RealLiteral || a instanceof Type.RealLiteral && isInt(b)) {
+                return isInt(b) ? Type.of(ElementaryKind.LREAL) : b;
+            }
+            return Type.isUnknown(b) ? Builtins.concrete(a) : b;
+        }
+        if (b instanceof Type.IntLiteral || b instanceof Type.RealLiteral) {
+            return promote(b, a);
+        }
+        ElementaryKind x = Type.elementary(a);
+        ElementaryKind y = Type.elementary(b);
+        if (x == null || y == null) {
+            return x != null ? a : y != null ? b : Type.UNKNOWN;
+        }
+        if (x.category() == ElementaryKind.Category.DURATION || y.category() == ElementaryKind.Category.DURATION) {
+            return x.category() == ElementaryKind.Category.DURATION && y.category() == ElementaryKind.Category.DURATION
+                    ? (x.bits() >= y.bits() ? a : b)
+                    : x.category() == ElementaryKind.Category.DATE
+                            ? a
+                            : y.category() == ElementaryKind.Category.DATE
+                                    ? b
+                                    : x.category() == ElementaryKind.Category.DURATION ? a : b;
+        }
+        if (x.category() == ElementaryKind.Category.DATE && y.category() == ElementaryKind.Category.DATE) {
+            return Type.of(x.bits() == 64 || y.bits() == 64 ? ElementaryKind.LTIME : ElementaryKind.TIME);
+        }
+        if (x.isReal() || y.isReal()) {
+            return x == ElementaryKind.LREAL || y == ElementaryKind.LREAL
+                    ? Type.of(ElementaryKind.LREAL)
+                    : Type.of(ElementaryKind.REAL);
+        }
+        return x.bits() >= y.bits() ? a : b;
+    }
+
+    private static boolean isInt(Type t) {
+        ElementaryKind k = Type.elementary(t);
+        return t instanceof Type.IntLiteral || k != null && k.isInteger();
+    }
+
+    private Type literal(Expression.Literal l) {
+        String prefix = l.typePrefix();
+        if (prefix != null) {
+            Optional<ElementaryKind> k = ElementaryKind.byName(prefix);
+            if (k.isPresent()) {
+                return Type.of(k.get());
+            }
+            String p = prefix.toUpperCase(Locale.ROOT);
+            switch (p) {
+                case "T", "TIME" -> {
+                    return Type.of(ElementaryKind.TIME);
+                }
+                case "LT", "LTIME" -> {
+                    return Type.of(ElementaryKind.LTIME);
+                }
+                case "D", "DATE" -> {
+                    return Type.of(ElementaryKind.DATE);
+                }
+                case "LD", "LDATE" -> {
+                    return Type.of(ElementaryKind.LDATE);
+                }
+                case "STRING" -> {
+                    return new Type.StringType(false, Math.max(1, l.text().length() - 2));
+                }
+                case "WSTRING" -> {
+                    return new Type.StringType(true, Math.max(1, l.text().length() - 2));
+                }
+                default -> {}
+            }
+            // E_Color#Red: enum-typed literal
+            Optional<TypeSymbol> enumType = global.type(prefix).filter(t -> t.kind() == TypeSymbol.Kind.ENUM);
+            if (enumType.isPresent()) {
+                names++;
+                Optional<EnumValueSymbol> v = enumType.get().value(l.text());
+                if (v.isPresent()) {
+                    resolved++;
+                    model.symbols.put(l, v.get());
+                } else {
+                    unresolved++;
+                }
+                return new Type.Enum(enumType.get());
+            }
+            return new Type.Unknown(prefix);
+        }
+        return switch (l.kind()) {
+            case INTEGER -> {
+                Long v = Literals.integer(l.text());
+                yield v == null ? Type.of(ElementaryKind.ULINT) : new Type.IntLiteral(v);
+            }
+            case REAL -> {
+                Double d = Literals.real(l.text());
+                yield new Type.RealLiteral(d == null ? 0 : d);
+            }
+            case BOOL -> Type.BOOL;
+            case STRING -> new Type.StringType(false, Math.max(0, l.text().length() - 2));
+            case WSTRING -> new Type.StringType(true, Math.max(0, l.text().length() - 2));
+            case TIME -> Type.of(ElementaryKind.TIME);
+            case DATE -> Type.of(ElementaryKind.DATE);
+            case TIME_OF_DAY -> Type.of(ElementaryKind.TIME_OF_DAY);
+            case DATE_AND_TIME -> Type.of(ElementaryKind.DATE_AND_TIME);
+            case ENUM -> Type.UNKNOWN;
+        };
+    }
+
+    /** {@code %IX0.1} → BOOL, {@code %QW2} → WORD, …; {@code %I*} (TwinCAT, linked later) → unknown. */
+    private static Type directAddress(String text) {
+        if (text.length() < 3 || text.contains("*")) {
+            return Type.UNKNOWN;
+        }
+        return switch (Character.toUpperCase(text.charAt(2))) {
+            case 'X' -> Type.BOOL;
+            case 'B' -> Type.of(ElementaryKind.BYTE);
+            case 'W' -> Type.of(ElementaryKind.WORD);
+            case 'D' -> Type.of(ElementaryKind.DWORD);
+            case 'L' -> Type.of(ElementaryKind.LWORD);
+            default -> Type.BOOL; // %I0.1 without size prefix is a bit
+        };
+    }
+}

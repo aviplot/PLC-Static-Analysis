@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <Task Name="FastTask" Id="{00000000-0000-0000-0000-000000000003}">
+    <CycleTime>1000</CycleTime>
+    <Priority>5</Priority>
+    <PouCall>
+      <Name>FAST</Name>
+    </PouCall>
+  </Task>
+</TcPlcObject>

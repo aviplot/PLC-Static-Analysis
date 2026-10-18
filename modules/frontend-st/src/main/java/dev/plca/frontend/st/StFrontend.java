@@ -50,13 +50,28 @@ public final class StFrontend {
 
     public record Result(SourceUnit unit, Stats stats) {}
 
-    private static final Set<String> TWINCAT_EXTENSIONS = Set.of(".tcpou", ".tcdut", ".tcgvl", ".tcio");
+    private static final Set<String> TWINCAT_EXTENSIONS = Set.of(".tcpou", ".tcdut", ".tcgvl", ".tcio", ".tctto");
 
-    private final StParserDriver driver = new StParserDriver();
+    /** Every extension this frontend reads (lower case, with dot). */
+    public static final Set<String> EXTENSIONS = Set.of(".st", ".tcpou", ".tcdut", ".tcgvl", ".tcio", ".tctto");
+
+    private final StParserDriver driver;
     private int texts;
     private int fallbacks;
     private int cleanFallbacks;
     private int syntaxErrors;
+
+    public StFrontend() {
+        this(true);
+    }
+
+    /**
+     * {@code twoStage = false} parses every text with full LL prediction (no SLL first pass). Results are identical; it
+     * exists so benchmarks can measure the two-stage gain (design rule 1).
+     */
+    public StFrontend(boolean twoStage) {
+        this.driver = new StParserDriver(twoStage);
+    }
 
     public static boolean isTwinCat(String path) {
         return TWINCAT_EXTENSIONS.contains(extension(path));
@@ -73,7 +88,9 @@ public final class StFrontend {
         List<Comment> comments = new ArrayList<>();
         List<Pragma> pragmas = new ArrayList<>();
         try {
-            if (twinCat) {
+            if (extension(file.path()).equals(".tctto")) {
+                declarations.addAll(TwinCatTaskReader.read(registry.register(file), sink));
+            } else if (twinCat) {
                 new TwinCatAssembler(file, registry, sink, comments, pragmas).run(declarations);
             } else {
                 parseStText(file, registry, sink, declarations, comments, pragmas);
@@ -325,7 +342,7 @@ public final class StFrontend {
         return tag.equals("Itf") ? PouKind.INTERFACE : PouKind.FUNCTION_BLOCK;
     }
 
-    private static String extension(String path) {
+    static String extension(String path) {
         int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
         int dot = path.lastIndexOf('.');
         return dot > slash ? path.substring(dot).toLowerCase(Locale.ROOT) : "";

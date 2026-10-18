@@ -1,0 +1,100 @@
+pous:
+  FUNCTION_BLOCK FB_Base
+    INPUT bEnable : BOOL
+    VAR nCalls : INT
+    METHOD Reset : BOOL
+  FUNCTION_BLOCK FB_Motor EXTENDS FB_Base
+    INPUT rSetpoint : T_Speed
+    OUTPUT bRunning : BOOL
+    IN_OUT stData : ST_Motor
+    VAR fbDelay : TON
+    VAR fbPower : Tc2_MC2.MC_Power?
+    VAR eState : E_State
+    VAR pData : POINTER TO ST_Motor
+    METHOD Reset : BOOL
+    PROPERTY Speed : REAL
+      PROPERTY_GET GET
+    ACTION Stop
+  PROGRAM MAIN
+    VAR fbMotor : FB_Motor
+    VAR aMotors : ARRAY[1..2] OF FB_Motor
+    VAR stMotor : ST_Motor
+    VAR rSpeed : REAL
+    VAR n : DINT
+    VAR i : INT
+    VAR eMode : E_Mode
+  PROGRAM FAST
+  FUNCTION F_Scale : REAL
+    INPUT rIn : REAL
+    INPUT nDepth : INT
+  FUNCTION F_Helper : REAL
+    INPUT rIn : REAL
+    INPUT nDepth : INT
+types:
+  ENUM E_State : INT { Idle=0, Starting=5, Running=6, Faulted=7 }
+  ENUM E_Mode : INT { Manual=0, Auto=1 }
+  STRUCT ST_Base { nId : UDINT }
+  STRUCT ST_Motor EXTENDS ST_Base { rSpeed : REAL, aLog : ARRAY[0..9] OF INT }
+  ALIAS T_Speed = REAL
+gvls:
+  GVL_IO (qualified_only) { bStart : BOOL }
+  <GVL_Main.st> { LOG_SIZE : INT, gnCounter : DINT, gAxis : Tc2_MC2.AXIS_REF? }
+effects:
+  FB_Base FB_Base.st:8:1 Assignment: write(nCalls) read(nCalls)
+  FB_Base.Reset FB_Base.st:11:1 Assignment: write(nCalls)
+  FB_Base.Reset FB_Base.st:12:1 Assignment: write(Reset)
+  FB_Motor FB_Motor.st:18:1 CallStatement: write(fbDelay.IN) read(bEnable) write(fbDelay.PT) read(fbDelay.Q) write(bRunning)
+  FB_Motor FB_Motor.st:19:1 Case: read(eState)
+  FB_Motor FB_Motor.st:20:11 If: read(bEnable)
+  FB_Motor FB_Motor.st:20:27 Assignment: write(eState)
+  FB_Motor FB_Motor.st:21:15 Assignment: write(eState)
+  FB_Motor FB_Motor.st:23:1 Assignment: write(stData.aLog[3]) read(nCalls)
+  FB_Motor FB_Motor.st:24:1 Assignment: write(stData.rSpeed) read(rSetpoint)
+  FB_Motor FB_Motor.st:25:1 Assignment: write(pData) address(stData)
+  FB_Motor FB_Motor.st:26:1 CallStatement: read(fbPower) read(gAxis) read(bEnable)
+  FB_Motor FB_Motor.st:27:1 CallStatement: call(ACTION FB_Motor.Stop)
+  FB_Motor.Reset FB_Motor.st:30:1 Assignment: write(bRunning)
+  FB_Motor.Reset FB_Motor.st:31:1 Assignment: write(Reset) call(METHOD FB_Base.Reset)
+  FB_Motor.Speed.GET FB_Motor.st:36:5 Assignment: write(Speed) read(stData.rSpeed)
+  FB_Motor.Stop FB_Motor.st:41:5 Assignment: write(bRunning)
+  MAIN MAIN.st:11:1 CallStatement: write(fbMotor.bEnable) read(bStart) write(fbMotor.rSetpoint) read_write(stMotor) call(FB_INSTANCE FB_Motor via fbMotor)
+  MAIN MAIN.st:12:1 Assignment: write(rSpeed) read(rSpeed) call(PROPERTY_GET FB_Motor.Speed.GET via fbMotor) call(FUNCTION F_Scale)
+  MAIN MAIN.st:13:1 Assignment: write(n) read(i)
+  MAIN MAIN.st:14:1 For: write(i)
+  MAIN MAIN.st:15:5 CallStatement: read(i) read_write(stMotor) call(FB_INSTANCE FB_Motor via aMotors[*])
+  MAIN MAIN.st:17:1 Assignment: write(gnCounter) read(gnCounter)
+  MAIN MAIN.st:18:1 Assignment: write(eMode)
+  MAIN MAIN.st:19:1 If: call(METHOD FB_Motor.Reset via fbMotor)
+  FAST MAIN.st:25:1 Assignment: write(gnCounter)
+  F_Scale functions.st:6:1 If: read(nDepth)
+  F_Scale functions.st:7:5 Assignment: write(F_Scale) read(rIn) read(nDepth) call(FUNCTION F_Helper)
+  F_Scale functions.st:9:5 Assignment: write(F_Scale) read(rIn)
+  F_Helper functions.st:18:1 Assignment: write(F_Helper) read(rIn) read(nDepth) call(FUNCTION F_Scale)
+call graph:
+  FB_Motor -> FB_Motor.Stop (ACTION FB_Motor.st:27:1)
+  FB_Motor.Reset -> FB_Base.Reset (METHOD FB_Motor.st:31:10)
+  MAIN -> FB_Motor (FB_INSTANCE MAIN.st:11:1)
+  MAIN -> FB_Motor.Speed.GET (PROPERTY_GET MAIN.st:12:11)
+  MAIN -> F_Scale (FUNCTION MAIN.st:12:27)
+  MAIN -> FB_Motor (FB_INSTANCE MAIN.st:15:5)
+  MAIN -> FB_Motor.Reset (METHOD MAIN.st:19:4)
+  F_Scale -> F_Helper (FUNCTION functions.st:7:16)
+  F_Helper -> F_Scale (FUNCTION functions.st:18:13)
+  cycle: F_Scale -> F_Helper
+instances:
+  FAST : FAST
+  MAIN : MAIN
+    MAIN.fbMotor : FB_Motor
+      MAIN.fbMotor.fbDelay : TON
+    MAIN.aMotors[*] : FB_Motor
+      MAIN.aMotors[*].fbDelay : TON
+tasks:
+  FastTask priority=5 interval=1.0ms programs=[FAST]
+  PlcTask priority=20 interval=10.0ms programs=[MAIN]
+  FAST runs in [FastTask]
+  FB_Motor runs in [PlcTask]
+  F_Helper runs in [PlcTask]
+  F_Scale runs in [PlcTask]
+  MAIN runs in [PlcTask]
+names: 70 resolved=70 library=0 unresolved=0
+diagnostics:

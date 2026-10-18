@@ -1,0 +1,7 @@
+VAR_GLOBAL CONSTANT
+    LOG_SIZE : INT := 10;
+END_VAR
+VAR_GLOBAL
+    gnCounter : DINT;
+    gAxis : Tc2_MC2.AXIS_REF;
+END_VAR

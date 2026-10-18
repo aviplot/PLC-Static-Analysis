@@ -55,11 +55,18 @@ final class StParserDriver {
     private final CodesysStParser parser = new CodesysStParser(null);
     private final BailErrorStrategy bail = new BailErrorStrategy();
 
+    private final boolean sllFirst;
     private long parses;
     private long fallbacks;
     private long cleanFallbacks;
 
     StParserDriver() {
+        this(true);
+    }
+
+    /** {@code sllFirst = false} skips stage 1 (always full LL): only for benchmarking the two-stage gain. */
+    StParserDriver(boolean sllFirst) {
+        this.sllFirst = sllFirst;
         lexer.removeErrorListeners();
     }
 
@@ -72,14 +79,16 @@ final class StParserDriver {
             entry = LIBRARY_START.contains(tokens.LA(1)) ? Entry.COMPILATION_UNIT : Entry.STATEMENTS;
         }
 
-        parser.setTokenStream(tokens);
-        parser.removeErrorListeners();
-        parser.setErrorHandler(bail);
-        parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
-        try {
-            return new Parsed(invoke(entry), tokens, false, 0);
-        } catch (ParseCancellationException sllFailed) {
-            fallbacks++;
+        if (sllFirst) {
+            parser.setTokenStream(tokens);
+            parser.removeErrorListeners();
+            parser.setErrorHandler(bail);
+            parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
+            try {
+                return new Parsed(invoke(entry), tokens, false, 0);
+            } catch (ParseCancellationException sllFailed) {
+                fallbacks++;
+            }
         }
 
         tokens.seek(0);

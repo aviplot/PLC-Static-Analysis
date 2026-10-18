@@ -1,0 +1,14 @@
+FUNCTION_BLOCK ABSTRACT FB_Base
+VAR_INPUT
+    bEnable : BOOL;
+END_VAR
+VAR
+    nCalls : INT;
+END_VAR
+nCalls := nCalls + 1;
+
+METHOD PUBLIC Reset : BOOL
+nCalls := 0;
+Reset := TRUE;
+END_METHOD
+END_FUNCTION_BLOCK
