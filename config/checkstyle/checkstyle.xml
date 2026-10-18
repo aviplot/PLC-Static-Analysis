@@ -19,7 +19,10 @@
 
     <module name="TreeWalker">
         <!-- imports -->
-        <module name="AvoidStarImport"/>
+        <module name="AvoidStarImport">
+            <!-- generated parse-tree contexts: dozens of nested classes used by the AST builder -->
+            <property name="excludes" value="dev.plca.grammar.CodesysStParser"/>
+        </module>
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
         <module name="IllegalImport"/>

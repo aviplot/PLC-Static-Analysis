@@ -1,0 +1,252 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION name=F_Expr bodyLanguage="ST" @1:1-23:13
+    returnType:
+      Named name=LREAL @1:19-1:24
+    varBlocks:
+      VarBlock section=INPUT @2:1-4:8
+        variables:
+          VarDecl name=p referenceInit=false @3:5-3:29
+            type:
+              PointerType kind=POINTER @3:9-3:28
+                target:
+                  Named name=ST_Point @3:20-3:28
+      VarBlock section=VAR @5:1-11:8
+        variables:
+          VarDecl name=w referenceInit=false @6:5-6:14
+            type:
+              Named name=WORD @6:9-6:13
+          VarDecl name=s referenceInit=false @7:5-7:16
+            type:
+              StringType wide=false @7:9-7:15
+          VarDecl name=ws referenceInit=false @8:5-8:18
+            type:
+              StringType wide=true @8:10-8:17
+          VarDecl name=b referenceInit=false @9:5-9:14
+            type:
+              Named name=BOOL @9:9-9:13
+          VarDecl name=t referenceInit=false @10:5-10:14
+            type:
+              Named name=TIME @10:9-10:13
+    body:
+      Assignment op=ASSIGN @13:1-13:47
+        target:
+          NameRef name=F_Expr globalScope=false @13:1-13:7
+        value:
+          Binary op=SUB @13:11-13:46
+            left:
+              Binary op=ADD @13:11-13:32
+                left:
+                  Unary op=NEGATE @13:11-13:18
+                    operand:
+                      Binary op=POWER @13:12-13:18
+                        left:
+                          Literal kind=INTEGER text="2" @13:12-13:13
+                        right:
+                          Literal kind=INTEGER text="2" @13:17-13:18
+                right:
+                  Binary op=MOD @13:21-13:32
+                    left:
+                      Binary op=MUL @13:21-13:26
+                        left:
+                          Literal kind=INTEGER text="3" @13:21-13:22
+                        right:
+                          Literal kind=INTEGER text="4" @13:25-13:26
+                    right:
+                      Literal kind=INTEGER text="5" @13:31-13:32
+            right:
+              Binary op=DIV @13:35-13:46
+                left:
+                  Binary op=ADD @13:36-13:41
+                    left:
+                      Literal kind=INTEGER text="1" @13:36-13:37
+                    right:
+                      Literal kind=INTEGER text="2" @13:40-13:41
+                right:
+                  Literal kind=INTEGER text="3" @13:45-13:46
+      Assignment op=ASSIGN @14:1-14:76
+        target:
+          NameRef name=b globalScope=false @14:1-14:2
+        value:
+          Binary op=OR_ELSE @14:6-14:75
+            left:
+              Binary op=AND @14:6-14:19
+                left:
+                  Unary op=NOT @14:6-14:11
+                    operand:
+                      NameRef name=b globalScope=false @14:10-14:11
+                right:
+                  BitAccess bit=3 @14:16-14:19
+                    target:
+                      NameRef name=w globalScope=false @14:16-14:17
+            right:
+              Binary op=XOR @14:28-14:75
+                left:
+                  Binary op=AND_THEN @14:28-14:60
+                    left:
+                      Binary op=GT @14:28-14:41
+                        left:
+                          MemberAccess member=x @14:28-14:32
+                            target:
+                              Deref @14:28-14:30
+                                target:
+                                  NameRef name=p globalScope=false @14:28-14:29
+                        right:
+                          Literal kind=REAL text="1.5E-3" @14:35-14:41
+                    right:
+                      MemberAccess member=bOk @14:51-14:60
+                        target:
+                          Deref @14:51-14:56
+                            target:
+                              ThisRef @14:51-14:55
+                right:
+                  MemberAccess member=bOk @14:65-14:75
+                    target:
+                      Deref @14:65-14:71
+                        target:
+                          SuperRef @14:65-14:70
+      Assignment op=ASSIGN @15:1-15:28
+        target:
+          NameRef name=b globalScope=false @15:1-15:2
+        value:
+          Binary op=NE @15:6-15:27
+            left:
+              Binary op=EQ @15:6-15:18
+                left:
+                  Binary op=LT @15:6-15:11
+                    left:
+                      Literal kind=INTEGER text="1" @15:6-15:7
+                    right:
+                      Literal kind=INTEGER text="2" @15:10-15:11
+                right:
+                  Literal kind=BOOL text="TRUE" @15:14-15:18
+            right:
+              Literal kind=BOOL text="FALSE" @15:22-15:27
+      Assignment op=ASSIGN @16:1-16:61
+        target:
+          NameRef name=w globalScope=false @16:1-16:2
+        value:
+          Binary op=ADD @16:6-16:60
+            left:
+              Binary op=ADD @16:6-16:51
+                left:
+                  Binary op=ADD @16:6-16:38
+                    left:
+                      Binary op=ADD @16:6-16:30
+                        left:
+                          Binary op=ADD @16:6-16:23
+                            left:
+                              Literal kind=INTEGER text="16#FF_FF" @16:6-16:14
+                            right:
+                              Literal kind=INTEGER text="2#1010" @16:17-16:23
+                        right:
+                          Literal kind=INTEGER text="8#17" @16:26-16:30
+                    right:
+                      Literal kind=INTEGER text="10#99" @16:33-16:38
+                right:
+                  Literal kind=INTEGER text="16#0F" typePrefix="WORD" @16:41-16:51
+            right:
+              Literal kind=INTEGER text="-5" typePrefix="INT" @16:54-16:60
+      Assignment op=ASSIGN @17:1-17:22
+        target:
+          NameRef name=s globalScope=false @17:1-17:2
+        value:
+          Literal kind=STRING text="'it$'s $N done'" @17:6-17:21
+      Assignment op=ASSIGN @18:1-18:25
+        target:
+          NameRef name=ws globalScope=false @18:1-18:3
+        value:
+          Literal kind=WSTRING text="\"wide $\"quoted$\"\"" @18:7-18:24
+      Assignment op=ASSIGN @19:1-19:31
+        target:
+          NameRef name=t globalScope=false @19:1-19:2
+        value:
+          Binary op=ADD @19:6-19:30
+            left:
+              Literal kind=TIME text="1h2m3s4ms" typePrefix="T" @19:6-19:17
+            right:
+              Literal kind=TIME text="-5us" typePrefix="LTIME" @19:20-19:30
+      Assignment op=ASSIGN @20:1-20:94
+        target:
+          NameRef name=F_Expr globalScope=false @20:1-20:7
+        value:
+          Binary op=ADD @20:11-20:93
+            left:
+              Binary op=ADD @20:11-20:68
+                left:
+                  Call @20:11-20:51
+                    callee:
+                      NameRef name=TO_LREAL globalScope=false @20:11-20:19
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @20:20-20:50
+                        value:
+                          Binary op=SUB @20:20-20:50
+                            left:
+                              Literal kind=DATE text="2024-01-31" typePrefix="D" @20:20-20:32
+                            right:
+                              Literal kind=DATE text="2024-01-01" typePrefix="DATE" @20:35-20:50
+                right:
+                  Literal kind=TIME_OF_DAY text="12:30:15.5" typePrefix="TOD" @20:54-20:68
+            right:
+              Literal kind=DATE_AND_TIME text="2024-01-31-12:00:00" typePrefix="DT" @20:71-20:93
+      Assignment op=ASSIGN @21:1-21:74
+        target:
+          NameRef name=w globalScope=false @21:1-21:2
+        value:
+          Binary op=ADD @21:6-21:73
+            left:
+              Binary op=ADD @21:6-21:61
+                left:
+                  Binary op=ADD @21:6-21:50
+                    left:
+                      Call @21:6-21:33
+                        callee:
+                          NameRef name=SIZEOF globalScope=false @21:6-21:12
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @21:13-21:32
+                            value:
+                              TypeOperand @21:13-21:32
+                                type:
+                                  PointerType kind=POINTER @21:13-21:32
+                                    target:
+                                      Named name=ST_Point @21:24-21:32
+                    right:
+                      Call @21:36-21:50
+                        callee:
+                          NameRef name=SIZEOF globalScope=false @21:36-21:42
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @21:43-21:49
+                            value:
+                              TypeOperand @21:43-21:49
+                                type:
+                                  StringType wide=false @21:43-21:49
+                right:
+                  NameRef name=gGlobal globalScope=true @21:53-21:61
+            right:
+              Call @21:64-21:73
+                callee:
+                  NameRef name=AND globalScope=false @21:64-21:67
+                arguments:
+                  Argument kind=POSITIONAL negated=false @21:68-21:69
+                    value:
+                      NameRef name=b globalScope=false @21:68-21:69
+                  Argument kind=POSITIONAL negated=false @21:71-21:72
+                    value:
+                      NameRef name=b globalScope=false @21:71-21:72
+      Assignment op=ASSIGN @22:1-22:31
+        target:
+          NameRef name=F_Expr globalScope=false @22:1-22:7
+        value:
+          MemberAccess member=field @22:11-22:30
+            target:
+              Index @22:11-22:24
+                target:
+                  NameRef name=arr globalScope=false @22:11-22:14
+                indices:
+                  NameRef name=i globalScope=false @22:15-22:16
+                  Binary op=ADD @22:18-22:23
+                    left:
+                      NameRef name=j globalScope=false @22:18-22:19
+                    right:
+                      Literal kind=INTEGER text="1" @22:22-22:23
+  comments: 0
+diagnostics:

@@ -20,7 +20,16 @@ configurations.api {
     setExtendsFrom(extendsFrom.filterNot { it.name == "antlr" })
 }
 
+// Shared core grammars (St*.g4) sit next to the dialect grammars that import them, but are never
+// generated on their own: a core grammar alone has no channels, options or token vocabulary.
 tasks.generateGrammarSource {
+    exclude("StLexer.g4", "StParser.g4")
+    // Excluded files are no longer task inputs; declare them so that editing the core regenerates every
+    // dialect grammar (a non-source input change makes the task run non-incrementally).
+    inputs
+        .files(layout.projectDirectory.files("src/main/antlr/StLexer.g4", "src/main/antlr/StParser.g4"))
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    packageName = "dev.plca.grammar"
     arguments.addAll(listOf("-visitor", "-no-listener", "-Werror"))
 }
 

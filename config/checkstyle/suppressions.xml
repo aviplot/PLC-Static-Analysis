@@ -3,4 +3,6 @@
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
     <suppress id="noConsole" files="[\\/]modules[\\/]plc-cli[\\/]"/>
+    <!-- developer command-line tools (corpus check, parse debugging) print to the console by design -->
+    <suppress id="noConsole" files="[\\/]src[\\/]test[\\/]java[\\/].*[\\/]corpus[\\/]"/>
 </suppressions>

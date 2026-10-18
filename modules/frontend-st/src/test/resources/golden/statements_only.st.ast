@@ -1,0 +1,29 @@
+SourceUnit dialect=CODESYS
+  Pou kind=ACTION name=statements_only bodyLanguage="ST" @1:1-6:1
+    body:
+      Assignment op=ASSIGN @2:1-2:22
+        target:
+          NameRef name=nCount globalScope=false @2:1-2:7
+        value:
+          Binary op=ADD @2:11-2:21
+            left:
+              NameRef name=nCount globalScope=false @2:11-2:17
+            right:
+              Literal kind=INTEGER text="1" @2:20-2:21
+      If @3:1-5:7
+        branches:
+          Branch @3:1-3:20
+            condition:
+              Binary op=GT @3:4-3:15
+                left:
+                  NameRef name=nCount globalScope=false @3:4-3:10
+                right:
+                  Literal kind=INTEGER text="10" @3:13-3:15
+            body:
+              Assignment op=ASSIGN @4:5-4:17
+                target:
+                  NameRef name=nCount globalScope=false @4:5-4:11
+                value:
+                  Literal kind=INTEGER text="0" @4:15-4:16
+  comments: 1
+diagnostics:

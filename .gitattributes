@@ -1,0 +1,2 @@
+# Test fixtures must stay byte-exact (line endings are part of span tests)
+modules/*/src/test/resources/** -text

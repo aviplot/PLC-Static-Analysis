@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="GVL_Sample" Id="{11111111-2222-3333-4444-777777777777}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+    gnCounter : INT;
+    gbInput AT %I* : BOOL;
+END_VAR
+VAR_GLOBAL CONSTANT
+    MAX_ITEMS : INT := 10;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

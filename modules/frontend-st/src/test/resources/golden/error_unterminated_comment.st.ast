@@ -1,0 +1,17 @@
+SourceUnit dialect=CODESYS
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @1:1-6:1
+    varBlocks:
+      VarBlock section=VAR @2:1-2:21
+        variables:
+          VarDecl name=a referenceInit=false @2:5-2:13
+            type:
+              Named name=INT @2:9-2:12
+    body:
+      Assignment op=ASSIGN @3:1-3:8
+        target:
+          NameRef name=a globalScope=false @3:1-3:2
+        value:
+          Literal kind=INTEGER text="1" @3:6-3:7
+  comments: 1
+diagnostics:
+  ERROR PLC-SYN-002 @4:1 comment is not closed before the end of the text

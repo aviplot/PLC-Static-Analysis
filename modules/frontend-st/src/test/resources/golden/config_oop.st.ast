@@ -1,0 +1,56 @@
+SourceUnit dialect=CODESYS
+  Namespace name=Lib.Motion @1:1-20:14
+    members:
+      Using names=[Lib.Base, Other] @2:1-2:23
+      Pou kind=INTERFACE name=I_Axis extendsTypes=[I_Base, I_Diag] @3:1-11:14
+        members:
+          Pou kind=METHOD name=MoveAbs @4:1-8:11
+            returnType:
+              Named name=BOOL @4:18-4:22
+            varBlocks:
+              VarBlock section=INPUT @5:1-7:8
+                variables:
+                  VarDecl name=pos referenceInit=false @6:5-6:17
+                    type:
+                      Named name=LREAL @6:11-6:16
+          Pou kind=PROPERTY name=Position @9:1-10:13
+            returnType:
+              Named name=LREAL @9:21-9:26
+      Pou kind=CLASS name=C_Axis modifiers=[FINAL] implementsTypes=[I_Axis] bodyLanguage="ST" @12:1-19:10
+        varBlocks:
+          VarBlock section=VAR qualifiers=[PUBLIC] @13:1-15:8
+            variables:
+              VarDecl name=pos referenceInit=false @14:5-14:17
+                type:
+                  Named name=LREAL @14:11-14:16
+        members:
+          Pou kind=METHOD name=MoveAbs modifiers=[OVERRIDE, PUBLIC] bodyLanguage="ST" @16:1-18:11
+            returnType:
+              Named name=BOOL @16:34-16:38
+            body:
+              Assignment op=ASSIGN @17:1-17:17
+                target:
+                  NameRef name=MoveAbs globalScope=false @17:1-17:8
+                value:
+                  Literal kind=BOOL text="TRUE" @17:12-17:16
+  Configuration name=Cfg @22:1-30:18
+    varBlocks:
+      VarBlock section=GLOBAL @23:1-25:8
+        variables:
+          VarDecl name=gRun referenceInit=false @24:5-24:17
+            type:
+              Named name=BOOL @24:12-24:16
+    elements:
+      Resource name=Res on=PLC @26:1-29:13
+        elements:
+          Task name=Fast @27:5-27:50
+            settings:
+              Argument kind=INPUT name=INTERVAL negated=false @27:15-27:33
+                value:
+                  Literal kind=TIME text="10MS" typePrefix="T" @27:27-27:33
+              Argument kind=INPUT name=PRIORITY negated=false @27:35-27:48
+                value:
+                  Literal kind=INTEGER text="1" @27:47-27:48
+          ProgramInstance name=Main task=Fast type=MAIN @28:5-28:35
+  comments: 0
+diagnostics:

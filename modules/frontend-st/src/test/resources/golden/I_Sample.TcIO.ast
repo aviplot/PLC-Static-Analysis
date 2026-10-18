@@ -1,0 +1,19 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=INTERFACE name=I_Sample extendsTypes=[__System.IQueryInterface] @4:27-4:78
+    members:
+      Pou kind=METHOD name=Execute @6:29-9:8
+        returnType:
+          Named name=BOOL @6:46-6:50
+        varBlocks:
+          VarBlock section=INPUT @7:1-9:8
+            variables:
+              VarDecl name=nMode referenceInit=false @8:5-8:17
+                type:
+                  Named name=INT @8:13-8:16
+      Pou kind=PROPERTY name=Busy @12:29-12:49
+        returnType:
+          Named name=BOOL @12:45-12:49
+        members:
+          Pou kind=PROPERTY_GET name=Get @1:1-1:1
+  comments: 0
+diagnostics:

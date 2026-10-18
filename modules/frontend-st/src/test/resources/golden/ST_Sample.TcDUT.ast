@@ -1,0 +1,19 @@
+SourceUnit dialect=TWINCAT
+  TypeDecl name=ST_Sample @5:6-9:11
+    type:
+      StructType @6:1-9:11
+        members:
+          VarDecl name=nId referenceInit=false @7:5-7:17
+            type:
+              Named name=UDINT @7:11-7:16
+          VarDecl name=sName referenceInit=false @8:5-8:24
+            type:
+              StringType wide=false @8:13-8:23
+                length:
+                  Literal kind=INTEGER text="31" @8:20-8:22
+    pragmas:
+      Pragma kind=ATTRIBUTE name="pack_mode" value="1" @4:27-4:57
+  pragmas:
+    Pragma kind=ATTRIBUTE name="pack_mode" value="1" @4:27-4:57
+  comments: 0
+diagnostics:

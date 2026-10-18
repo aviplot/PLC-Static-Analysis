@@ -1,0 +1,26 @@
+SourceUnit dialect=TWINCAT
+  GlobalVars listName=GVL_Sample @5:1-8:8
+    block:
+      VarBlock section=GLOBAL @5:1-8:8
+        variables:
+          VarDecl name=gnCounter referenceInit=false @6:5-6:21
+            type:
+              Named name=INT @6:17-6:20
+          VarDecl name=gbInput address="%I*" referenceInit=false @7:5-7:27
+            type:
+              Named name=BOOL @7:22-7:26
+        pragmas:
+          Pragma kind=ATTRIBUTE name="qualified_only" @4:27-4:55
+  GlobalVars listName=GVL_Sample @9:1-11:8
+    block:
+      VarBlock section=GLOBAL qualifiers=[CONSTANT] @9:1-11:8
+        variables:
+          VarDecl name=MAX_ITEMS referenceInit=false @10:5-10:27
+            type:
+              Named name=INT @10:17-10:20
+            init:
+              Literal kind=INTEGER text="10" @10:24-10:26
+  pragmas:
+    Pragma kind=ATTRIBUTE name="qualified_only" @4:27-4:55
+  comments: 0
+diagnostics:

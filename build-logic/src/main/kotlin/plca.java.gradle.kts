@@ -57,7 +57,9 @@ spotless {
         palantirJavaFormat(version("palantir-java-format")).formatJavadoc(true)
         trimTrailingWhitespace()
         endWithNewline()
-        targetExclude("build/**")
+        // only our own sources: the default target also picks up generated code and, in the ANTLR module,
+        // paths under build/ that compileJava writes concurrently (flaky "Could not read path" failures)
+        target("src/*/java/**/*.java")
     }
 }
 

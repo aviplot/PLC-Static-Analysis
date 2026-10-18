@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Sample" Id="{11111111-2222-3333-4444-555555555555}" SpecialFunc="None">
+    <Declaration><![CDATA[{attribute 'reflection'}
+FUNCTION_BLOCK FB_Sample EXTENDS FB_Base
+VAR_INPUT
+    bEnable : BOOL;
+END_VAR
+VAR
+    nValue : INT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bEnable THEN
+    nValue := nValue + 1;
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="Reset" Id="{aaaaaaaa-0000-0000-0000-000000000001}">
+      <Declaration><![CDATA[METHOD PUBLIC Reset : BOOL
+VAR_INPUT
+    bHard : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[nValue := 0;
+Reset := bHard AND nValue < 5;]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="Value" Id="{aaaaaaaa-0000-0000-0000-000000000002}">
+      <Declaration><![CDATA[PROPERTY PUBLIC Value : INT]]></Declaration>
+      <Get Name="Get" Id="{aaaaaaaa-0000-0000-0000-000000000003}">
+        <Declaration><![CDATA[VAR
+END_VAR]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[Value := nValue;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{aaaaaaaa-0000-0000-0000-000000000004}">
+        <Declaration><![CDATA[PROTECTED
+VAR
+END_VAR]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[nValue := Value;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Action Name="Clear" Id="{aaaaaaaa-0000-0000-0000-000000000005}">
+      <Implementation>
+        <ST><![CDATA[nValue := 0;]]></ST>
+      </Implementation>
+    </Action>
+    <Method Name="Draw" Id="{aaaaaaaa-0000-0000-0000-000000000006}">
+      <Declaration><![CDATA[METHOD Draw]]></Declaration>
+      <Implementation>
+        <NWL>
+          <XmlArchive />
+        </NWL>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_Sample">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

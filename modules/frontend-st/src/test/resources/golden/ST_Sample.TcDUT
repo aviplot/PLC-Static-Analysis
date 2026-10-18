@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_Sample" Id="{11111111-2222-3333-4444-666666666666}">
+    <Declaration><![CDATA[{attribute 'pack_mode' := '1'}
+TYPE ST_Sample :
+STRUCT
+    nId : UDINT;
+    sName : STRING(31);
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,30 @@
+SourceUnit dialect=CODESYS
+  GlobalVars @6:1-14:8
+    block:
+      VarBlock section=GLOBAL @6:1-14:8
+        variables:
+          VarDecl name=gValue referenceInit=false @11:5-11:18
+            type:
+              Named name=INT @11:14-11:17
+            pragmas:
+              Pragma kind=ATTRIBUTE name="pytmc" value="\n        pv: TEST:VALUE\n        io: i\n    " @7:5-10:7
+          VarDecl name=gOther referenceInit=false @13:5-13:18
+            type:
+              Named name=INT @13:14-13:17
+            pragmas:
+              Pragma kind=MESSAGE name="warning" value="check this" @12:5-12:27
+        pragmas:
+          Pragma kind=ATTRIBUTE name="qualified_only" @4:1-4:29
+          Pragma kind=ATTRIBUTE name="TcLinkTo" value=".in := TIIB[Term 1]^Channel 1^Value" @5:1-5:64
+  pragmas:
+    Pragma kind=ATTRIBUTE name="qualified_only" @4:1-4:29
+    Pragma kind=ATTRIBUTE name="TcLinkTo" value=".in := TIIB[Term 1]^Channel 1^Value" @5:1-5:64
+    Pragma kind=ATTRIBUTE name="pytmc" value="\n        pv: TEST:VALUE\n        io: i\n    " @7:5-10:7
+    Pragma kind=MESSAGE name="warning" value="check this" @12:5-12:27
+    Pragma kind=CONDITIONAL name="IF" value="defined (SIMULATION)" @15:1-15:26
+    Pragma kind=CONDITIONAL name="ELSE" value="" @16:1-16:7
+    Pragma kind=CONDITIONAL name="END_IF" value="" @17:1-17:9
+    Pragma kind=REGION name="region" value="\"Main part\"" @18:1-18:21
+    Pragma kind=REGION name="endregion" value="" @19:1-19:12
+  comments: 4
+diagnostics:

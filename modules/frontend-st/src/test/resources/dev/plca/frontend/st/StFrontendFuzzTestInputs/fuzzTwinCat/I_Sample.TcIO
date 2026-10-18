@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <Itf Name="I_Sample" Id="{11111111-2222-3333-4444-888888888888}">
+    <Declaration><![CDATA[INTERFACE I_Sample EXTENDS __System.IQueryInterface]]></Declaration>
+    <Method Name="Execute" Id="{bbbbbbbb-0000-0000-0000-000000000001}">
+      <Declaration><![CDATA[METHOD Execute : BOOL
+VAR_INPUT
+    nMode : INT;
+END_VAR]]></Declaration>
+    </Method>
+    <Property Name="Busy" Id="{bbbbbbbb-0000-0000-0000-000000000002}">
+      <Declaration><![CDATA[PROPERTY Busy : BOOL]]></Declaration>
+      <Get Name="Get" Id="{bbbbbbbb-0000-0000-0000-000000000003}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+    </Property>
+  </Itf>
+</TcPlcObject>

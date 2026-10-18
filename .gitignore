@@ -3,6 +3,9 @@ corpus/external/
 # Large generated manifest stays local for now (decision in docs/plans/M0.md)
 corpus/MANIFEST.csv
 
+# Jazzer working corpus (seeds and crash reproducers live under src/test/resources)
+.cifuzz-corpus/
+
 # Build output
 .gradle/
 build/

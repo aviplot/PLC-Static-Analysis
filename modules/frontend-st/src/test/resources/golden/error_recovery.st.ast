@@ -1,0 +1,70 @@
+SourceUnit dialect=CODESYS
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @1:1-17:1
+    varBlocks:
+      VarBlock section=VAR @2:1-6:8
+        variables:
+          VarDecl name=a referenceInit=false @3:5-3:13
+            type:
+              Named name=INT @3:9-3:12
+          VarDecl name=b referenceInit=false @4:5-4:17
+            type:
+              Named name=INT @4:9-4:12
+            init:
+              Invalid @4:16-4:16
+          VarDecl name=c referenceInit=false @5:5-5:14
+            type:
+              Named name=BOOL @5:9-5:13
+    body:
+      Assignment op=ASSIGN @7:1-7:10
+        target:
+          NameRef name=a globalScope=false @7:1-7:2
+        value:
+          Binary op=ADD @7:6-7:9
+            left:
+              Literal kind=INTEGER text="1" @7:6-7:7
+            right:
+              Invalid @7:9-7:9
+      Assignment op=ASSIGN @8:1-8:11
+        target:
+          NameRef name=c globalScope=false @8:1-8:2
+        value:
+          Literal kind=BOOL text="TRUE" @8:6-8:10
+      If @9:1-11:7
+        branches:
+          Branch @9:1-9:14
+            condition:
+              Binary op=GT @9:4-9:9
+                left:
+                  NameRef name=a globalScope=false @9:4-9:5
+                right:
+                  Literal kind=INTEGER text="1" @9:8-9:9
+            body:
+              Assignment op=ASSIGN @10:5-10:11
+                target:
+                  NameRef name=a globalScope=false @10:5-10:6
+                value:
+                  Literal kind=INTEGER text="2" @10:10-10:11
+      Assignment op=ASSIGN @12:1-12:10
+        target:
+          NameRef name=a globalScope=false @12:1-12:2
+        value:
+          Literal kind=INTEGER text="3" @12:8-12:9
+      Assignment op=ASSIGN @14:1-14:12
+        target:
+          NameRef name=c globalScope=false @14:1-14:2
+        value:
+          Literal kind=BOOL text="FALSE" @14:6-14:11
+      Assignment op=ASSIGN @15:1-17:1
+        target:
+          NameRef name=b globalScope=false @15:1-15:2
+        value:
+          Literal kind=STRING text="'unterminated\nEND_PROGRAM\n" @15:6-17:1
+  comments: 0
+diagnostics:
+  ERROR PLC-SYN-001 @4:16 unexpected ';'
+  ERROR PLC-SYN-001 @7:9 unexpected ';'
+  ERROR PLC-SYN-001 @11:1 missing ';' before 'END_IF'
+  ERROR PLC-SYN-001 @17:1 missing ';' before end of input
+  ERROR PLC-SYN-005 @12:3 unknown assignment operator 'FOO='; expected ':=', 'S=', 'R=' or 'REF='
+  ERROR PLC-SYN-003 @15:6 string is not closed before the end of the text
+  ERROR PLC-SYN-004 @13:1 unexpected character '§'

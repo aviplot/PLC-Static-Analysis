@@ -1,0 +1,31 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_Exported bodyLanguage="ST" @1:1-11:1
+    varBlocks:
+      VarBlock section=INPUT @2:1-4:8
+        variables:
+          VarDecl name=bIn referenceInit=false @3:5-3:16
+            type:
+              Named name=BOOL @3:11-3:15
+      VarBlock section=VAR @5:1-7:8
+        variables:
+          VarDecl name=n referenceInit=false @6:5-6:13
+            type:
+              Named name=INT @6:9-6:12
+    body:
+      If @8:1-10:7
+        branches:
+          Branch @8:1-8:12
+            condition:
+              NameRef name=bIn globalScope=false @8:4-8:7
+            body:
+              Assignment op=ASSIGN @9:5-9:16
+                target:
+                  NameRef name=n globalScope=false @9:5-9:6
+                value:
+                  Binary op=ADD @9:10-9:15
+                    left:
+                      NameRef name=n globalScope=false @9:10-9:11
+                    right:
+                      Literal kind=INTEGER text="1" @9:14-9:15
+  comments: 0
+diagnostics:

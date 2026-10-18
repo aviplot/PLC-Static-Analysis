@@ -1,0 +1,81 @@
+SourceUnit dialect=CODESYS
+  TypeDecl name=ST_Point extendsType=ST_Base @2:5-6:15
+    type:
+      StructType @3:5-6:15
+        members:
+          VarDecl name=x referenceInit=false @4:9-4:18
+            type:
+              Named name=REAL @4:13-4:17
+          VarDecl name=y referenceInit=false @5:9-5:25
+            type:
+              Named name=REAL @5:13-5:17
+            init:
+              Literal kind=REAL text="0.0" @5:21-5:24
+  TypeDecl name=E_State @7:5-7:63
+    type:
+      EnumType @7:15-7:54
+        values:
+          EnumValue name=Idle @7:16-7:25
+            value:
+              Literal kind=INTEGER text="0" @7:24-7:25
+          EnumValue name=Running @7:27-7:34
+          EnumValue name=Faulted @7:36-7:49
+            value:
+              Literal kind=INTEGER text="10" @7:47-7:49
+        baseType:
+          Named name=INT @7:51-7:54
+    init:
+      NameRef name=Idle globalScope=false @7:58-7:62
+  TypeDecl name=U_Raw @8:5-12:14
+    type:
+      UnionType @9:5-12:14
+        members:
+          VarDecl name=dw referenceInit=false @10:9-10:20
+            type:
+              Named name=DWORD @10:14-10:19
+          VarDecl name=ab referenceInit=false @11:9-11:34
+            type:
+              ArrayType @11:14-11:33
+                dimensions:
+                  Dimension @11:20-11:24
+                    low:
+                      Literal kind=INTEGER text="0" @11:20-11:21
+                    high:
+                      Literal kind=INTEGER text="3" @11:23-11:24
+                element:
+                  Named name=BYTE @11:29-11:33
+  TypeDecl name=T_Name @13:5-13:25
+    type:
+      StringType wide=false @13:14-13:24
+        length:
+          Literal kind=INTEGER text="80" @13:21-13:23
+  TypeDecl name=T_Percent @14:5-14:29
+    type:
+      Named name=INT @14:17-14:28
+        rangeLow:
+          Literal kind=INTEGER text="0" @14:21-14:22
+        rangeHigh:
+          Literal kind=INTEGER text="100" @14:24-14:27
+  TypeDecl name=T_Matrix @15:5-15:43
+    type:
+      ArrayType @15:16-15:42
+        dimensions:
+          Dimension @15:22-15:26
+            low:
+              Literal kind=INTEGER text="1" @15:22-15:23
+            high:
+              Literal kind=INTEGER text="3" @15:25-15:26
+          Dimension @15:28-15:32
+            low:
+              Literal kind=INTEGER text="1" @15:28-15:29
+            high:
+              Literal kind=INTEGER text="3" @15:31-15:32
+        element:
+          Named name=LREAL @15:37-15:42
+  TypeDecl name=T_Ref @16:5-16:24
+    type:
+      PointerType kind=REF_TO @16:13-16:23
+        target:
+          Named name=INT @16:20-16:23
+  comments: 0
+diagnostics:

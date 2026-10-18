@@ -1,0 +1,176 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_Motor modifiers=[PUBLIC] extendsTypes=[FB_Base] implementsTypes=[I_Diag, I_Motor] bodyLanguage="ST" @3:1-55:19
+    varBlocks:
+      VarBlock section=INPUT @4:1-7:8
+        variables:
+          VarDecl name=bStart referenceInit=false @5:5-5:19
+            type:
+              Named name=BOOL @5:14-5:18
+          VarDecl name=rSetpoint referenceInit=false @6:5-6:29
+            type:
+              Named name=REAL @6:17-6:21
+            init:
+              Literal kind=REAL text="1.5" @6:25-6:28
+      VarBlock section=OUTPUT @8:1-10:8
+        variables:
+          VarDecl name=bRunning address="%QX0.1" referenceInit=false @9:5-9:31
+            type:
+              Named name=BOOL @9:26-9:30
+      VarBlock section=IN_OUT @11:1-13:8
+        variables:
+          VarDecl name=stConfig referenceInit=false @12:5-12:26
+            type:
+              Named name=ST_Config @12:16-12:25
+      VarBlock section=VAR qualifiers=[PERSISTENT, RETAIN] @14:1-16:8
+        variables:
+          VarDecl name=nStarts referenceInit=false @15:5-15:21
+            type:
+              Named name=UDINT @15:15-15:20
+      VarBlock section=VAR qualifiers=[CONSTANT] @17:1-19:8
+        variables:
+          VarDecl name=MAX_SPEED referenceInit=false @18:5-18:29
+            type:
+              Named name=INT @18:17-18:20
+            init:
+              Literal kind=INTEGER text="1500" @18:24-18:28
+      VarBlock section=VAR @20:1-28:8
+        variables:
+          VarDecl name=fbTimer referenceInit=false @22:5-22:35
+            type:
+              Named name=TON @22:15-22:18
+            init:
+              StructInit @22:22-22:34
+                fields:
+                  FieldInit name=PT @22:23-22:33
+                    value:
+                      Literal kind=TIME text="2S" typePrefix="T" @22:29-22:33
+            pragmas:
+              Pragma kind=ATTRIBUTE name="hide" @21:5-21:23
+          VarDecl name=aBuf referenceInit=false @23:5-23:47
+            type:
+              ArrayType @23:12-23:30
+                dimensions:
+                  Dimension @23:18-23:22
+                    low:
+                      Literal kind=INTEGER text="0" @23:18-23:19
+                    high:
+                      Literal kind=INTEGER text="9" @23:21-23:22
+                element:
+                  Named name=INT @23:27-23:30
+            init:
+              ArrayInit @23:34-23:46
+                elements:
+                  Element repeat=1 @23:35-23:36
+                    value:
+                      Literal kind=INTEGER text="1" @23:35-23:36
+                  Element repeat=1 @23:38-23:39
+                    value:
+                      Literal kind=INTEGER text="2" @23:38-23:39
+                  Element repeat=8 @23:41-23:45
+                    value:
+                      Literal kind=INTEGER text="0" @23:43-23:44
+          VarDecl name=pData referenceInit=false @24:5-24:29
+            type:
+              PointerType kind=POINTER @24:13-24:28
+                target:
+                  Named name=BYTE @24:24-24:28
+          VarDecl name=refCfg referenceInit=false @25:5-25:37
+            type:
+              PointerType kind=REFERENCE @25:14-25:36
+                target:
+                  Named name=ST_Config @25:27-25:36
+          VarDecl name=fbInit referenceInit=false @26:5-26:46
+            type:
+              Named name=FB_Logger @26:14-26:45
+                init:
+                  ConstructorArgs @26:23-26:45
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @26:24-26:26
+                        value:
+                          Literal kind=INTEGER text="10" @26:24-26:26
+                      Argument kind=INPUT name=sName negated=false @26:28-26:44
+                        value:
+                          Literal kind=STRING text="'motor'" @26:37-26:44
+          VarDecl name=a referenceInit=false @27:5-27:16
+            type:
+              Named name=INT @27:12-27:15
+          VarDecl name=b referenceInit=false @27:5-27:16
+            type:
+              Named name=INT @27:12-27:15
+    members:
+      Pou kind=METHOD name=Reset modifiers=[PUBLIC] bodyLanguage="ST" @35:1-41:11
+        returnType:
+          Named name=BOOL @35:23-35:27
+        varBlocks:
+          VarBlock section=INPUT @36:1-38:8
+            variables:
+              VarDecl name=bForce referenceInit=false @37:5-37:19
+                type:
+                  Named name=BOOL @37:14-37:18
+        body:
+          Assignment op=ASSIGN @39:1-39:14
+            target:
+              NameRef name=nStarts globalScope=false @39:1-39:8
+            value:
+              Literal kind=INTEGER text="0" @39:12-39:13
+          Assignment op=ASSIGN @40:1-40:15
+            target:
+              NameRef name=Reset globalScope=false @40:1-40:6
+            value:
+              Literal kind=BOOL text="TRUE" @40:10-40:14
+      Pou kind=PROPERTY name=Speed modifiers=[PUBLIC] @43:1-50:13
+        returnType:
+          Named name=INT @43:25-43:28
+        members:
+          Pou kind=PROPERTY_GET name=GET bodyLanguage="ST" @44:1-46:8
+            body:
+              Assignment op=ASSIGN @45:5-45:24
+                target:
+                  NameRef name=Speed globalScope=false @45:5-45:10
+                value:
+                  NameRef name=MAX_SPEED globalScope=false @45:14-45:23
+          Pou kind=PROPERTY_SET name=SET bodyLanguage="ST" @47:1-49:8
+            body:
+              Empty @48:5-48:6
+      Pou kind=ACTION name=Stop bodyLanguage="ST" @52:1-54:11
+        body:
+          Assignment op=ASSIGN @53:5-53:23
+            target:
+              NameRef name=bRunning globalScope=false @53:5-53:13
+            value:
+              Literal kind=BOOL text="FALSE" @53:17-53:22
+    body:
+      CallStatement @30:1-30:38
+        call:
+          Call @30:1-30:37
+            callee:
+              NameRef name=fbTimer globalScope=false @30:1-30:8
+            arguments:
+              Argument kind=INPUT name=IN negated=false @30:9-30:21
+                value:
+                  NameRef name=bStart globalScope=false @30:15-30:21
+              Argument kind=OUTPUT name=Q negated=false @30:23-30:36
+                value:
+                  NameRef name=bRunning globalScope=false @30:28-30:36
+      If @31:1-33:7
+        branches:
+          Branch @31:1-31:17
+            condition:
+              NameRef name=bRunning globalScope=false @31:4-31:12
+            body:
+              Assignment op=ASSIGN @32:5-32:28
+                target:
+                  NameRef name=nStarts globalScope=false @32:5-32:12
+                value:
+                  Binary op=ADD @32:16-32:27
+                    left:
+                      NameRef name=nStarts globalScope=false @32:16-32:23
+                    right:
+                      Literal kind=INTEGER text="1" @32:26-32:27
+    pragmas:
+      Pragma kind=ATTRIBUTE name="reflection" @2:1-2:25
+  pragmas:
+    Pragma kind=ATTRIBUTE name="reflection" @2:1-2:25
+    Pragma kind=ATTRIBUTE name="hide" @21:5-21:23
+  comments: 1
+diagnostics:

@@ -1,0 +1,95 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=FUNCTION_BLOCK name=FB_Sample extendsTypes=[FB_Base] bodyLanguage="ST" @5:1-11:8
+    varBlocks:
+      VarBlock section=INPUT @6:1-8:8
+        variables:
+          VarDecl name=bEnable referenceInit=false @7:5-7:20
+            type:
+              Named name=BOOL @7:15-7:19
+      VarBlock section=VAR @9:1-11:8
+        variables:
+          VarDecl name=nValue referenceInit=false @10:5-10:18
+            type:
+              Named name=INT @10:14-10:17
+    members:
+      Pou kind=METHOD name=Reset modifiers=[PUBLIC] bodyLanguage="ST" @18:29-21:8
+        returnType:
+          Named name=BOOL @18:51-18:55
+        varBlocks:
+          VarBlock section=INPUT @19:1-21:8
+            variables:
+              VarDecl name=bHard referenceInit=false @20:5-20:18
+                type:
+                  Named name=BOOL @20:13-20:17
+        body:
+          Assignment op=ASSIGN @23:22-23:34
+            target:
+              NameRef name=nValue globalScope=false @23:22-23:28
+            value:
+              Literal kind=INTEGER text="0" @23:32-23:33
+          Assignment op=ASSIGN @24:1-24:31
+            target:
+              NameRef name=Reset globalScope=false @24:1-24:6
+            value:
+              Binary op=AND @24:10-24:30
+                left:
+                  NameRef name=bHard globalScope=false @24:10-24:15
+                right:
+                  Binary op=LT @24:20-24:30
+                    left:
+                      NameRef name=nValue globalScope=false @24:20-24:26
+                    right:
+                      Literal kind=INTEGER text="5" @24:29-24:30
+      Pou kind=PROPERTY name=Value modifiers=[PUBLIC] @28:29-28:56
+        returnType:
+          Named name=INT @28:53-28:56
+        members:
+          Pou kind=PROPERTY_GET name=Get bodyLanguage="ST" @30:31-31:8
+            varBlocks:
+              VarBlock section=VAR @30:31-31:8
+            body:
+              Assignment op=ASSIGN @33:24-33:40
+                target:
+                  NameRef name=Value globalScope=false @33:24-33:29
+                value:
+                  NameRef name=nValue globalScope=false @33:33-33:39
+          Pou kind=PROPERTY_SET name=Set modifiers=[PROTECTED] bodyLanguage="ST" @37:31-39:8
+            varBlocks:
+              VarBlock section=VAR @38:1-39:8
+            body:
+              Assignment op=ASSIGN @41:24-41:40
+                target:
+                  NameRef name=nValue globalScope=false @41:24-41:30
+                value:
+                  NameRef name=Value globalScope=false @41:34-41:39
+      Pou kind=ACTION name=Clear bodyLanguage="ST" @45:5-45:70
+        body:
+          Assignment op=ASSIGN @47:22-47:34
+            target:
+              NameRef name=nValue globalScope=false @47:22-47:28
+            value:
+              Literal kind=INTEGER text="0" @47:32-47:33
+      Pou kind=METHOD name=Draw bodyLanguage="NWL" @51:29-51:40
+    body:
+      If @13:20-15:7
+        branches:
+          Branch @13:20-13:35
+            condition:
+              NameRef name=bEnable globalScope=false @13:23-13:30
+            body:
+              Assignment op=ASSIGN @14:5-14:26
+                target:
+                  NameRef name=nValue globalScope=false @14:5-14:11
+                value:
+                  Binary op=ADD @14:15-14:25
+                    left:
+                      NameRef name=nValue globalScope=false @14:15-14:21
+                    right:
+                      Literal kind=INTEGER text="1" @14:24-14:25
+    pragmas:
+      Pragma kind=ATTRIBUTE name="reflection" @4:27-4:51
+  pragmas:
+    Pragma kind=ATTRIBUTE name="reflection" @4:27-4:51
+  comments: 0
+diagnostics:
+  INFO PLC-TC-001 @50:5 Method 'Draw' is implemented in NWL, which is not analysed yet
