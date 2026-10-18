@@ -1,0 +1,16 @@
+[versions]
+java = "21"
+antlr = "4.13.2"
+junit = "6.1.3"
+assertj = "3.27.7"
+picocli = "4.7.7"
+spotless = "8.10.3"
+palantir-java-format = "2.100.0"
+checkstyle = "14.3.0"
+
+[libraries]
+antlr-tool = { module = "org.antlr:antlr4", version.ref = "antlr" }
+antlr-runtime = { module = "org.antlr:antlr4-runtime", version.ref = "antlr" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+spotless-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
