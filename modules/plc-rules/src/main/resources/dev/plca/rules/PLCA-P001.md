@@ -22,8 +22,9 @@ application. Compute the value once, in one place. PLCopen Coding Guidelines rul
 written once per PLC cycle* covers physical outputs; this rule also checks globals and FB outputs.
 
 To stay quiet on correct code, only unconditional writes count (`:=` or `=>` in a top-level statement of a body),
-`S=`/`R=` latches and writes inside IF/CASE/loops are ignored, and a second write in the same body is not reported
-when the variable is read in between (sequential use of a working variable).
+`S=`/`R=` latches, read-modify-write statements (`n := n + 1`) and writes inside IF/CASE/loops are ignored, and a
+second write in the same body is not reported when the variable is read in between (sequential use of a working
+variable).
 
 ## Noncompliant
 

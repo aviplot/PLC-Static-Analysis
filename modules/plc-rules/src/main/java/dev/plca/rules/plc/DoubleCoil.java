@@ -32,7 +32,8 @@ import java.util.Set;
  * <ul>
  *   <li>Only <em>unconditional</em> writes count: {@code :=} or {@code =>} in a top-level statement of a body. Writes
  *       inside IF/CASE/loops, {@code S=}/{@code R=} and {@code REF=} never count, which also keeps the "default, then
- *       override in an IF" idiom silent.
+ *       override in an IF" idiom silent. Read-modify-write statements ({@code n := n + 1}) update a value rather than
+ *       drive it and do not count either.
  *   <li>Only output-like variables: {@code AT %Q…} variables, globals, and the POU's own VAR_OUTPUTs (plus FB/PROGRAM
  *       locals with {@code includeLocals}).
  *   <li>Within one body, a second write is not reported when the variable is read in between (directly, or by a POU
@@ -133,16 +134,28 @@ public final class DoubleCoil implements ProjectRule {
                         }
                     }
                 }));
+        List<Access> accesses = m.effects(s).accesses();
         List<Access> r = new ArrayList<>();
-        for (Access a : m.effects(s).accesses()) {
+        for (Access a : accesses) {
             if (a.kind() == Access.Kind.WRITE
                     && targets.contains(a.expression())
                     && !a.path().contains("*")
-                    && !a.path().contains("^")) {
+                    && !a.path().contains("^")
+                    && !readModifyWrite(a, accesses)) {
                 r.add(a);
             }
         }
         return r;
+    }
+
+    /** {@code x := x + 1}, {@code x := x OR b}: the statement updates the variable rather than driving it. */
+    private static boolean readModifyWrite(Access write, List<Access> accesses) {
+        for (Access a : accesses) {
+            if (a.variable() == write.variable() && a.kind() != Access.Kind.WRITE && overlaps(a.path(), write.path())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean eligible(VariableSymbol v, PouSymbol pou, boolean includeLocals) {

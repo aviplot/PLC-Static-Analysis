@@ -46,3 +46,15 @@ gMode := 1;
 fb(bA := gMode > 0);
 gMode := 2;
 END_PROGRAM
+
+VAR_GLOBAL
+    gnCycles : DINT;
+END_VAR
+
+PROGRAM P_Count
+gnCycles := gnCycles + 1;
+END_PROGRAM
+
+PROGRAM P_ResetCount
+gnCycles := 0;
+END_PROGRAM
