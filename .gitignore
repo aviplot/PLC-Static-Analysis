@@ -1,5 +1,7 @@
 # Harvested third-party code: local analysis only, never committed (see CLAUDE.md license policy)
 corpus/external/
+# Large generated manifest stays local for now (decision in docs/plans/M0.md)
+corpus/MANIFEST.csv
 
 # Build output
 .gradle/
