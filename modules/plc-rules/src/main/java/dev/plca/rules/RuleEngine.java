@@ -65,7 +65,7 @@ public final class RuleEngine {
         if (!pouRules.isEmpty()) {
             for (PouSymbol p : model.pous()) {
                 if (!p.isBuiltin() && p.declaration() != null && p.declaration().body() != null) {
-                    tasks.add(() -> runPou(model, config, pouRules, p));
+                    tasks.add(() -> runPou(model, sources, config, pouRules, p));
                 }
             }
         }
@@ -93,14 +93,15 @@ public final class RuleEngine {
         final Map<String, Long> nanos = new LinkedHashMap<>();
     }
 
-    private Partial runPou(SemanticModel model, RuleConfig config, List<PouRule> rules, PouSymbol pou) {
+    private Partial runPou(
+            SemanticModel model, SourceRegistry sources, RuleConfig config, List<PouRule> rules, PouSymbol pou) {
         Partial out = new Partial();
         for (PouRule r : rules) {
             RuleDescriptor d = registry.descriptor(r.id()).orElseThrow();
             if (!d.appliesTo(pou.dialect())) {
                 continue;
             }
-            PouContext ctx = new PouContext(model, d, params(config, d), pou);
+            PouContext ctx = new PouContext(model, sources, d, params(config, d), pou);
             long t0 = System.nanoTime();
             try {
                 r.check(ctx);
@@ -120,7 +121,7 @@ public final class RuleEngine {
     private Partial runProject(SemanticModel model, SourceRegistry sources, RuleConfig config, ProjectRule r) {
         Partial out = new Partial();
         RuleDescriptor d = registry.descriptor(r.id()).orElseThrow();
-        ProjectContext ctx = new ProjectContext(model, d, params(config, d));
+        ProjectContext ctx = new ProjectContext(model, sources, d, params(config, d));
         long t0 = System.nanoTime();
         try {
             r.check(ctx);

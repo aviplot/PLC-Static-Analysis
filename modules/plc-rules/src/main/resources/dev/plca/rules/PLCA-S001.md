@@ -23,6 +23,9 @@ cannot be rotated without a program change, and are often identical across machi
 literal is a back door. Hard-coded IP addresses tie the program to one network layout and hide communication
 partners from reviews. Keep secrets in a protected store and network settings in configuration.
 
+Not reported: empty strings and masks such as `'*****'`, loopback addresses and netmasks, and dotted numbers given to
+a version-like name (`sVersion := '1.0.0.0'`, `sFirmwareRev`), which look like IPv4 addresses but are not.
+
 ## Noncompliant
 
 ```st

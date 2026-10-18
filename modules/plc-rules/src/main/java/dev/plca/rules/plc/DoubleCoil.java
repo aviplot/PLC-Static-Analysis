@@ -1,5 +1,6 @@
 package dev.plca.rules.plc;
 
+import dev.plca.ast.Declaration;
 import dev.plca.ast.Expression;
 import dev.plca.ast.Statement;
 import dev.plca.ast.VarBlock;
@@ -12,10 +13,12 @@ import dev.plca.semantic.CallSite;
 import dev.plca.semantic.Effects;
 import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
+import dev.plca.semantic.Statements;
 import dev.plca.semantic.VariableSymbol;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,7 +41,10 @@ import java.util.Set;
  *       locals with {@code includeLocals}).
  *   <li>Within one body, a second write is not reported when the variable is read in between (directly, or by a POU
  *       called in between): that is sequential use of a working variable, not a coil.
- *   <li>Across POUs, only globals and {@code %Q} variables are compared.
+ *   <li>Within one body, an early exit (RETURN, JMP) between two writes also keeps the first write meaningful.
+ *   <li>Function and method results are return values, not coils.
+ *   <li>Across POUs, only globals and {@code %Q} variables are compared, and only between program and FB bodies:
+ *       methods and actions run on demand, often as alternatives.
  * </ul>
  */
 public final class DoubleCoil implements ProjectRule {
@@ -93,11 +99,16 @@ public final class DoubleCoil implements ProjectRule {
             if (!crossPou(key.variable())) {
                 return;
             }
-            Write first = writes.getFirst();
-            Set<PouSymbol> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-            seen.add(first.pou());
-            for (Write w : writes) {
-                if (seen.add(w.pou())) {
+            List<Write> cyclic = writes.stream().filter(w -> cyclic(w.pou())).toList();
+            if (cyclic.size() < 2) {
+                return;
+            }
+            Write first = cyclic.getFirst();
+            Set<String> seen = new HashSet<>();
+            seen.add(first.pou().qualifiedName().toLowerCase(Locale.ROOT));
+            for (Write w : cyclic) {
+                // same name twice: duplicate copies of one POU (backup files), not two drivers
+                if (seen.add(w.pou().qualifiedName().toLowerCase(Locale.ROOT))) {
                     ctx.report(
                             w.pou(),
                             w.access().span(),
@@ -111,6 +122,15 @@ public final class DoubleCoil implements ProjectRule {
                 }
             }
         });
+    }
+
+    /**
+     * Bodies that run every cycle they are called: programs and FB bodies. Methods, actions, property accessors and SFC
+     * step actions run on demand, often as alternatives ({@code On}/{@code Off}), so they are only compared within
+     * their own body.
+     */
+    private static boolean cyclic(PouSymbol p) {
+        return p.kind() == Declaration.PouKind.PROGRAM || p.kind() == Declaration.PouKind.FUNCTION_BLOCK;
     }
 
     /** {@code :=} targets and {@code =>} outputs of one statement; nothing for compound statements. */
@@ -159,6 +179,9 @@ public final class DoubleCoil implements ProjectRule {
     }
 
     private static boolean eligible(VariableSymbol v, PouSymbol pou, boolean includeLocals) {
+        if (v.isResult()) {
+            return false; // a function/method result is a return value, not a coil
+        }
         if (crossPou(v) || v.section() == VarBlock.Section.EXTERNAL) {
             return true;
         }
@@ -179,6 +202,11 @@ public final class DoubleCoil implements ProjectRule {
     /** Is {@code w}'s variable read after {@code prev} and up to (including) {@code w}'s statement? */
     private static boolean readBetween(SemanticModel m, Readers readers, List<Statement> body, Write prev, Write w) {
         VariableSymbol v = w.access().variable();
+        for (int i = prev.index() + 1; i < w.index(); i++) {
+            if (leavesEarly(body.get(i))) {
+                return true; // the first write is what the caller sees on an early RETURN
+            }
+        }
         for (int i = prev.index() + 1; i <= w.index(); i++) {
             Effects e = m.deepEffects(body.get(i));
             for (Access a : e.accesses()) {
@@ -195,6 +223,17 @@ public final class DoubleCoil implements ProjectRule {
             }
         }
         return false;
+    }
+
+    /** Contains a RETURN, JMP or jump label: control may not reach the next statement in order. */
+    private static boolean leavesEarly(Statement s) {
+        boolean[] found = {false};
+        Statements.forEachDeep(s, x -> {
+            if (x instanceof Statement.Return || x instanceof Statement.Jump || x instanceof Statement.Label) {
+                found[0] = true;
+            }
+        });
+        return found[0];
     }
 
     /** {@code .x} overlaps {@code ""}, {@code .x.y} and {@code [*]...}-style paths conservatively. */

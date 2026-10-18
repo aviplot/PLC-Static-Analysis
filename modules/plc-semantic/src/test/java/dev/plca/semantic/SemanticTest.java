@@ -279,4 +279,30 @@ class SemanticTest {
         assertThat(m.global().pou("F")).isPresent();
         assertThat(m.pous()).filteredOn(p -> p.kind() == PouKind.FUNCTION).hasSize(2);
     }
+
+    @Test
+    void libraryQualifiedNameNeverResolvesToTheEnclosingPou() {
+        SemanticModel m = model("""
+                FUNCTION_BLOCK FB_BasicPid
+                VAR
+                    _pid : Tc2_Utilities.FB_BasicPID;
+                    other : MyNs.FB_Other;
+                END_VAR
+                _pid();
+                END_FUNCTION_BLOCK
+                FUNCTION_BLOCK FB_Other
+                END_FUNCTION_BLOCK""", """
+                FUNCTION Equal : BOOL
+                VAR_INPUT
+                    a : INT;
+                END_VAR
+                Equal := Assert.Equal(TRUE, a = 1);
+                END_FUNCTION""");
+        PouSymbol fb = pou(m, "FB_BasicPid");
+        assertThat(fb.variable("_pid").orElseThrow().type()).isInstanceOf(Type.Unknown.class);
+        assertThat(fb.variable("other").orElseThrow().type().display()).isEqualTo("FB_Other");
+        assertThat(m.callGraph().cycles()).isEmpty();
+        Expression.Call call = (Expression.Call) value(m, "Equal", 0);
+        assertThat(m.symbol(call.callee())).get().isInstanceOf(LibrarySymbol.class);
+    }
 }

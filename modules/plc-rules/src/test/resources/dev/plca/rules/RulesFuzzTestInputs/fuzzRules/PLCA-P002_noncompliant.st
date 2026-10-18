@@ -1,0 +1,9 @@
+PROGRAM P_Io
+VAR
+    b : BOOL;
+    w : WORD;
+END_VAR
+b := %IX0.0; // PLCA-P002
+%QX0.1 := b; // PLCA-P002
+w := %MW10 + %IW2; // PLCA-P002 PLCA-P002
+END_PROGRAM

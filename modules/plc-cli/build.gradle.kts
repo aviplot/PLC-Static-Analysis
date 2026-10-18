@@ -22,9 +22,17 @@ val smokeTest by tasks.registering(Exec::class) {
     group = "verification"
     description = "Runs build/install/plca/bin/plca on the plant test project."
     dependsOn(tasks.named("installDist"))
-    val script = layout.buildDirectory.file("install/plca/bin/plca").get().asFile
+    val script =
+        layout.buildDirectory
+            .file("install/plca/bin/plca")
+            .get()
+            .asFile
     val project = rootProject.layout.projectDirectory.dir("modules/plc-semantic/src/test/resources/projects/plant")
-    val report = layout.buildDirectory.file("smoke/plant.sarif").get().asFile
+    val report =
+        layout.buildDirectory
+            .file("smoke/plant.sarif")
+            .get()
+            .asFile
     inputs.dir(project)
     outputs.file(report)
     commandLine(script.absolutePath, "analyze", project.asFile.absolutePath, "--format", "sarif", "--output", report.absolutePath)

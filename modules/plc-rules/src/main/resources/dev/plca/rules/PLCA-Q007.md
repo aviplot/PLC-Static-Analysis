@@ -19,6 +19,9 @@ Each recursive call uses stack space, and PLC stacks are small and fixed; deep r
 Support for recursion also differs between vendors, so the code is less portable. Replace the recursion with a loop.
 PLCopen Coding Guidelines rule CP13 *POUs shall not call themselves directly or indirectly*.
 
+Cycles through a name that is declared more than once (overloaded methods in SIMATIC AX, duplicate copies of a POU)
+are not reported, because which declaration a call refers to is not known.
+
 ## Noncompliant
 
 ```st

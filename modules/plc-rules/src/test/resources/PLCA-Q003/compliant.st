@@ -14,4 +14,7 @@ b := ABS(r - 1.5) < 0.001;
 b := n = 3;
 b := r > 1.0;
 b := cA = cB;
+b := r = 0.0;
+b := r <> 0;
+b := r = r;
 END_FUNCTION_BLOCK

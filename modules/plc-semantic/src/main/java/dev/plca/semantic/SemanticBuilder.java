@@ -274,6 +274,16 @@ public final class SemanticBuilder {
         return false;
     }
 
+    /** {@code candidate} is {@code context} or one of its owners (the FB of a method, …). */
+    static boolean encloses(PouSymbol candidate, PouSymbol context) {
+        for (PouSymbol c = context; c != null; c = c.owner()) {
+            if (c == candidate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void defineType(TypeSymbol s, PouSymbol context) {
         if (!(s.type() instanceof Type.Unknown)) {
             return; // already defined (alias chains resolve their targets eagerly)
@@ -361,7 +371,7 @@ public final class SemanticBuilder {
     }
 
     private Type named(TypeRef.Named n, PouSymbol context) {
-        Type base = namedBase(n.name());
+        Type base = namedBase(n.name(), context);
         if (n.isSubrange() && Type.elementary(base) != null) {
             Long lo = model.constants.integer(n.rangeLow(), e -> constantScope(e, context));
             Long hi = model.constants.integer(n.rangeHigh(), e -> constantScope(e, context));
@@ -372,7 +382,7 @@ public final class SemanticBuilder {
         return base;
     }
 
-    private Type namedBase(QualifiedName q) {
+    private Type namedBase(QualifiedName q, PouSymbol context) {
         if (q.parts().size() == 1) {
             Optional<ElementaryKind> k = ElementaryKind.byName(q.last().name());
             if (k.isPresent()) {
@@ -393,7 +403,7 @@ public final class SemanticBuilder {
                     ? new Type.Struct(s)
                     : s.kind() == TypeSymbol.Kind.ENUM ? new Type.Enum(s) : s.type();
         }
-        Optional<PouSymbol> p = lookupPou(q);
+        Optional<PouSymbol> p = lookupPou(q, context);
         if (p.isPresent()) {
             return new Type.Instance(p.get());
         }
@@ -411,9 +421,17 @@ public final class SemanticBuilder {
     }
 
     private Optional<PouSymbol> lookupPou(QualifiedName q) {
+        return lookupPou(q, null);
+    }
+
+    /**
+     * Like {@link #lookupType}; the last-part fallback never yields a POU enclosing {@code context}: inside
+     * {@code FB_BasicPid}, {@code Tc2_Utilities.FB_BasicPID} is the library block, not the FB itself.
+     */
+    private Optional<PouSymbol> lookupPou(QualifiedName q, PouSymbol context) {
         Optional<PouSymbol> p = global.pou(q.toString());
         if (p.isEmpty() && q.parts().size() > 1) {
-            p = global.pou(q.last().name());
+            p = global.pou(q.last().name()).filter(c -> !encloses(c, context));
         }
         if (p.isEmpty()) {
             Optional<Symbol> b = global.builtin(q.last().name());

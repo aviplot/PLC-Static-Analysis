@@ -14,6 +14,7 @@ import dev.plca.rules.Walk;
 import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.Statements;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -29,12 +30,18 @@ import java.util.regex.Pattern;
  *   <li><b>Credential</b>: a non-empty string literal assigned to, initialising, passed as, or compared with a
  *       variable/parameter whose name looks like a secret ({@code namePattern}: password, pwd, secret, token, …).
  *   <li><b>IP address</b>: a string literal that is exactly an IPv4 address (optionally with {@code :port}), except
- *       loopback, the unspecified/broadcast addresses and netmasks; more can be allowed with {@code allowedAddresses}.
+ *       loopback, the unspecified/broadcast addresses and netmasks, and literals given to a version-like name
+ *       ({@code sVersion := '1.0.0.0'}); more can be allowed with {@code allowedAddresses}.
  * </ul>
  *
  * Project rule because initial values in GVLs matter as much as code in bodies.
  */
 public final class HardCodedSecret implements ProjectRule {
+
+    /** Version numbers look like IPv4 addresses ({@code sVersion := '1.0.0.0'}). */
+    private static final Pattern VERSION_NAME = Pattern.compile("(?i)(vers|revision|release|build|firmware)");
+    /** HMI masks ({@code '*****'}) are not secrets. */
+    private static final Pattern MASK = Pattern.compile("^[*#\u2022]+$");
 
     private static final Pattern IPV4 =
             Pattern.compile("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?::\\d{1,5})?$");
@@ -57,6 +64,10 @@ public final class HardCodedSecret implements ProjectRule {
         final Set<Expression> reported = Collections.newSetFromMap(new IdentityHashMap<>());
 
         final Map<Declaration.Pou, PouSymbol> pous = new IdentityHashMap<>();
+        /** isSecretName per name: the same few hundred names repeat across a project. */
+        final Map<String, Boolean> secretNames = new HashMap<>();
+        /** The variable, field or parameter a literal is assigned to, initialises or is passed as. */
+        final Map<Expression, String> contextNames = new IdentityHashMap<>();
 
         Scan(ProjectContext ctx) {
             this.ctx = ctx;
@@ -94,20 +105,36 @@ public final class HardCodedSecret implements ProjectRule {
 
         private void block(VarBlock b, PouSymbol p) {
             for (VarDecl v : b.variables()) {
-                if (isSecretName(v.name().name()) && v.init() instanceof Expression e) {
-                    credential(e, v.name().name(), p);
-                }
-                initializer(v.init(), p);
+                initializer(v.init(), v.name().name(), p);
             }
         }
 
-        private void initializer(Initializer init, PouSymbol p) {
-            Walk.expressions(init, e -> expression(e, p));
+        /** Records context names (also of struct fields) and checks credentials, then IP literals. */
+        private void initializer(Initializer init, String name, PouSymbol p) {
+            switch (init) {
+                case null -> {}
+                case Expression e -> {
+                    contextNames.put(e, name);
+                    if (isSecretName(name)) {
+                        credential(e, name, p);
+                    }
+                    Walk.deep(e, x -> expression(x, p));
+                }
+                case Initializer.ArrayInit a -> a.elements().forEach(el -> initializer(el.value(), name, p));
+                case Initializer.StructInit st ->
+                    st.fields().forEach(f -> initializer(f.value(), f.name().name(), p));
+            }
         }
 
         private void statement(Statement s, PouSymbol p) {
-            if (s instanceof Statement.Assignment a && isSecretName(Walk.lastName(a.target()))) {
-                credential(a.value(), Walk.lastName(a.target()), p);
+            if (s instanceof Statement.Assignment a) {
+                String target = Walk.lastName(a.target());
+                if (target != null) {
+                    contextNames.put(a.value(), target);
+                }
+                if (isSecretName(target)) {
+                    credential(a.value(), target, p);
+                }
             }
         }
 
@@ -116,6 +143,9 @@ public final class HardCodedSecret implements ProjectRule {
             switch (e) {
                 case Expression.Call c -> {
                     for (Expression.Argument a : c.arguments()) {
+                        if (a.name() != null && a.value() != null) {
+                            contextNames.put(a.value(), a.name().name());
+                        }
                         if (a.name() != null && isSecretName(a.name().name())) {
                             credential(a.value(), a.name().name(), p);
                         }
@@ -131,9 +161,12 @@ public final class HardCodedSecret implements ProjectRule {
                     }
                 }
                 case Expression.Literal l
-                when isString(l) && !reported.contains(l) -> {
+                when isString(l) && mayBeAddress(l.text()) && !reported.contains(l) -> {
                     String value = StringLiterals.decode(l.text());
-                    if (isIpAddress(value)) {
+                    String context = contextNames.get(l);
+                    if (isIpAddress(value)
+                            && (context == null
+                                    || !VERSION_NAME.matcher(context).find())) {
                         ctx.report(
                                 p,
                                 l.span(),
@@ -146,10 +179,10 @@ public final class HardCodedSecret implements ProjectRule {
         }
 
         private void credential(Expression value, String name, PouSymbol p) {
-            if (value instanceof Expression.Literal l
-                    && isString(l)
-                    && !StringLiterals.decode(l.text()).isEmpty()
-                    && reported.add(l)) {
+            String decoded =
+                    value instanceof Expression.Literal l && isString(l) ? StringLiterals.decode(l.text()) : "";
+            if (!decoded.isEmpty() && !MASK.matcher(decoded).matches() && reported.add(value)) {
+                Expression.Literal l = (Expression.Literal) value;
                 ctx.report(
                         p,
                         l.span(),
@@ -160,7 +193,9 @@ public final class HardCodedSecret implements ProjectRule {
         }
 
         private boolean isSecretName(String name) {
-            return name != null && secretName.matcher(name).find();
+            return name != null
+                    && secretNames.computeIfAbsent(
+                            name, n -> secretName.matcher(n).find());
         }
 
         private boolean isIpAddress(String s) {
@@ -183,6 +218,11 @@ public final class HardCodedSecret implements ProjectRule {
             // netmasks: ones followed by zeros (also covers 0.0.0.0 and 255.255.255.255)
             long inverted = ~bits & 0xFFFFFFFFL;
             return (inverted & (inverted + 1)) != 0;
+        }
+
+        /** Cheap pre-check on the source text ({@code '1.2.3.4'} is at least 9 characters) before decoding. */
+        private static boolean mayBeAddress(String text) {
+            return text.length() >= 9 && text.length() <= 25 && Character.isDigit(text.charAt(1));
         }
 
         private static boolean isString(Expression.Literal l) {

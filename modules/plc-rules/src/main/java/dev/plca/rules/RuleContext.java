@@ -1,6 +1,8 @@
 package dev.plca.rules;
 
+import dev.plca.ast.Node;
 import dev.plca.core.diag.Diagnostic;
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
 import dev.plca.semantic.SemanticModel;
 import java.util.ArrayList;
@@ -12,18 +14,27 @@ import java.util.regex.Pattern;
 public abstract sealed class RuleContext permits PouContext, ProjectContext {
 
     private final SemanticModel model;
+    private final SourceRegistry sources;
     private final RuleDescriptor descriptor;
     private final Map<String, String> parameters;
     final List<Finding> findings = new ArrayList<>();
 
-    RuleContext(SemanticModel model, RuleDescriptor descriptor, Map<String, String> parameters) {
+    RuleContext(
+            SemanticModel model, SourceRegistry sources, RuleDescriptor descriptor, Map<String, String> parameters) {
         this.model = model;
+        this.sources = sources;
         this.descriptor = descriptor;
         this.parameters = parameters;
     }
 
     public SemanticModel model() {
         return model;
+    }
+
+    /** The source text of a node, as the lexer saw it (CDATA content for TwinCAT files). */
+    public String text(Node node) {
+        Span s = node.span();
+        return sources.text(s.textId()).text().substring(s.start(), s.end());
     }
 
     public RuleDescriptor descriptor() {

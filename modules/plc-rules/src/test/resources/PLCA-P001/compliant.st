@@ -58,3 +58,42 @@ END_PROGRAM
 PROGRAM P_ResetCount
 gnCycles := 0;
 END_PROGRAM
+
+FUNCTION F_Result : INT
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Result := 0;
+F_Result := n * 2;
+END_FUNCTION
+
+VAR_GLOBAL
+    gLight : BOOL;
+END_VAR
+
+FUNCTION_BLOCK FB_Parser
+VAR_INPUT
+    bValid : BOOL;
+END_VAR
+VAR_OUTPUT
+    bDone : BOOL;
+    bOk : BOOL;
+END_VAR
+// clear outputs, early exit, then set them
+bDone := FALSE;
+bOk := FALSE;
+IF NOT bValid THEN
+    bDone := TRUE;
+    RETURN;
+END_IF
+bOk := TRUE;
+bDone := TRUE;
+
+METHOD On
+gLight := TRUE;
+END_METHOD
+
+METHOD Off
+gLight := FALSE;
+END_METHOD
+END_FUNCTION_BLOCK

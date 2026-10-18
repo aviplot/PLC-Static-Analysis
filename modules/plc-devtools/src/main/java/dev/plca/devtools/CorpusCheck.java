@@ -9,6 +9,7 @@ import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.st.StFrontend;
+import dev.plca.rules.RuleEngine;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
 import java.io.IOException;
@@ -33,11 +34,12 @@ import java.util.regex.Pattern;
 /**
  * Parses every CODESYS/TwinCAT file of the harvested corpus ({@code corpus/MANIFEST.csv}), builds the semantic model
  * per project (a TwinCAT {@code .plcproj} directory, else the repository) and reports how much real-world code the
- * frontend accepts and how many names the model resolves. Run with {@code ./gradlew :plc-devtools:corpusCheck}.
+ * frontend accepts, how many names the model resolves, and what the rules report (see {@link RuleCorpusStats}). Run
+ * with {@code ./gradlew :plc-devtools:corpusCheck}.
  *
- * <p>Fails (exit 1) when the SLL-fallback rate on error-free texts exceeds {@value #MAX_CLEAN_FALLBACK_RATE}, or when a
- * rate drops below {@code corpus-baseline.properties}. With {@code --update-baseline} the current rates become the new
- * baseline.
+ * <p>Fails (exit 1) when a rule fails on any project, when the SLL-fallback rate on error-free texts exceeds
+ * {@value #MAX_CLEAN_FALLBACK_RATE}, or when a rate drops below {@code corpus-baseline.properties}. With
+ * {@code --update-baseline} the current rates become the new baseline.
  */
 public final class CorpusCheck {
 
@@ -63,7 +65,9 @@ public final class CorpusCheck {
             SemanticModel.ResolutionStats stats,
             long nanos,
             String escaped,
-            List<String> unresolved) {}
+            List<String> unresolved,
+            long parseNanos,
+            RuleCorpusStats.Outcome rules) {}
 
     private CorpusCheck() {}
 
@@ -109,7 +113,17 @@ public final class CorpusCheck {
         Files.createDirectories(reportDir);
         Map<String, Double> rates = report(results, seconds, threads, out, reportDir);
         rates.putAll(semanticReport(projectResults, out, reportDir));
+        long lines = results.stream().mapToLong(FileResult::lines).sum();
+        long parseAndModel = projectResults.stream()
+                .mapToLong(p -> p.parseNanos() + p.nanos())
+                .sum();
+        int ruleFailures = RuleCorpusStats.report(
+                projectResults.stream().map(ProjectResult::rules).toList(), lines, parseAndModel, out, reportDir);
         boolean ok = checkThresholds(results, rates, baseline, update, out);
+        if (ruleFailures > 0) {
+            out.println("FAIL: " + ruleFailures + " rule failures (" + RuleEngine.INTERNAL + ")");
+            ok = false;
+        }
         if (!ok) {
             System.exit(1);
         }
@@ -149,6 +163,7 @@ public final class CorpusCheck {
         List<SourceUnit> units = new ArrayList<>();
         rows.sort(Comparator.comparing(r -> r[2]));
         boolean twinCat = false;
+        long parseStart = System.nanoTime();
         for (String[] r : rows) {
             twinCat |= r[3].equals("TwinCat");
             try {
@@ -172,6 +187,9 @@ public final class CorpusCheck {
             }
         }
         long t = System.nanoTime();
+        long parseNanos = t - parseStart;
+        RuleCorpusStats.Outcome rules = RuleCorpusStats.Outcome.NONE;
+        long modelNanos = 0;
         SemanticModel.ResolutionStats stats = new SemanticModel.ResolutionStats(0, 0, 0, 0);
         String escaped = null;
         List<String> unresolved = new ArrayList<>();
@@ -193,8 +211,15 @@ public final class CorpusCheck {
                     escaped = d.message();
                 }
             }
+            modelNanos = System.nanoTime() - t;
+            try {
+                rules = RuleCorpusStats.run(rows.getFirst()[0], key, model, registry);
+            } catch (Throwable e) {
+                rules = new RuleCorpusStats.Outcome(Map.of(), Map.of(), List.of("ESCAPED " + e), List.of());
+            }
         } catch (Throwable e) {
             escaped = "ESCAPED " + e;
+            modelNanos = System.nanoTime() - t;
         }
         String repo = rows.getFirst()[0];
         return Map.entry(
@@ -205,9 +230,11 @@ public final class CorpusCheck {
                         twinCat ? "TwinCat" : "st",
                         rows.size(),
                         stats,
-                        System.nanoTime() - t,
+                        modelNanos,
                         escaped,
-                        unresolved));
+                        unresolved,
+                        parseNanos,
+                        rules));
     }
 
     private static Map<String, Double> semanticReport(List<ProjectResult> projects, PrintStream out, Path reportDir)

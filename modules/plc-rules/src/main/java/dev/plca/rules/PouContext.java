@@ -3,6 +3,7 @@ package dev.plca.rules;
 import dev.plca.ast.Expression;
 import dev.plca.ast.Statement;
 import dev.plca.core.diag.Diagnostic;
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
 import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
@@ -16,8 +17,13 @@ public final class PouContext extends RuleContext {
 
     private final PouSymbol pou;
 
-    PouContext(SemanticModel model, RuleDescriptor descriptor, Map<String, String> parameters, PouSymbol pou) {
-        super(model, descriptor, parameters);
+    PouContext(
+            SemanticModel model,
+            SourceRegistry sources,
+            RuleDescriptor descriptor,
+            Map<String, String> parameters,
+            PouSymbol pou) {
+        super(model, sources, descriptor, parameters);
         this.pou = pou;
     }
 

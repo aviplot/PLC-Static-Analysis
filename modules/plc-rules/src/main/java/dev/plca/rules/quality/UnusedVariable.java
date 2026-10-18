@@ -63,10 +63,19 @@ public final class UnusedVariable implements ProjectRule {
             if (d == null) {
                 continue;
             }
-            if (d.body() == null && d.bodyLanguage() != null || hasInvalid(d.body())) {
+            boolean[] invalid = {d.body() == null && d.bodyLanguage() != null};
+            Statements.forEachDeep(d.body(), st -> {
+                invalid[0] |= st instanceof Statement.Invalid;
+                Walk.ownExpressions(
+                        st,
+                        top -> Walk.deep(top, e -> {
+                            invalid[0] |= e instanceof Expression.Invalid;
+                            markUsed.accept(e);
+                        }));
+            });
+            if (invalid[0]) {
                 opaque.add(p.instanceOwner() == null ? p : p.instanceOwner());
             }
-            Walk.expressions(d.body(), markUsed);
             for (VarBlock b : d.varBlocks()) {
                 for (VarDecl v : b.variables()) {
                     Walk.expressions(v.init(), markUsed);
@@ -129,21 +138,6 @@ public final class UnusedVariable implements ProjectRule {
                 && v.pragmas().stream().noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE)
                 && !namesInDeclarations.contains(v.name().toLowerCase(Locale.ROOT))
                 && !spare.matcher(v.name()).find();
-    }
-
-    private static boolean hasInvalid(List<Statement> body) {
-        boolean[] found = {false};
-        Statements.forEachDeep(body, s -> {
-            if (s instanceof Statement.Invalid) {
-                found[0] = true;
-            }
-        });
-        Walk.expressions(body, e -> {
-            if (e instanceof Expression.Invalid) {
-                found[0] = true;
-            }
-        });
-        return found[0];
     }
 
     private static void typeDeclarationNames(Declaration d, Set<String> names) {

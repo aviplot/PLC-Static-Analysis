@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":frontend-st"))
     implementation(project(":plc-semantic"))
+    implementation(project(":plc-rules"))
 }
 
 val corpusDir =

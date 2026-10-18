@@ -256,7 +256,7 @@ final class Binder {
             if (!model.unresolved.isEmpty() && model.unresolved.getLast() == prefix) {
                 model.unresolved.removeLast();
             }
-            s = qualified(prefix.name().name(), name);
+            s = qualified(prefix.name().name(), name, pou);
         } else {
             s = memberOf(targetType, name);
         }
@@ -278,13 +278,18 @@ final class Binder {
         return typeOfSymbol(s);
     }
 
-    private Symbol qualified(String prefix, String name) {
+    /**
+     * {@code prefix.name} with an unknown prefix: a namespace, or a library the project does not contain. The last-part
+     * fallback never yields a POU enclosing the reference ({@code AxUnit.Assert.Equal} inside {@code Equal} is not a
+     * recursive call).
+     */
+    private Symbol qualified(String prefix, String name, PouSymbol pou) {
         Optional<Symbol> s = global.pou(prefix + "." + name).map(Symbol.class::cast);
         if (s.isEmpty()) {
             s = global.type(prefix + "." + name).map(Symbol.class::cast);
         }
         if (s.isEmpty()) {
-            s = global.pou(name).map(Symbol.class::cast);
+            s = global.pou(name).filter(c -> !SemanticBuilder.encloses(c, pou)).map(Symbol.class::cast);
         }
         if (s.isEmpty()) {
             s = global.type(name).map(Symbol.class::cast);
