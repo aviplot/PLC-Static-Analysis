@@ -1,0 +1,16 @@
+# Harvested third-party code: local analysis only, never committed (see CLAUDE.md license policy)
+corpus/external/
+
+# Build output
+.gradle/
+build/
+*.class
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.iml
