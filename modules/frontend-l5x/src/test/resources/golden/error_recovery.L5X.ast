@@ -83,6 +83,8 @@ SourceUnit dialect=ROCKWELL
             value:
               Literal kind=INTEGER text="10" @30:44-30:46
       ProgramInstance name=P task=T type=P @32:25-32:26
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Controller" @2:96-2:106
   comments: 0
 diagnostics:
   ERROR PLC-XML-001 @32:29 malformed XML: Unexpected EOF; was expecting a close tag for element <ScheduledPrograms>; the rest of the file is not analysed

@@ -69,6 +69,7 @@ public final class DoubleCoil implements ProjectRule {
     public void check(ProjectContext ctx) {
         SemanticModel m = ctx.model();
         boolean includeLocals = ctx.boolParam("includeLocals");
+        Pattern spare = ctx.patternParam("sparePattern");
         Readers readers = new Readers(m);
 
         Map<Key, List<Write>> survivors = new LinkedHashMap<>();
@@ -80,11 +81,13 @@ public final class DoubleCoil implements ProjectRule {
             }
             Set<Statement> coils = Collections.newSetFromMap(new IdentityHashMap<>());
             List<Statement> body = sequence(declared, coils);
+            boolean rockwell = pou.dialect() == dev.plca.core.Dialect.ROCKWELL;
             Map<Key, Write> previous = new HashMap<>();
             for (int i = 0; i < body.size(); i++) {
                 boolean coil = coils.contains(body.get(i));
-                for (Access a : unconditionalWrites(m, body.get(i), coil)) {
-                    if (!coil && !eligible(a.variable(), pou, includeLocals)) {
+                for (Access a : unconditionalWrites(m, body.get(i), coil, rockwell)) {
+                    if (!coil && !eligible(a.variable(), pou, includeLocals)
+                            || spare.matcher(a.variable().name()).find()) {
                         continue;
                     }
                     Key key = new Key(a.variable(), a.path());
@@ -110,7 +113,11 @@ public final class DoubleCoil implements ProjectRule {
             if (!crossPou(key.variable()) && writes.stream().noneMatch(Write::coil)) {
                 return;
             }
-            List<Write> cyclic = writes.stream().filter(w -> cyclic(w.pou())).toList();
+            // Rockwell routines are often called conditionally as alternatives: across them only coils compare
+            List<Write> cyclic = writes.stream()
+                    .filter(w -> cyclic(w.pou()))
+                    .filter(w -> w.coil() || w.pou().kind() != Declaration.PouKind.ROUTINE)
+                    .toList();
             if (cyclic.size() < 2) {
                 return;
             }
@@ -208,7 +215,7 @@ public final class DoubleCoil implements ProjectRule {
      * {@code :=} targets and {@code =>} outputs of one statement; nothing for compound statements. A ladder coil is a
      * coil even when its rung reads it (seal-in), so the read-modify-write exemption does not apply to it.
      */
-    private static List<Access> unconditionalWrites(SemanticModel m, Statement s, boolean coil) {
+    private static List<Access> unconditionalWrites(SemanticModel m, Statement s, boolean coil, boolean rockwell) {
         if (!(s instanceof Statement.Assignment a && a.op() == Statement.AssignOp.ASSIGN)
                 && !(s instanceof Statement.CallStatement)) {
             return List.of();
@@ -220,7 +227,8 @@ public final class DoubleCoil implements ProjectRule {
         Walk.ownExpressions(
                 s,
                 top -> Walk.deep(top, e -> {
-                    if (e instanceof Expression.Call c) {
+                    // a required AOI output must be bound to some tag (often a scratch tag): no coil
+                    if (e instanceof Expression.Call c && !rockwell) {
                         for (Expression.Argument arg : c.arguments()) {
                             if (arg.kind() == Expression.ArgumentKind.OUTPUT && arg.value() != null) {
                                 targets.add(arg.value());

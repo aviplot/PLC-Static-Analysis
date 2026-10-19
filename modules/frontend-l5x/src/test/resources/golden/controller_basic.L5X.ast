@@ -364,5 +364,7 @@ SourceUnit dialect=ROCKWELL
           Argument kind=INPUT name=INTERVAL negated=false @138:41-138:43
             value:
               Literal kind=TIME text="10ms" typePrefix="T" @138:41-138:43
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Controller" @2:98-2:108
   comments: 2
 diagnostics:

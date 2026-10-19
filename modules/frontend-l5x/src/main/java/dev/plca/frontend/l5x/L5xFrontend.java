@@ -134,6 +134,8 @@ public final class L5xFrontend implements Frontend {
                         Span.at(whole.id(), 0)));
                 return;
             }
+            // a partial export (one routine, rung, AOI…) refers to tags it does not contain: the model needs to know
+            pragmas.add(attribute("TargetType", p.targetType.value(), nameSpan(p.targetType, 0)));
             aois = signatures(p.aois);
             for (DataTypeDef d : p.dataTypes) {
                 declarations.add(dataType(d));

@@ -228,6 +228,12 @@ final class Binder {
             model.symbols.put(n, io);
             return io.status() && name.length() <= 4 ? Type.BOOL : new Type.Unknown(name);
         }
+        if (s.isEmpty() && rockwell(pou) && partialExport(pou)) {
+            // a routine or AOI exported on its own refers to tags of the project it came from
+            external++;
+            model.symbols.put(n, new LibrarySymbol(name));
+            return new Type.Unknown(name);
+        }
         if (s.isEmpty() && n.name().form() == Identifier.Form.QUOTED) {
             // a PLC tag (tag tables are not part of SCL exports) or a block outside the export: never guessed
             external++;
@@ -401,6 +407,13 @@ final class Binder {
             return Type.of(s.wide() ? ElementaryKind.WORD : ElementaryKind.BYTE);
         }
         return Type.UNKNOWN;
+    }
+
+    /** An L5X export of less than a controller ({@code TargetType} Routine, Rung, Program, AOI, …). */
+    private static boolean partialExport(PouSymbol pou) {
+        return pou.unit() != null
+                && pou.unit().pragmas().stream()
+                        .anyMatch(p -> p.isAttribute("TargetType") && !"Controller".equalsIgnoreCase(p.value()));
     }
 
     private static boolean rockwell(PouSymbol pou) {

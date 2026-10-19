@@ -35,6 +35,8 @@ SourceUnit dialect=ROCKWELL
               Argument kind=POSITIONAL negated=false @15:50-15:55
                 value:
                   NameRef name=Graph globalScope=false @15:50-15:55
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="AddOnInstructionDefinition" @2:98-2:124
   comments: 0
 diagnostics:
   INFO PLC-L5X-003 @5:61 Add-On Instruction 'Drive_v3' is source-protected; only its parameters are analysed

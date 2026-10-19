@@ -70,5 +70,7 @@ SourceUnit dialect=ROCKWELL
                         right:
                           Literal kind=REAL text="1.0" @23:41-23:44
       Pou kind=ROUTINE name=Drain @27:1-27:40
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Routine" @2:97-2:104
   comments: 0
 diagnostics:

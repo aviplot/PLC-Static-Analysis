@@ -1,4 +1,6 @@
 SourceUnit dialect=ROCKWELL
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Controller" @3:79-3:89
   comments: 0
 diagnostics:
   ERROR PLC-XML-001 @4:36 malformed XML: Undeclared general entity "xxe"; the rest of the file is not analysed
