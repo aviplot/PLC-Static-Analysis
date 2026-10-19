@@ -180,4 +180,51 @@ class MainTest {
         assertThat(json.get("findings").findValuesAsString("ruleId")).contains("PLCA-Q006", "PLCA-P002");
         assertThat(json.get("diagnostics").findValuesAsString("severity")).doesNotContain("error");
     }
+
+    @Test
+    void analysesRockwellL5x() throws IOException {
+        Path p = project("Line.L5X", """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetType="Controller">
+                <Controller Use="Target" Name="Line">
+                <Tags>
+                <Tag Name="Start" TagType="Base" DataType="BOOL" ExternalAccess="Read/Write"/>
+                <Tag Name="Motor" TagType="Base" DataType="BOOL" ExternalAccess="Read/Write"/>
+                </Tags>
+                <Programs>
+                <Program Name="Main" MainRoutineName="R">
+                <Routines>
+                <Routine Name="R" Type="RLL">
+                <RLLContent>
+                <Rung Number="0" Type="N"><Text><![CDATA[XIC(Start)OTE(Motor);]]></Text></Rung>
+                <Rung Number="1" Type="N"><Text><![CDATA[XIO(Start)OTE(Motor);]]></Text></Rung>
+                </RLLContent>
+                </Routine>
+                </Routines>
+                </Program>
+                </Programs>
+                </Controller>
+                </RSLogix5000Content>
+                """);
+        Path report = tmp.resolve("l5x.sarif");
+        run("analyze", p.toString(), "--format", "sarif", "-o", report.toString());
+        JsonNode sarif = JsonMapper.builder().build().readTree(Files.readString(report));
+        JsonNode result = sarif.get("runs").get(0).get("results").get(0);
+        assertThat(result.get("ruleId").asString()).isEqualTo("PLCA-P001");
+        // the place in Studio 5000 terms, beside the physical location in the .L5X
+        assertThat(result.get("locations")
+                        .get(0)
+                        .get("logicalLocations")
+                        .get(0)
+                        .get("fullyQualifiedName")
+                        .asString())
+                .isEqualTo("Program:Main/Routine:R/Rung:1");
+        assertThat(result.get("locations")
+                        .get(0)
+                        .get("physicalLocation")
+                        .get("region")
+                        .get("startLine")
+                        .asInt())
+                .isEqualTo(14);
+    }
 }
