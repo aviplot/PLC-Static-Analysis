@@ -11,8 +11,8 @@ parameters:
 ---
 ## Description
 
-Logic that waits for a moment or a value nobody sets by accident: a comparison with an absolute date, a real-time clock
-value compared with a calendar year, an equality comparison with a "magic" constant (hexspeak such as `16#DEADBEEF`,
+Logic that waits for a moment or a value nobody sets by accident: a date compared to be on or after an absolute date,
+a real-time clock value compared to be on or after a calendar year, an equality comparison with a "magic" constant (hexspeak such as `16#DEADBEEF`,
 `16#C0FFEE`, or leet numbers such as 1337), or a timer that runs from start-up and fires only after a long delay.
 
 ## Rationale
@@ -21,9 +21,10 @@ This is the shape of a logic bomb or a backdoor: code that behaves normally duri
 something else on a given date, after weeks of operation, or when a value only an insider knows is written. Such code
 has been found in sabotage and research cases, and a code review is the best place to catch it. Each finding asks a
 reviewer to confirm what the condition enables. Not reported, because they are normal: daily schedules (time-of-day
-comparisons), dates up to the year 2000 (the 1970 epoch and S7's `DT#1990-01-01` mean "not set"), comparisons inside
-test assertions, short start-up delays, timers the POU also resets (`tmr(IN := FALSE)`, a periodic cycle) and the
-largest 32-bit TIME (`T#49D17H2M47S295MS`), the usual "no timeout" value.
+comparisons), "before" comparisons (a clock that is not set yet), dates up to the year 2000 (the 1970 epoch and S7's
+`DT#1990-01-01` mean "not set") and from 2100 (range bounds, the end of DT in 2106), comparisons inside test
+assertions, short start-up delays, timers the POU also resets (`tmr(IN := FALSE)`, a periodic cycle) and the 32-bit
+TIME maxima (`T#49D17H2M47S295MS`, `T#24D20H31M23S647MS`, `T#24D`), the usual "no timeout" values.
 
 Clock sources recognised: the IEC `RTC` block, CODESYS `SysTimeRtcGet`, TwinCAT `NT_GetTime`, `FB_LocalSystemTime`,
 `F_GetSystemTime`, Siemens `RD_LOC_T`/`RD_SYS_T`, and Rockwell `GSV(WallClockTime, …)`.

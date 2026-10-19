@@ -165,6 +165,12 @@ public final class HiddenTrigger implements ProjectRule {
         for (Expression[] side : sides) {
             Expression value = side[0];
             Expression constant = side[1];
+            // "on or after": value >= C, value > C, value = C (or C <= value, …); "before" is a validity check
+            boolean constantRight = constant == b.right();
+            boolean onOrAfter = b.op() == BinaryOp.EQ
+                    || (constantRight
+                            ? b.op() == BinaryOp.GE || b.op() == BinaryOp.GT
+                            : b.op() == BinaryOp.LE || b.op() == BinaryOp.LT);
             // only literals can be dates, years or magic values; skip everything else before asking the model
             Expression lit = constant instanceof Expression.Unary u ? u.operand() : constant;
             if (!(lit instanceof Expression.Literal) || value instanceof Expression.Literal) {
@@ -178,7 +184,9 @@ public final class HiddenTrigger implements ProjectRule {
             if (date
                     && constant instanceof Expression.Literal l
                     && !(value instanceof Expression.Literal)
-                    && year(l.text()) > SENTINEL_YEARS) {
+                    && onOrAfter
+                    && year(l.text()) > SENTINEL_YEARS
+                    && year(l.text()) < MAX_YEARS) {
                 ctx.report(
                         p,
                         b.span(),
@@ -194,7 +202,7 @@ public final class HiddenTrigger implements ProjectRule {
             if (k instanceof Constant.Int i) {
                 boolean fromClock =
                         m.symbol(rootName(value)).orElse(null) instanceof VariableSymbol v && clock.contains(v);
-                if (fromClock && i.value() >= 2000 && i.value() <= 2100) {
+                if (fromClock && onOrAfter && i.value() > SENTINEL_YEARS && i.value() < MAX_YEARS) {
                     ctx.report(
                             p,
                             b.span(),
@@ -246,7 +254,10 @@ public final class HiddenTrigger implements ProjectRule {
             }
         }
         // the largest 32-bit TIME (T#49D17H2M47S295MS) is the usual "no timeout" value
-        boolean maxTime = delay != null && Math.abs(delay - MAX_TIME_NANOS) < 1_000_000_000L;
+        boolean maxTime = delay != null
+                && (Math.abs(delay - MAX_TIME_NANOS) < 1_000_000_000L
+                        || Math.abs(delay - MAX_SIGNED_TIME_NANOS) < 1_000_000_000L
+                        || Math.abs(delay - 24 * 86_400_000_000_000L) < 1_000_000_000L);
         if (alwaysOn && delay != null && delay >= minDelay && !maxTime) {
             ctx.report(
                     p,
@@ -258,7 +269,10 @@ public final class HiddenTrigger implements ProjectRule {
         }
     }
 
+    /** The 32-bit TIME maxima (unsigned and signed, about 49.7 and 24.8 days); T#24D is the usual round form. */
     private static final long MAX_TIME_NANOS = 4_294_967_295L * 1_000_000L;
+
+    private static final long MAX_SIGNED_TIME_NANOS = 2_147_483_647L * 1_000_000L;
 
     /** {@code tmr(IN := FALSE)}. */
     private static boolean resetCall(SemanticModel m, Expression.Call c) {
@@ -285,6 +299,9 @@ public final class HiddenTrigger implements ProjectRule {
 
     /** Dates up to this year are "not set" sentinels (1970 epoch, S7's DT#1990-01-01), not triggers. */
     private static final int SENTINEL_YEARS = 2000;
+
+    /** From this year on, dates are "never" sentinels and range bounds (DT ends in 2106). */
+    private static final int MAX_YEARS = 2100;
 
     /** The year of a date literal's text ({@code 2027-01-01-00:00:00}), or 0. */
     static int year(String text) {
