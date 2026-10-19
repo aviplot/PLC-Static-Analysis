@@ -1,0 +1,10 @@
+FUNCTION_BLOCK "FB_Line"
+VERSION : 0.1
+   VAR 
+      Delay : TON_TIME;
+      Start : Bool;
+   END_VAR
+BEGIN
+	#Delay(IN := #Start, PT := T#2S);
+	#Delay(IN := NOT #Start, PT := T#2S); // PLCA-P003
+END_FUNCTION_BLOCK

@@ -1,0 +1,1 @@
+switch.st:8:4-8:15 PLCA-Q009 warning: Condition is always FALSE: the branch below it never runs [P]

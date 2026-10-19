@@ -1,0 +1,4 @@
+timers.L5X:16:51-16:65 PLCA-P003 warning: Timer 'T1' is used by a timer instruction more than once in MainProgram.Main; each call advances its state (CP20), call it once per cycle [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:1}
+    timers.L5X:15:52-15:66 earlier call
+timers.L5X:24:52-24:66 PLCA-P003 warning: Timer 'T1' is used by a timer instruction in both MainProgram.Main and MainProgram.Sub; each call advances its state (CP20), call it once per cycle [MainProgram.Sub] {Program:MainProgram/Routine:Sub/Rung:0}
+    timers.L5X:15:52-15:66 call in MainProgram.Main

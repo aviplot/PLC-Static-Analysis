@@ -1,0 +1,2 @@
+blocks.scl:9:2-9:38 PLCA-P003 warning: '#Delay' is called more than once in FB_Line; each call advances its state (CP20), call it once per cycle [FB_Line]
+    blocks.scl:8:2-8:34 earlier call

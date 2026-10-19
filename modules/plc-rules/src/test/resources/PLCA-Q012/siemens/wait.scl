@@ -1,0 +1,16 @@
+FUNCTION_BLOCK "FB_Wait"
+VERSION : 0.1
+   VAR_INPUT 
+      Ready : Bool;
+   END_VAR
+   VAR 
+      Count : Int;
+   END_VAR
+BEGIN
+	WHILE NOT #Ready DO // PLCA-Q012
+	    #Count := #Count + 1;
+	END_WHILE;
+	WHILE #Count < 10 DO
+	    #Count := #Count + 1;
+	END_WHILE;
+END_FUNCTION_BLOCK

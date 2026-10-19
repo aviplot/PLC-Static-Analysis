@@ -1,0 +1,2 @@
+tasks.L5X:21:48-21:53 PLCA-P004 warning: Global 'Count' is written from task SlowTask (Slow.Main) and from task FastTask (Fast.Main); one task can interrupt the other mid-update (CP10) [Slow.Main] {Program:Slow/Routine:Main/Rung:0}
+    tasks.L5X:12:54-12:59 write in task FastTask

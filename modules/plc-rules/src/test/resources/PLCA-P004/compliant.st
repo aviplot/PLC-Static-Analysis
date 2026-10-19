@@ -1,0 +1,23 @@
+VAR_GLOBAL
+    gnCount : INT;
+END_VAR
+
+PROGRAM P_Fast2
+gnCount := gnCount + 1;
+END_PROGRAM
+
+PROGRAM P_Slow2
+VAR
+    nSeen : INT;
+END_VAR
+nSeen := gnCount;
+END_PROGRAM
+
+CONFIGURATION Cfg2
+    RESOURCE Res2 ON PLC
+        TASK tFast2(INTERVAL := T#2MS, PRIORITY := 1);
+        TASK tSlow2(INTERVAL := T#100MS, PRIORITY := 10);
+        PROGRAM iFast2 WITH tFast2 : P_Fast2;
+        PROGRAM iSlow2 WITH tSlow2 : P_Slow2;
+    END_RESOURCE
+END_CONFIGURATION

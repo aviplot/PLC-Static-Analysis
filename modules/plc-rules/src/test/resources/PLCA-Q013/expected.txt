@@ -1,0 +1,2 @@
+noncompliant.st:14:21-14:28 PLCA-Q013 info: Nesting depth 6 exceeds 5; move inner logic into a method, function or separate statements [FB_Deep]
+noncompliant.st:25:10-25:19 PLCA-Q013 info: Cyclomatic complexity of F_Branchy is 21 (limit 20); split it into smaller POUs or methods [F_Branchy]

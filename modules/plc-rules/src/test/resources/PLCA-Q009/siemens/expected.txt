@@ -1,0 +1,5 @@
+blocks.scl:9:2-9:16 PLCA-Q009 warning: Unreachable code: it follows RETURN in the same statement list [F_Scale]
+    blocks.scl:8:2-8:9 RETURN
+blocks.scl:18:5-18:10 PLCA-Q009 warning: Condition is always FALSE: the branch below it never runs [FB_Seq]
+blocks.scl:23:6-23:17 PLCA-Q009 warning: Unreachable code: it follows a jump to Done in the same statement list [FB_Seq]
+    blocks.scl:22:6-22:16 a jump to Done

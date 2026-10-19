@@ -1,0 +1,1 @@
+wait.scl:10:2-10:18 PLCA-Q012 error: WHILE loop has no evident exit: the body never changes Ready, which the condition reads, and has no EXIT, RETURN or JMP [FB_Wait]

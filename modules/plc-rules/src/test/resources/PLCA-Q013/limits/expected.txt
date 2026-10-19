@@ -1,0 +1,2 @@
+small.st:1:10-1:15 PLCA-Q013 info: Cyclomatic complexity of F_Two is 4 (limit 3); split it into smaller POUs or methods [F_Two]
+small.st:7:9-7:13 PLCA-Q013 info: Nesting depth 3 exceeds 2; move inner logic into a method, function or separate statements [F_Two]

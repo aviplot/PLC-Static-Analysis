@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cell" TargetType="Controller" ContainsContext="false">
+<Controller Use="Target" Name="Cell">
+<Tags>
+<Tag Name="Count" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs>
+<Program Name="Fast" MainRoutineName="Main" Disabled="false">
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[ADD(Count,1,Count);]]></Text></Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+<Program Name="Slow" MainRoutineName="Main" Disabled="false">
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[MOV(0,Count);]]></Text></Rung> <!-- PLCA-P004 -->
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="FastTask" Type="PERIODIC" Rate="10" Priority="5">
+<ScheduledPrograms>
+<ScheduledProgram Name="Fast"/>
+</ScheduledPrograms>
+</Task>
+<Task Name="SlowTask" Type="PERIODIC" Rate="100" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="Slow"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

@@ -1,0 +1,25 @@
+FUNCTION "F_Deep" : Int
+VERSION : 0.1
+   VAR_INPUT 
+      a : Bool;
+      b : Bool;
+      c : Bool;
+      d : Bool;
+      e : Bool;
+      f : Bool;
+   END_VAR
+BEGIN
+	IF #a THEN
+	    IF #b THEN
+	        IF #c THEN
+	            IF #d THEN
+	                IF #e THEN
+	                    IF #f THEN // PLCA-Q013
+	                        #F_Deep := 1;
+	                    END_IF;
+	                END_IF;
+	            END_IF;
+	        END_IF;
+	    END_IF;
+	END_IF;
+END_FUNCTION

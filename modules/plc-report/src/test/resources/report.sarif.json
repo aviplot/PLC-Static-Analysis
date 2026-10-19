@@ -203,6 +203,145 @@
           "properties" : {
             "tags" : [ "security", "credentials", "configuration", "external/cwe/cwe-798" ]
           }
+        }, {
+          "id" : "PLCA-Q009",
+          "name" : "UnreachableCode",
+          "shortDescription" : {
+            "text" : "Unreachable code"
+          },
+          "fullDescription" : {
+            "text" : "Code that can never run: statements after `RETURN`, `EXIT`, `CONTINUE` or `JMP` in the same statement list, an IF, ELSIF or WHILE whose condition is always FALSE, ELSIF/ELSE branches after a condition that is always TRUE, and Rockwell rungs disabled by an `AFI` instruction."
+          },
+          "help" : {
+            "text" : "Code that can never run: statements after `RETURN`, `EXIT`, `CONTINUE` or `JMP` in the same statement list, an IF, ELSIF or WHILE whose condition is always FALSE, ELSIF/ELSE branches after a condition that is always TRUE, and Rockwell rungs disabled by an `AFI` instruction.",
+            "markdown" : "## Description\n\nCode that can never run: statements after `RETURN`, `EXIT`, `CONTINUE` or `JMP` in the same statement list, an IF,\nELSIF or WHILE whose condition is always FALSE, ELSIF/ELSE branches after a condition that is always TRUE, and\nRockwell rungs disabled by an `AFI` instruction.\n\n## Rationale\n\nDead code misleads the reader, who must work out that it never runs, and often hides a mistake: a `RETURN` left over\nfrom debugging, or logic switched off with `IF FALSE THEN` and forgotten. PLCopen Coding Guidelines rule CP2 *All code\nshall be used in the application*.\n\nOnly conditions built from literals are reported by default. A condition on a named constant (`IF cSimulation THEN`)\nis usually a deliberate configuration switch; set `includeNamedConstants` to report those too. A label after a jump\nmakes the following code reachable again. TwinCAT's `RETURN(expression)` is not treated as an unconditional exit. Conditions generated from ladder, FBD and SFC are not checked, but a rung\nwhose main series contains `AFI` is reported: it is switched off for good.\n\n## Noncompliant\n\n```st\nFUNCTION F_Limit : INT\nVAR_INPUT\n    nValue : INT;\nEND_VAR\nF_Limit := nValue;\nRETURN;\nIF nValue > 100 THEN\n    F_Limit := 100;\nEND_IF\nEND_FUNCTION\n```\n\n```st\nPROGRAM P_Test\nVAR\n    bPump : BOOL;\nEND_VAR\nIF FALSE THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nFUNCTION F_Limit : INT\nVAR_INPUT\n    nValue : INT;\nEND_VAR\nF_Limit := nValue;\nIF nValue > 100 THEN\n    F_Limit := 100;\nEND_IF\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "dead-code", "external/cwe/cwe-561" ],
+            "plcopen" : "CP2"
+          }
+        }, {
+          "id" : "PLCA-Q012",
+          "name" : "LoopWithoutEvidentExit",
+          "shortDescription" : {
+            "text" : "Loop without evident exit"
+          },
+          "fullDescription" : {
+            "text" : "A WHILE or REPEAT loop whose condition is constant (`WHILE TRUE`, `UNTIL FALSE`) or reads only variables that the loop body never changes, and whose body has no `EXIT`, `RETURN` or `JMP` out of the loop."
+          },
+          "help" : {
+            "text" : "A WHILE or REPEAT loop whose condition is constant (`WHILE TRUE`, `UNTIL FALSE`) or reads only variables that the loop body never changes, and whose body has no `EXIT`, `RETURN` or `JMP` out of the loop.",
+            "markdown" : "## Description\n\nA WHILE or REPEAT loop whose condition is constant (`WHILE TRUE`, `UNTIL FALSE`) or reads only variables that the loop\nbody never changes, and whose body has no `EXIT`, `RETURN` or `JMP` out of the loop.\n\n## Rationale\n\nA PLC program runs inside a cyclic task: a loop that never ends keeps the cycle from finishing, the watchdog trips and\nthe controller stops, with every output in its fault state. Waiting for an input inside a loop never works either —\ninputs are only read between cycles. Change the condition inside the loop, add an iteration limit, or restructure the\nwait as a step of a state machine that is checked once per cycle.\n\nNot reported when the loop may end in ways the analysis cannot see: the condition calls a function, method or\nproperty or assigns a variable, reads through a pointer, reference or VAR_IN_OUT, or reads a global, an instance member\nor a function block instance while the body calls other code; or a variable it reads has its address taken anywhere in\nthe POU.\n\n## Noncompliant\n\n```st\nFUNCTION_BLOCK FB_Wait\nVAR_INPUT\n    bReady : BOOL;\nEND_VAR\nVAR\n    nTries : INT;\nEND_VAR\nWHILE NOT bReady DO\n    nTries := nTries + 1;\nEND_WHILE\nEND_FUNCTION_BLOCK\n```\n\n## Compliant\n\n```st\nFUNCTION_BLOCK FB_Wait\nVAR_INPUT\n    bReady : BOOL;\nEND_VAR\nVAR\n    nTries : INT;\nEND_VAR\nWHILE NOT bReady AND nTries < 10 DO\n    nTries := nTries + 1;\nEND_WHILE\nEND_FUNCTION_BLOCK\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "error"
+          },
+          "properties" : {
+            "tags" : [ "quality", "reliability", "watchdog", "external/cwe/cwe-835" ]
+          }
+        }, {
+          "id" : "PLCA-Q013",
+          "name" : "ComplexPouBody",
+          "shortDescription" : {
+            "text" : "Complex POU body"
+          },
+          "fullDescription" : {
+            "text" : "A POU body nests IF, CASE, FOR, WHILE or REPEAT statements deeper than `maxNesting`, or its cyclomatic complexity is above `maxComplexity`. Complexity is 1 plus one for every IF/ELSIF condition, CASE branch, FOR, WHILE and REPEAT."
+          },
+          "help" : {
+            "text" : "A POU body nests IF, CASE, FOR, WHILE or REPEAT statements deeper than `maxNesting`, or its cyclomatic complexity is above `maxComplexity`. Complexity is 1 plus one for every IF/ELSIF condition, CASE branch, FOR, WHILE and REPEAT.",
+            "markdown" : "## Description\n\nA POU body nests IF, CASE, FOR, WHILE or REPEAT statements deeper than `maxNesting`, or its cyclomatic complexity is\nabove `maxComplexity`. Complexity is 1 plus one for every IF/ELSIF condition, CASE branch, FOR, WHILE and REPEAT.\n\n## Rationale\n\nDeeply nested and highly branched code is hard to read, review and test, and is where commissioning changes go wrong.\nPLCopen Coding Guidelines rule CP9 *Limit the complexity of POU code*. Split the logic into methods, actions or\nfunctions, or replace nested IFs with a CASE state machine. The limits are parameters; CODESYS and TwinCAT ship their\nown metric checks off by default, and so this rule reports at `info`.\n\nBodies generated from ladder, FBD and SFC are not measured: a ladder routine is a list of rungs, and each rung's\nlowered conditions are not nesting the engineer wrote.\n\n## Noncompliant\n\n```st\nFUNCTION F_Deep : INT\nVAR_INPUT\n    a, b, c, d, e, f : BOOL;\nEND_VAR\nIF a THEN\n    IF b THEN\n        IF c THEN\n            IF d THEN\n                IF e THEN\n                    IF f THEN\n                        F_Deep := 1;\n                    END_IF\n                END_IF\n            END_IF\n        END_IF\n    END_IF\nEND_IF\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nFUNCTION F_Flat : INT\nVAR_INPUT\n    a, b, c, d, e, f : BOOL;\nEND_VAR\nIF a AND b AND c AND d AND e AND f THEN\n    F_Flat := 1;\nEND_IF\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "metrics" ],
+            "plcopen" : "CP9"
+          }
+        }, {
+          "id" : "PLCA-P006",
+          "name" : "JumpInstruction",
+          "shortDescription" : {
+            "text" : "Jump instruction"
+          },
+          "fullDescription" : {
+            "text" : "A jump: ST `JMP`, Siemens SCL `GOTO`, a jump in a PLCopen LD/FBD network, or a Rockwell ladder `JMP`."
+          },
+          "help" : {
+            "text" : "A jump: ST `JMP`, Siemens SCL `GOTO`, a jump in a PLCopen LD/FBD network, or a Rockwell ladder `JMP`.",
+            "markdown" : "## Description\n\nA jump: ST `JMP`, Siemens SCL `GOTO`, a jump in a PLCopen LD/FBD network, or a Rockwell ladder `JMP`.\n\n## Rationale\n\nJumps make the order of execution hard to follow. In ladder they are worse: the rungs a `JMP` skips are not scanned,\nso their outputs keep their last state, which is easy to miss when reading the logic. PLCopen Coding Guidelines rule\nCP19 *Usage of Jump and Return should be avoided*. Use IF, CASE or loops in text languages and explicit conditions in\nladder. One finding per jump; the label is not reported separately.\n\n## Noncompliant\n\n```st\nPROGRAM P_Jump\nVAR\n    nStep : INT;\nEND_VAR\nIF nStep = 0 THEN\n    JMP lEnd;\nEND_IF\nnStep := nStep + 1;\nlEnd:\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Jump\nVAR\n    nStep : INT;\nEND_VAR\nIF nStep <> 0 THEN\n    nStep := nStep + 1;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "plc", "maintainability", "control-flow" ],
+            "plcopen" : "CP19"
+          }
+        }, {
+          "id" : "PLCA-Q008",
+          "name" : "UnusedPou",
+          "shortDescription" : {
+            "text" : "Unused POU"
+          },
+          "fullDescription" : {
+            "text" : "A program, function block, function, class or Rockwell routine that nothing runs: it is not scheduled in a task, not called, not instantiated and not referenced from code that runs."
+          },
+          "help" : {
+            "text" : "A program, function block, function, class or Rockwell routine that nothing runs: it is not scheduled in a task, not called, not instantiated and not referenced from code that runs.",
+            "markdown" : "## Description\n\nA program, function block, function, class or Rockwell routine that nothing runs: it is not scheduled in a task,\nnot called, not instantiated and not referenced from code that runs.\n\n## Rationale\n\nCode that never runs still has to be read, reviewed and maintained, and a routine that was meant to run but is not\ncalled (a missing `JSR`, a program left out of the task) is a bug that testing on site may not reveal. PLCopen Coding\nGuidelines rule CP2 *All code shall be used in the application*.\n\nReachability starts at the entry points: the programs of the configured tasks (or every PROGRAM when the project has no\ntask configuration), Siemens organisation blocks and Rockwell programs. From there it follows calls, `JSR`s, instance\ndeclarations (anywhere, including global variable lists and structures), `EXTENDS`/`IMPLEMENTS` and references to\nPOUs in expressions. Methods, actions and properties are not reported on their own. A dialect whose code in the\nproject has no entry point — a folder of library blocks — is not checked.\n\n## Noncompliant\n\n```st\nPROGRAM P_Main\nVAR\n    nCount : INT;\nEND_VAR\nnCount := F_Used(nCount);\nEND_PROGRAM\n\nFUNCTION F_Used : INT\nVAR_INPUT\n    n : INT;\nEND_VAR\nF_Used := n + 1;\nEND_FUNCTION\n\nFUNCTION F_Forgotten : INT\nVAR_INPUT\n    n : INT;\nEND_VAR\nF_Forgotten := n - 1;\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nPROGRAM P_Main\nVAR\n    nCount : INT;\nEND_VAR\nnCount := F_Used(nCount);\nEND_PROGRAM\n\nFUNCTION F_Used : INT\nVAR_INPUT\n    n : INT;\nEND_VAR\nF_Used := n + 1;\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "dead-code", "external/cwe/cwe-561" ],
+            "plcopen" : "CP2"
+          }
+        }, {
+          "id" : "PLCA-P003",
+          "name" : "FunctionBlockInstanceCalledMoreThanOncePerCycle",
+          "shortDescription" : {
+            "text" : "Function block instance called more than once per cycle"
+          },
+          "fullDescription" : {
+            "text" : "The same function block instance — a timer, counter, edge detector or user FB — is called more than once in a cycle: twice in one body (not as alternatives in different IF/CASE branches), or from two programs, function blocks or routines when the instance is global. Rockwell: the same TIMER in two TON/TOF/RTO instructions, or the same COUNTER in two CTU (or two CTD) instructions."
+          },
+          "help" : {
+            "text" : "The same function block instance — a timer, counter, edge detector or user FB — is called more than once in a cycle: twice in one body (not as alternatives in different IF/CASE branches), or from two programs, function blocks or routines when the instance is global. Rockwell: the same TIMER in two TON/TOF/RTO instructions, or the same COUNTER in two CTU (or two CTD) instructions.",
+            "markdown" : "## Description\n\nThe same function block instance — a timer, counter, edge detector or user FB — is called more than once in a cycle:\ntwice in one body (not as alternatives in different IF/CASE branches), or from two programs, function blocks or\nroutines when the instance is global. Rockwell: the same TIMER in two TON/TOF/RTO instructions, or the same COUNTER in\ntwo CTU (or two CTD) instructions.\n\n## Rationale\n\nA function block keeps state between calls and expects to be called once per cycle. A second call works on what the\nfirst left behind: a timer called with two different IN values restarts or never elapses, an R_TRIG sees no edge, a\ncounter counts twice. In ladder the second timer instruction runs even when its rung is false, and resets the timer.\nPLCopen Coding Guidelines rule CP20 *Function block instances should be called only once*. Call the instance once and\nuse its outputs where needed.\n\nNot compared: calls inside loops, calls through a variable array index (`afbAxis[i]()`), and calls in SFC actions,\nwhere the active step decides what runs. CTU and CTD on the same Rockwell counter form an up/down counter and are not\nreported.\n\n## Noncompliant\n\n```st\nPROGRAM P_Conveyor\nVAR\n    fbDelay : TON;\n    bStart, bStop, bRun : BOOL;\nEND_VAR\nfbDelay(IN := bStart, PT := T#2S);\nIF fbDelay.Q THEN\n    bRun := TRUE;\nEND_IF\nfbDelay(IN := bStop, PT := T#5S);\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Conveyor\nVAR\n    fbStartDelay : TON;\n    fbStopDelay : TON;\n    bStart, bStop, bRun : BOOL;\nEND_VAR\nfbStartDelay(IN := bStart, PT := T#2S);\nfbStopDelay(IN := bStop, PT := T#5S);\nIF fbStartDelay.Q THEN\n    bRun := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "plc", "reliability", "timers" ],
+            "plcopen" : "CP20"
+          }
+        }, {
+          "id" : "PLCA-P004",
+          "name" : "GlobalVariableWrittenFromSeveralTasks",
+          "shortDescription" : {
+            "text" : "Global variable written from several tasks"
+          },
+          "fullDescription" : {
+            "text" : "A global variable is written by code running in more than one task, according to the project's task configuration (IEC configurations, TwinCAT task objects, PLCopen instances, Rockwell tasks)."
+          },
+          "help" : {
+            "text" : "A global variable is written by code running in more than one task, according to the project's task configuration (IEC configurations, TwinCAT task objects, PLCopen instances, Rockwell tasks).",
+            "markdown" : "## Description\n\nA global variable is written by code running in more than one task, according to the project's task configuration\n(IEC configurations, TwinCAT task objects, PLCopen instances, Rockwell tasks).\n\n## Rationale\n\nTasks of different priority interrupt each other. If two tasks write the same global, one task can preempt the other\nbetween reading and writing it, and an update is lost; a structure or string can be seen half written. PLCopen Coding\nGuidelines rule CP10 *Avoid multiple writes from multiple tasks*. Let one task own the variable and hand data over\nthrough separate variables, or use the runtime's synchronisation (CODESYS `SysSem`, TwinCAT `TestAndSet`).\n\nThe rule needs a task configuration with at least two tasks; without one it is silent. A POU runs in every task whose\nprograms call it, directly or indirectly. One finding per variable.\n\n## Noncompliant\n\n```st\nVAR_GLOBAL\n    gnParts : INT;\nEND_VAR\n\nPROGRAM P_Fast\ngnParts := gnParts + 1;\nEND_PROGRAM\n\nPROGRAM P_Slow\ngnParts := 0;\nEND_PROGRAM\n\nCONFIGURATION Cfg\n    RESOURCE Res ON PLC\n        TASK tFast(INTERVAL := T#2MS, PRIORITY := 1);\n        TASK tSlow(INTERVAL := T#100MS, PRIORITY := 10);\n        PROGRAM iFast WITH tFast : P_Fast;\n        PROGRAM iSlow WITH tSlow : P_Slow;\n    END_RESOURCE\nEND_CONFIGURATION\n```\n\n## Compliant\n\n```st\nVAR_GLOBAL\n    gnParts : INT;\n    gbResetParts : BOOL;\nEND_VAR\n\nPROGRAM P_Fast\nIF gbResetParts THEN\n    gnParts := 0;\nELSE\n    gnParts := gnParts + 1;\nEND_IF\nEND_PROGRAM\n\nPROGRAM P_Slow\ngbResetParts := TRUE;\nEND_PROGRAM\n\nCONFIGURATION Cfg\n    RESOURCE Res ON PLC\n        TASK tFast(INTERVAL := T#2MS, PRIORITY := 1);\n        TASK tSlow(INTERVAL := T#100MS, PRIORITY := 10);\n        PROGRAM iFast WITH tFast : P_Fast;\n        PROGRAM iSlow WITH tSlow : P_Slow;\n    END_RESOURCE\nEND_CONFIGURATION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "plc", "reliability", "concurrency", "external/cwe/cwe-362" ],
+            "plcopen" : "CP10"
+          }
         } ]
       }
     },
@@ -497,6 +636,34 @@
       } ],
       "partialFingerprints" : {
         "plcaFingerprint/v1" : "ca7fe972b9b614d523b7a0a29f6960c0"
+      }
+    }, {
+      "ruleId" : "PLCA-Q008",
+      "ruleIndex" : 14,
+      "level" : "warning",
+      "message" : {
+        "text" : "FUNCTION F_Broken is never called"
+      },
+      "locations" : [ {
+        "physicalLocation" : {
+          "artifactLocation" : {
+            "uri" : "with%20space.st",
+            "uriBaseId" : "SRCROOT"
+          },
+          "region" : {
+            "startLine" : 1,
+            "startColumn" : 10,
+            "endLine" : 1,
+            "endColumn" : 18
+          }
+        },
+        "logicalLocations" : [ {
+          "fullyQualifiedName" : "F_Broken",
+          "kind" : "function"
+        } ]
+      } ],
+      "partialFingerprints" : {
+        "plcaFingerprint/v1" : "df13267bf55b304ea570a593fe4cfd5f"
       }
     } ]
   } ]

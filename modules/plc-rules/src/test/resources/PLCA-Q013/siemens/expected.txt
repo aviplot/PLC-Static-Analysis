@@ -1,0 +1,1 @@
+deep.scl:17:22-17:27 PLCA-Q013 info: Nesting depth 6 exceeds 5; move inner logic into a method, function or separate statements [F_Deep]

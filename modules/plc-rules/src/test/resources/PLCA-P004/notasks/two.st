@@ -1,0 +1,11 @@
+VAR_GLOBAL
+    gnParts : INT;
+END_VAR
+
+PROGRAM P_A
+gnParts := 1;
+END_PROGRAM
+
+PROGRAM P_B
+gnParts := 2;
+END_PROGRAM

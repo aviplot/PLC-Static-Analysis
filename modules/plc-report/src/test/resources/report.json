@@ -78,6 +78,58 @@
     "category" : "security",
     "cwe" : "CWE-798",
     "tags" : [ "security", "credentials", "configuration" ]
+  }, {
+    "id" : "PLCA-Q009",
+    "title" : "Unreachable code",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP2",
+    "cwe" : "CWE-561",
+    "tags" : [ "maintainability", "dead-code" ]
+  }, {
+    "id" : "PLCA-Q012",
+    "title" : "Loop without evident exit",
+    "severity" : "error",
+    "category" : "quality",
+    "cwe" : "CWE-835",
+    "tags" : [ "reliability", "watchdog" ]
+  }, {
+    "id" : "PLCA-Q013",
+    "title" : "Complex POU body",
+    "severity" : "info",
+    "category" : "quality",
+    "plcopen" : "CP9",
+    "tags" : [ "maintainability", "metrics" ]
+  }, {
+    "id" : "PLCA-P006",
+    "title" : "Jump instruction",
+    "severity" : "info",
+    "category" : "plc",
+    "plcopen" : "CP19",
+    "tags" : [ "maintainability", "control-flow" ]
+  }, {
+    "id" : "PLCA-Q008",
+    "title" : "Unused POU",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP2",
+    "cwe" : "CWE-561",
+    "tags" : [ "maintainability", "dead-code" ]
+  }, {
+    "id" : "PLCA-P003",
+    "title" : "Function block instance called more than once per cycle",
+    "severity" : "warning",
+    "category" : "plc",
+    "plcopen" : "CP20",
+    "tags" : [ "reliability", "timers" ]
+  }, {
+    "id" : "PLCA-P004",
+    "title" : "Global variable written from several tasks",
+    "severity" : "warning",
+    "category" : "plc",
+    "plcopen" : "CP10",
+    "cwe" : "CWE-362",
+    "tags" : [ "reliability", "concurrency" ]
   } ],
   "findings" : [ {
     "ruleId" : "PLCA-P001",
@@ -209,6 +261,20 @@
     },
     "related" : [ ],
     "fingerprint" : "ca7fe972b9b614d523b7a0a29f6960c0"
+  }, {
+    "ruleId" : "PLCA-Q008",
+    "severity" : "warning",
+    "message" : "FUNCTION F_Broken is never called",
+    "pou" : "F_Broken",
+    "location" : {
+      "path" : "with space.st",
+      "startLine" : 1,
+      "startColumn" : 10,
+      "endLine" : 1,
+      "endColumn" : 18
+    },
+    "related" : [ ],
+    "fingerprint" : "df13267bf55b304ea570a593fe4cfd5f"
   } ],
   "suppressed" : [ ],
   "diagnostics" : [ {
@@ -227,7 +293,7 @@
     "files" : 3,
     "lines" : 37,
     "pous" : 3,
-    "findings" : 8,
+    "findings" : 9,
     "suppressed" : {
       "inline" : 0,
       "config" : 0,
@@ -235,7 +301,7 @@
     },
     "findingsBySeverity" : {
       "error" : 0,
-      "warning" : 7,
+      "warning" : 8,
       "info" : 1,
       "hint" : 0
     },

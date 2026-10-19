@@ -1,0 +1,1 @@
+blocks.scl:13:10-13:21 PLCA-Q008 warning: FUNCTION FC_Unused is never called [FC_Unused]

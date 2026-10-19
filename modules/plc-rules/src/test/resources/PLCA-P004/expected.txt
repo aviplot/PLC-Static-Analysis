@@ -1,0 +1,3 @@
+noncompliant.st:14:1-14:8 PLCA-P004 warning: Global 'gnParts' is written from task tSlow (P_Slow) and from task tFast (P_Fast); one task can interrupt the other mid-update (CP10) [P_Slow]
+    noncompliant.st:8:1-8:8 write in task tFast
+noncompliant.st:19:1-19:9 PLCA-P004 warning: Global 'gnShared' is written from task tSlow (F_Log) and from task tFast (F_Log); one task can interrupt the other mid-update (CP10) [F_Log]

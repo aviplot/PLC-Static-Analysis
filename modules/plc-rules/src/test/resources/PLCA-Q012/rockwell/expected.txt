@@ -1,0 +1,1 @@
+wait.L5X:13:27-13:42 PLCA-Q012 error: WHILE loop has no evident exit: the body never changes Ready, which the condition reads, and has no EXIT, RETURN or JMP [MainProgram.Main] {Program:MainProgram/Routine:Main/Line:1}

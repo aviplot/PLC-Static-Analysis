@@ -1,0 +1,1 @@
+cell.L5X:23:42-23:67 PLCA-Q009 warning: Rung 2 is disabled by AFI (always false): it never runs [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:2}

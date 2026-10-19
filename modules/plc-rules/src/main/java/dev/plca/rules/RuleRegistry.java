@@ -1,13 +1,20 @@
 package dev.plca.rules;
 
+import dev.plca.rules.plc.CrossTaskWrite;
 import dev.plca.rules.plc.DirectAddressing;
 import dev.plca.rules.plc.DoubleCoil;
+import dev.plca.rules.plc.JumpUsage;
+import dev.plca.rules.plc.MultipleInstanceCalls;
 import dev.plca.rules.quality.CaseWithoutElse;
+import dev.plca.rules.quality.Complexity;
 import dev.plca.rules.quality.DivisionByZero;
 import dev.plca.rules.quality.FloatEquality;
 import dev.plca.rules.quality.ForVariableModified;
 import dev.plca.rules.quality.InputWrite;
+import dev.plca.rules.quality.LoopWithoutExit;
 import dev.plca.rules.quality.Recursion;
+import dev.plca.rules.quality.UnreachableCode;
+import dev.plca.rules.quality.UnusedPou;
 import dev.plca.rules.quality.UnusedVariable;
 import dev.plca.rules.security.HardCodedSecret;
 import java.util.ArrayList;
@@ -48,7 +55,14 @@ public final class RuleRegistry {
                 new Recursion(),
                 new DoubleCoil(),
                 new DirectAddressing(),
-                new HardCodedSecret()));
+                new HardCodedSecret(),
+                new UnreachableCode(),
+                new LoopWithoutExit(),
+                new Complexity(),
+                new JumpUsage(),
+                new UnusedPou(),
+                new MultipleInstanceCalls(),
+                new CrossTaskWrite()));
     }
 
     public List<RuleDescriptor> descriptors() {

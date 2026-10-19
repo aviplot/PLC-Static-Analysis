@@ -1,0 +1,11 @@
+VAR_GLOBAL
+    gfbPulse : TP;
+END_VAR
+
+PROGRAM P_A
+gfbPulse(IN := TRUE, PT := T#1S);
+END_PROGRAM
+
+PROGRAM P_B
+gfbPulse(IN := FALSE, PT := T#1S); // PLCA-P003
+END_PROGRAM

@@ -1,0 +1,13 @@
+FUNCTION F_Scale : REAL
+VAR_INPUT
+    r : REAL;
+END_VAR
+F_Scale := r * 2.0;
+END_FUNCTION
+
+FUNCTION_BLOCK FB_Filter
+VAR
+    r : REAL;
+END_VAR
+r := r * 0.5;
+END_FUNCTION_BLOCK

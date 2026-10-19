@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cell" TargetType="Controller" ContainsContext="false">
+<Controller Use="Target" Name="Cell">
+<Tags>
+<Tag Name="Start" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Stop" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="T1" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="C1" TagType="Base" DataType="COUNTER" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs>
+<Program Name="MainProgram" MainRoutineName="Main" Disabled="false">
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIC(Start)TON(T1,5000,0);]]></Text></Rung>
+<Rung Number="1" Type="N"><Text><![CDATA[XIC(Stop)TON(T1,2000,0);]]></Text></Rung> <!-- PLCA-P003 -->
+<Rung Number="2" Type="N"><Text><![CDATA[XIC(Start)CTU(C1,10,0);]]></Text></Rung>
+<Rung Number="3" Type="N"><Text><![CDATA[XIC(Stop)CTD(C1,10,0);]]></Text></Rung>
+<Rung Number="4" Type="N"><Text><![CDATA[JSR(Sub,0);]]></Text></Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Sub" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIO(Start)RTO(T1,1000,0);]]></Text></Rung> <!-- PLCA-P003 -->
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="MainProgram"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

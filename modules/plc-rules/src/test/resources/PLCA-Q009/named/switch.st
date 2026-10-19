@@ -1,0 +1,11 @@
+PROGRAM P
+VAR
+    bDone : BOOL;
+END_VAR
+VAR CONSTANT
+    cSimulation : BOOL := FALSE;
+END_VAR
+IF cSimulation THEN // PLCA-Q009
+    bDone := TRUE;
+END_IF
+END_PROGRAM

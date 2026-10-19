@@ -52,7 +52,7 @@ final class RuleCorpusStats {
 
     /** Runs all rules single-threaded (projects already run in parallel) and samples findings. */
     static Outcome run(String repo, String key, String group, SemanticModel model, SourceRegistry sources) {
-        RuleEngine.Result r = ENGINE.run(model, sources, RuleConfig.defaults(), 1);
+        RuleEngine.Result r = ENGINE.run(model, sources, RuleConfig.only("all"), 1);
         Map<String, Integer> counts = new LinkedHashMap<>();
         Map<String, List<Finding>> byRule = new LinkedHashMap<>();
         for (Finding f : r.findings()) {

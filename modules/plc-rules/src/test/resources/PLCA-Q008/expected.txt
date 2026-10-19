@@ -1,0 +1,2 @@
+noncompliant.st:41:10-41:21 PLCA-Q008 warning: FUNCTION F_Forgotten is never called [F_Forgotten]
+noncompliant.st:48:16-48:22 PLCA-Q008 warning: FUNCTION_BLOCK FB_Old is never instantiated or called [FB_Old]

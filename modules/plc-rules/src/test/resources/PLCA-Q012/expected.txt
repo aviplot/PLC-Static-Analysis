@@ -1,0 +1,4 @@
+noncompliant.st:9:1-9:17 PLCA-Q012 error: WHILE loop has no evident exit: the body never changes bReady, which the condition reads, and has no EXIT, RETURN or JMP [FB_Wait]
+noncompliant.st:12:1-12:11 PLCA-Q012 error: WHILE loop never ends: its condition is always TRUE and the body has no EXIT, RETURN or JMP [FB_Wait]
+noncompliant.st:18:1-18:7 PLCA-Q012 error: REPEAT loop never ends: its condition is always FALSE and the body has no EXIT, RETURN or JMP [FB_Wait]
+noncompliant.st:22:1-22:7 PLCA-Q012 error: REPEAT loop has no evident exit: the body never changes i, which the condition reads, and has no EXIT, RETURN or JMP [FB_Wait]

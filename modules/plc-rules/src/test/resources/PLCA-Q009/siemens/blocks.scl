@@ -1,0 +1,27 @@
+FUNCTION "F_Scale" : Int
+VERSION : 0.1
+   VAR_INPUT 
+      Raw : Int;
+   END_VAR
+BEGIN
+	#F_Scale := #Raw;
+	RETURN;
+	#F_Scale := 0; // PLCA-Q009
+END_FUNCTION
+
+FUNCTION_BLOCK "FB_Seq"
+VERSION : 0.1
+   VAR 
+      Step : Int;
+   END_VAR
+BEGIN
+	IF FALSE THEN // PLCA-Q009
+	    #Step := 1;
+	END_IF;
+	REGION Jump
+	    GOTO Done;
+	    #Step := 2; // PLCA-Q009
+	    Done:
+	    #Step := 3;
+	END_REGION
+END_FUNCTION_BLOCK

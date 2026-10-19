@@ -1,0 +1,10 @@
+noncompliant.st:12:5-12:37 PLCA-P003 warning: 'fbDelay' is called more than once in P_Conveyor; each call advances its state (CP20), call it once per cycle [P_Conveyor]
+    noncompliant.st:10:1-10:34 earlier call
+noncompliant.st:15:1-15:21 PLCA-P003 warning: 'fbEdge' is called more than once in P_Conveyor; each call advances its state (CP20), call it once per cycle [P_Conveyor]
+    noncompliant.st:14:1-14:22 earlier call
+noncompliant.st:17:1-17:13 PLCA-P003 warning: 'afbAxis[1]' is called more than once in P_Conveyor; each call advances its state (CP20), call it once per cycle [P_Conveyor]
+    noncompliant.st:16:1-16:13 earlier call
+noncompliant.st:28:8-28:27 PLCA-P003 warning: 'fbEdge' is called more than once in P_Conveyor; each call advances its state (CP20), call it once per cycle [P_Conveyor]
+    noncompliant.st:14:1-14:22 earlier call
+noncompliant.st:29:8-29:17 PLCA-P003 warning: 'fbMotor' is called more than once in P_Conveyor; each call advances its state (CP20), call it once per cycle [P_Conveyor]
+    noncompliant.st:21:5-21:14 earlier call

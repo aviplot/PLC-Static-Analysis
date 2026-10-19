@@ -1,0 +1,53 @@
+PROGRAM P_Main
+VAR
+    fbMotor : FB_Motor;
+    nCount : INT;
+END_VAR
+fbMotor();
+nCount := F_Used(nCount);
+END_PROGRAM
+
+FUNCTION_BLOCK FB_Motor EXTENDS FB_Base
+VAR
+    bRun : BOOL;
+END_VAR
+bRun := NOT bRun;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK FB_Base
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK FB_InGvl
+END_FUNCTION_BLOCK
+
+VAR_GLOBAL
+    gfbSpare : FB_InGvl;
+END_VAR
+
+FUNCTION F_Used : INT
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Used := F_Helper(n);
+END_FUNCTION
+
+FUNCTION F_Helper : INT
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Helper := n + 1;
+END_FUNCTION
+
+FUNCTION F_Forgotten : INT // PLCA-Q008
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Forgotten := F_Helper(n);
+END_FUNCTION
+
+FUNCTION_BLOCK FB_Old // PLCA-Q008
+VAR
+    n : INT;
+END_VAR
+n := 1;
+END_FUNCTION_BLOCK
