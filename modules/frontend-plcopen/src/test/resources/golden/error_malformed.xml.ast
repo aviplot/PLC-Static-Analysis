@@ -1,0 +1,12 @@
+SourceUnit dialect=PLCOPEN
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @5:5-5:37
+    body:
+      Assignment op=ASSIGN @5:120-5:130
+        target:
+          NameRef name=x globalScope=false @5:120-5:121
+        value:
+          NameRef name=xxe globalScope=false @5:126-5:129
+  comments: 0
+diagnostics:
+  ERROR PLC-SYN-001 @5:125 unexpected '&'
+  ERROR PLC-XML-001 @6:120 malformed XML: Undeclared general entity "xxe"; the rest of the file is not analysed

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE project [ <!ENTITY xxe SYSTEM "file:///etc/hostname"> ]>
+<project xmlns="http://www.plcopen.org/xml/tc6_0201">
+  <types><pous>
+    <pou name="P" pouType="program"><interface/><body><ST><xhtml:p xmlns:xhtml="http://www.w3.org/1999/xhtml"><![CDATA[x := &xxe;]]></xhtml:p></ST></body></pou>
+    <pou name="Q" pouType="program"><interface/><body><ST><xhtml:p xmlns:xhtml="http://www.w3.org/1999/xhtml">y := &xxe;</xhtml:p></ST></body></pou>

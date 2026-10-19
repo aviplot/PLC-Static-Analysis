@@ -24,6 +24,7 @@ final class StParserDriver {
         COMPILATION_UNIT,
         DECLARATION_PART,
         STATEMENTS,
+        EXPRESSION,
         /** COMPILATION_UNIT if the text starts with a library element keyword, else STATEMENTS. */
         AUTO
     }
@@ -99,6 +100,7 @@ final class StParserDriver {
         Function<CodesysStParser, ParserRuleContext> rule = switch (entry) {
             case COMPILATION_UNIT -> CodesysStParser::compilationUnit;
             case DECLARATION_PART -> CodesysStParser::declarationPart;
+            case EXPRESSION -> CodesysStParser::expressionOnly;
             case STATEMENTS, AUTO -> CodesysStParser::statementsOnly;
         };
         return parser.parse(text, tokens, rule, sink);

@@ -38,6 +38,47 @@ public final class XmlInput {
         return f;
     }
 
+    /**
+     * The range {@code [start, end)} of the raw value of attribute {@code name} in the start tag at {@code lt} (between
+     * the quotes), or null when the tag has no such attribute.
+     */
+    public static int[] attributeRange(String xml, int lt, String name) {
+        int end = endOfStartTag(xml, lt);
+        int i = lt + 1;
+        while (i < end) {
+            char c = xml.charAt(i);
+            if (c == '"' || c == '\'') {
+                int close = xml.indexOf(c, i + 1);
+                if (close < 0 || close >= end) {
+                    return null;
+                }
+                i = close + 1;
+                continue;
+            }
+            if (Character.isWhitespace(xml.charAt(i - 1)) && xml.startsWith(name, i)) {
+                int j = i + name.length();
+                while (j < end && Character.isWhitespace(xml.charAt(j))) {
+                    j++;
+                }
+                if (j < end && xml.charAt(j) == '=') {
+                    j++;
+                    while (j < end && Character.isWhitespace(xml.charAt(j))) {
+                        j++;
+                    }
+                    if (j < end && (xml.charAt(j) == '"' || xml.charAt(j) == '\'')) {
+                        int close = xml.indexOf(xml.charAt(j), j + 1);
+                        if (close > j && close < end) {
+                            return new int[] {j + 1, close};
+                        }
+                    }
+                    return null;
+                }
+            }
+            i++;
+        }
+        return null;
+    }
+
     /** Offset just after the {@code >} of the start tag beginning at {@code lt}, skipping quoted attribute values. */
     public static int endOfStartTag(String xml, int lt) {
         char quote = 0;

@@ -1,0 +1,160 @@
+<?xml version='1.0' encoding='utf-8'?>
+<project xmlns:ns1="http://www.plcopen.org/xml/tc6_0201" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.plcopen.org/xml/tc6_0201">
+  <fileHeader companyName="Beremiz" productName="Mixer" productVersion="1" creationDateTime="2026-10-19T10:00:00"/>
+  <contentHeader name="Mixer" modificationDateTime="2026-10-19T10:00:00">
+    <coordinateInfo><fbd><scaling x="0" y="0"/></fbd><ld><scaling x="0" y="0"/></ld><sfc><scaling x="0" y="0"/></sfc></coordinateInfo>
+  </contentHeader>
+  <types>
+    <dataTypes>
+      <dataType name="E_Mode">
+        <baseType><enum><values><value name="Idle"/><value name="Fill" value="10"/><value name="Mix"/></values></enum></baseType>
+      </dataType>
+      <dataType name="ST_Tank">
+        <baseType>
+          <struct>
+            <variable name="Level"><type><REAL/></type></variable>
+            <variable name="Name"><type><string length="20"/></type><initialValue><simpleValue value="'Tank A'"/></initialValue></variable>
+            <variable name="History"><type><array><dimension lower="0" upper="9"/><baseType><INT/></baseType></array></type></variable>
+          </struct>
+        </baseType>
+      </dataType>
+      <dataType name="T_Percent">
+        <baseType><subrangeSigned><range lower="0" upper="100"/><baseType><INT/></baseType></subrangeSigned></baseType>
+      </dataType>
+    </dataTypes>
+    <pous>
+      <pou name="Scale" pouType="function">
+        <interface>
+          <returnType><REAL/></returnType>
+          <inputVars><variable name="Raw"><type><INT/></type></variable></inputVars>
+        </interface>
+        <body><ST><xhtml:p><![CDATA[Scale := INT_TO_REAL(Raw) / 27.648;]]></xhtml:p></ST></body>
+      </pou>
+      <pou name="Counter" pouType="functionBlock">
+        <interface>
+          <inputVars><variable name="Reset"><type><BOOL/></type></variable></inputVars>
+          <outputVars><variable name="OUT"><type><INT/></type></variable></outputVars>
+          <localVars><variable name="Cnt"><type><INT/></type></variable></localVars>
+        </interface>
+        <body>
+          <FBD>
+            <block localId="4" typeName="ADD" executionOrderId="0" height="80" width="67">
+              <position x="180" y="87"/>
+              <inputVariables>
+                <variable formalParameter="IN1"><connectionPointIn><connection refLocalId="6"/></connectionPointIn></variable>
+                <variable formalParameter="IN2"><connectionPointIn><connection refLocalId="3"/></connectionPointIn></variable>
+              </inputVariables>
+              <inOutVariables/>
+              <outputVariables><variable formalParameter="OUT"><connectionPointOut/></variable></outputVariables>
+            </block>
+            <inVariable localId="6" height="30" width="21"><position x="106" y="107"/><connectionPointOut/><expression>1</expression></inVariable>
+            <block localId="7" typeName="SEL" height="90" width="65">
+              <position x="290" y="87"/>
+              <inputVariables>
+                <variable formalParameter="G"><connectionPointIn><connection refLocalId="8"/></connectionPointIn></variable>
+                <variable formalParameter="IN0"><connectionPointIn><connection refLocalId="4" formalParameter="OUT"/></connectionPointIn></variable>
+                <variable formalParameter="IN1"><connectionPointIn><connection refLocalId="9"/></connectionPointIn></variable>
+              </inputVariables>
+              <inOutVariables/>
+              <outputVariables><variable formalParameter="OUT"><connectionPointOut/></variable></outputVariables>
+            </block>
+            <inVariable localId="8" height="30" width="50"><position x="200" y="200"/><connectionPointOut/><expression>Reset</expression></inVariable>
+            <inVariable localId="9" height="30" width="50"><position x="200" y="240"/><connectionPointOut/><expression>0</expression></inVariable>
+            <inOutVariable localId="3" height="30" width="34" negatedOut="false" negatedIn="false">
+              <position x="409" y="87"/>
+              <connectionPointIn><connection refLocalId="7" formalParameter="OUT"/></connectionPointIn>
+              <connectionPointOut/>
+              <expression>Cnt</expression>
+            </inOutVariable>
+            <outVariable localId="2" height="30" width="34" negated="false">
+              <position x="527" y="87"/>
+              <connectionPointIn><connection refLocalId="3"/></connectionPointIn>
+              <expression>OUT</expression>
+            </outVariable>
+          </FBD>
+        </body>
+      </pou>
+      <pou name="Main" pouType="program">
+        <interface>
+          <inputVars>
+            <variable name="Start"><type><BOOL/></type></variable>
+            <variable name="Stop"><type><BOOL/></type></variable>
+            <variable name="Level"><type><INT/></type></variable>
+          </inputVars>
+          <outputVars>
+            <variable name="Motor"><type><BOOL/></type></variable>
+            <variable name="Alarm"><type><BOOL/></type></variable>
+          </outputVars>
+          <localVars>
+            <variable name="Delay"><type><derived name="TON"/></type></variable>
+            <variable name="Cycles"><type><derived name="Counter"/></type></variable>
+            <variable name="Mode"><type><derived name="E_Mode"/></type><initialValue><simpleValue value="E_Mode.Idle"/></initialValue></variable>
+          </localVars>
+        </interface>
+        <body>
+          <LD>
+            <leftPowerRail localId="1" height="200" width="10"><position x="20" y="20"/><connectionPointOut formalParameter=""/></leftPowerRail>
+            <contact localId="2" negated="false" edge="none" height="15" width="21"><position x="60" y="40"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Start</variable></contact>
+            <contact localId="3" negated="false" edge="none" height="15" width="21"><position x="60" y="80"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Motor</variable></contact>
+            <contact localId="4" negated="true" edge="none" height="15" width="21"><position x="120" y="40"/><connectionPointIn><connection refLocalId="2"/><connection refLocalId="3"/></connectionPointIn><connectionPointOut/><variable>Stop</variable></contact>
+            <coil localId="5" negated="false" storage="none" height="15" width="21"><position x="200" y="40"/><connectionPointIn><connection refLocalId="4"/></connectionPointIn><connectionPointOut/><variable>Motor</variable></coil>
+            <block localId="6" typeName="TON" instanceName="Delay" height="60" width="50">
+              <position x="120" y="140"/>
+              <inputVariables>
+                <variable formalParameter="IN"><connectionPointIn><connection refLocalId="7"/></connectionPointIn></variable>
+                <variable formalParameter="PT"><connectionPointIn><connection refLocalId="8"/></connectionPointIn></variable>
+              </inputVariables>
+              <inOutVariables/>
+              <outputVariables><variable formalParameter="Q"><connectionPointOut/></variable><variable formalParameter="ET"><connectionPointOut/></variable></outputVariables>
+            </block>
+            <contact localId="7" negated="false" edge="rising" height="15" width="21"><position x="60" y="150"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Motor</variable></contact>
+            <inVariable localId="8" height="30" width="50"><position x="60" y="180"/><connectionPointOut/><expression>T#5s</expression></inVariable>
+            <coil localId="9" negated="false" storage="set" height="15" width="21"><position x="200" y="150"/><connectionPointIn><connection refLocalId="6" formalParameter="Q"/></connectionPointIn><connectionPointOut/><variable>Alarm</variable></coil>
+            <rightPowerRail localId="10" height="200" width="10"><position x="260" y="20"/><connectionPointIn><connection refLocalId="5"/></connectionPointIn><connectionPointIn><connection refLocalId="9"/></connectionPointIn></rightPowerRail>
+          </LD>
+        </body>
+      </pou>
+      <pou name="Sequence" pouType="program">
+        <interface>
+          <inputVars><variable name="Go"><type><BOOL/></type></variable><variable name="Done"><type><BOOL/></type></variable></inputVars>
+          <outputVars><variable name="Valve"><type><BOOL/></type></variable><variable name="Pump"><type><BOOL/></type></variable></outputVars>
+        </interface>
+        <actions>
+          <action name="OpenValve"><body><ST><xhtml:p><![CDATA[Valve := TRUE;]]></xhtml:p></ST></body></action>
+        </actions>
+        <transitions>
+          <transition name="Finished"><body><ST><xhtml:p><![CDATA[Finished := Done;]]></xhtml:p></ST></body></transition>
+        </transitions>
+        <body>
+          <SFC>
+            <step localId="1" name="Init" initialStep="true"><position x="100" y="20"/><connectionPointOut formalParameter=""/></step>
+            <transition localId="2"><position x="100" y="60"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/>
+              <condition><inline name=""><ST><xhtml:p><![CDATA[Go AND NOT Done]]></xhtml:p></ST></inline></condition></transition>
+            <step localId="3" name="Filling"><position x="100" y="100"/><connectionPointIn><connection refLocalId="2"/></connectionPointIn><connectionPointOut formalParameter=""/></step>
+            <actionBlock localId="4"><position x="200" y="100"/><connectionPointIn><connection refLocalId="3"/></connectionPointIn>
+              <action localId="0" qualifier="N"><reference name="OpenValve"/></action>
+              <action localId="0" qualifier="S"><inline><ST><xhtml:p><![CDATA[Pump := TRUE;]]></xhtml:p></ST></inline></action>
+            </actionBlock>
+            <selectionDivergence localId="5"><position x="100" y="140"/><connectionPointIn><connection refLocalId="3"/></connectionPointIn><connectionPointOut formalParameter=""/><connectionPointOut formalParameter=""/></selectionDivergence>
+            <transition localId="6"><position x="80" y="160"/><connectionPointIn><connection refLocalId="5"/></connectionPointIn><connectionPointOut/><condition><reference name="Finished"/></condition></transition>
+            <transition localId="7"><position x="140" y="160"/><connectionPointIn><connection refLocalId="5"/></connectionPointIn><connectionPointOut/><condition><connectionPointIn><connection refLocalId="8"/></connectionPointIn></condition></transition>
+            <inVariable localId="8"><position x="180" y="160"/><connectionPointOut/><expression>NOT Go</expression></inVariable>
+            <selectionConvergence localId="9"><position x="100" y="200"/><connectionPointIn><connection refLocalId="6"/></connectionPointIn><connectionPointIn><connection refLocalId="7"/></connectionPointIn><connectionPointOut/></selectionConvergence>
+            <jumpStep localId="10" targetName="Init"><position x="100" y="220"/><connectionPointIn><connection refLocalId="9"/></connectionPointIn></jumpStep>
+          </SFC>
+        </body>
+      </pou>
+    </pous>
+  </types>
+  <instances>
+    <configurations>
+      <configuration name="config">
+        <resource name="cpu">
+          <task name="fast" priority="1" interval="T#10ms"><pouInstance name="main_inst" typeName="Main"/></task>
+          <task name="slow" priority="5" interval="T#100ms"><pouInstance name="seq_inst" typeName="Sequence"/></task>
+          <globalVars><variable name="Setpoint"><type><REAL/></type><initialValue><simpleValue value="42.5"/></initialValue></variable></globalVars>
+        </resource>
+      </configuration>
+    </configurations>
+  </instances>
+</project>

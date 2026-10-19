@@ -1,0 +1,194 @@
+SourceUnit dialect=PLCOPEN
+  Pou kind=FUNCTION_BLOCK name=FB_Average extendsTypes=[FB_Base] implementsTypes=[I_Value] bodyLanguage="ST" @10:7-10:54
+    varBlocks:
+      VarBlock section=INPUT @18:1-20:8
+        variables:
+          VarDecl name=nSize referenceInit=false @19:2-19:20
+            type:
+              Named name=INT @19:10-19:13
+            init:
+              Literal kind=INTEGER text="10" @19:17-19:19
+      VarBlock section=VAR @21:1-24:8
+        variables:
+          VarDecl name=aValues referenceInit=false @22:2-22:33
+            type:
+              ArrayType @22:12-22:32
+                dimensions:
+                  Dimension @22:18-22:23
+                    low:
+                      Literal kind=INTEGER text="1" @22:18-22:19
+                    high:
+                      Literal kind=INTEGER text="10" @22:21-22:23
+                element:
+                  Named name=REAL @22:28-22:32
+          VarDecl name=nCount referenceInit=false @23:2-23:15
+            type:
+              Named name=INT @23:11-23:14
+    members:
+      Pou kind=METHOD name=Add bodyLanguage="ST" @39:13-39:80
+        returnType:
+          Named name=BOOL @41:29-41:37
+        varBlocks:
+          VarBlock section=INPUT @42:17-42:28
+            variables:
+              VarDecl name=rValue referenceInit=false @42:28-42:52
+                type:
+                  Named name=REAL @42:58-42:66
+        body:
+          Assignment op=ASSIGN @46:63-46:89
+            target:
+              Index @46:63-46:78
+                target:
+                  NameRef name=aValues globalScope=false @46:63-46:70
+                indices:
+                  NameRef name=nCount globalScope=false @46:71-46:77
+            value:
+              NameRef name=rValue globalScope=false @46:82-46:88
+          Assignment op=ASSIGN @47:1-47:13
+            target:
+              NameRef name=Add globalScope=false @47:1-47:4
+            value:
+              Literal kind=BOOL text="TRUE" @47:8-47:12
+      Pou kind=PROPERTY name=Count @54:13-54:84
+        returnType:
+          Named name=INT @55:38-55:45
+        members:
+          Pou kind=PROPERTY_GET name=GET bodyLanguage="ST" @56:15-56:28
+            body:
+              Assignment op=ASSIGN @58:71-58:87
+                target:
+                  NameRef name=Count globalScope=false @58:71-58:76
+                value:
+                  NameRef name=nCount globalScope=false @58:80-58:86
+    body:
+      If @32:57-34:7
+        branches:
+          Branch @32:57-32:82
+            condition:
+              Binary op=LT @32:60-32:77
+                left:
+                  NameRef name=nCount globalScope=false @32:60-32:66
+                right:
+                  NameRef name=nSize globalScope=false @32:72-32:77
+            body:
+              Assignment op=ASSIGN @33:2-33:23
+                target:
+                  NameRef name=nCount globalScope=false @33:2-33:8
+                value:
+                  Binary op=ADD @33:12-33:22
+                    left:
+                      NameRef name=nCount globalScope=false @33:12-33:18
+                    right:
+                      Literal kind=INTEGER text="1" @33:21-33:22
+    pragmas:
+      Pragma kind=ATTRIBUTE name="hide_all_locals" @16:61-16:90
+  Pou kind=PROGRAM name=PLC_PRG bodyLanguage="LD" @65:7-65:45
+    varBlocks:
+      VarBlock section=VAR @67:11-67:22
+        variables:
+          VarDecl name=xStart referenceInit=false @68:13-68:37
+            type:
+              Named name=BOOL @68:43-68:51
+          VarDecl name=xStop referenceInit=false @69:13-69:36
+            type:
+              Named name=BOOL @69:42-69:50
+          VarDecl name=xMotor referenceInit=false @70:13-70:37
+            type:
+              Named name=BOOL @70:43-70:51
+          VarDecl name=fbBlink referenceInit=false @71:13-71:38
+            type:
+              Named name=BLINK @71:59-71:64
+          VarDecl name=rIn referenceInit=false @72:13-72:34
+            type:
+              Named name=REAL @72:40-72:48
+          VarDecl name=rOut referenceInit=false @73:13-73:35
+            type:
+              Named name=REAL @73:41-73:49
+    members:
+      Pou kind=ACTION name=Scale bodyLanguage="FBD" @96:11-96:32
+        body:
+          Network number=1 network="FBD 4 elements" @99:17-109:63
+            body:
+              Assignment op=ASSIGN @109:17-109:63
+                target:
+                  NameRef name=rOut globalScope=false @109:190-109:194
+                value:
+                  Binary op=MUL @100:17-100:72
+                    left:
+                      NameRef name=rIn globalScope=false @99:99-99:102
+                    right:
+                      Literal kind=REAL text="2.5" @108:100-108:103
+          Network number=2 network="FBD 2 elements" @110:17-118:41
+            body:
+              If @110:17-110:97
+                branches:
+                  Branch @110:17-110:97
+                    condition:
+                      NameRef name=xMotor globalScope=false @118:100-118:106
+                    body:
+                      CallStatement @110:17-110:97
+                        call:
+                          Call @110:17-110:97
+                            callee:
+                              NameRef name=fbBlink globalScope=false @110:67-110:74
+                            arguments:
+                              Argument kind=INPUT name=ENABLE negated=false @110:17-110:97
+                                value:
+                                  NameRef name=xMotor globalScope=false @118:100-118:106
+    body:
+      Network number=1 network="LD 6 elements" @87:13-91:61
+        body:
+          Assignment op=ASSIGN @89:13-89:76
+            target:
+              NameRef name=$fbd1 globalScope=false @89:13-89:76
+            value:
+              Binary op=AND @89:13-89:76
+                left:
+                  Binary op=OR @88:177-88:183
+                    left:
+                      NameRef name=xStart globalScope=false @87:177-87:183
+                    right:
+                      NameRef name=xMotor globalScope=false @88:177-88:183
+                right:
+                  Unary op=NOT @89:13-89:76
+                    operand:
+                      NameRef name=xStop globalScope=false @89:205-89:210
+          Assignment op=ASSIGN @90:13-90:62
+            target:
+              NameRef name=xMotor globalScope=false @90:162-90:168
+            value:
+              NameRef name=$fbd1 globalScope=false @89:13-89:76
+          Assignment op=ASSIGN @91:13-91:61
+            target:
+              NameRef name=xIdleLamp globalScope=false @91:161-91:170
+            value:
+              Unary op=NOT @91:13-91:61
+                operand:
+                  NameRef name=$fbd1 globalScope=false @89:13-89:76
+    pragmas:
+      Pragma kind=ATTRIBUTE name="qualified_only" value="" @77:27-77:71
+  Configuration name=Device @128:7-128:36
+    elements:
+      Resource name=Application @129:9-129:38
+        elements:
+          Task name=MainTask @130:11-130:58
+            settings:
+              Argument kind=INPUT name=PRIORITY negated=false @130:55-130:56
+                value:
+                  Literal kind=INTEGER text="1" @130:55-130:56
+              Argument kind=INPUT name=INTERVAL negated=false @134:61-134:67
+                value:
+                  Literal kind=TIME text="20ms" typePrefix="t" @134:61-134:67
+          ProgramInstance name=PLC_PRG task=MainTask type=PLC_PRG @131:13-131:62
+  GlobalVars listName=GVL_IO @144:7-144:33
+    block:
+      VarBlock section=GLOBAL @144:7-144:33
+        variables:
+          VarDecl name=xLampOut address="%QX0.0" referenceInit=false @145:9-145:52
+            type:
+              Named name=BOOL @145:58-145:66
+  pragmas:
+    Pragma kind=ATTRIBUTE name="Producer" value="CODESYS" @3:3-3:128
+    Pragma kind=ATTRIBUTE name="hide_all_locals" @16:61-16:90
+  comments: 1
+diagnostics:

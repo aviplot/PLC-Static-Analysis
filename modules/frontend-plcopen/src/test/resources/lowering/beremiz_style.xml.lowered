@@ -1,0 +1,41 @@
+== FUNCTION Scale (ST)
+  Scale := INT_TO_REAL(Raw) / 27.648;
+== FUNCTION_BLOCK Counter (FBD)
+  // network 1 (FBD 7 elements)
+  Cnt := SEL(Reset, 1 + Cnt, 0);
+  OUT := Cnt;
+== PROGRAM Main (LD)
+  // network 1 (LD 6 elements)
+  Motor := (Start OR Motor) AND NOT Stop;
+  // network 2 (LD 6 elements)
+  Delay(IN := $R_TRIG(Motor), PT := T#5s);
+  IF Delay.Q THEN
+    Alarm := TRUE;
+  END_IF
+== PROGRAM Sequence (SFC)
+  // chart (2 steps, 3 transitions)
+  IF Filling.X THEN
+    OpenValve();
+  END_IF
+  IF Filling.X THEN
+    $act_filling_2 := TRUE;
+  END_IF
+  IF $act_filling_2 THEN
+    Pump := TRUE;
+  END_IF
+  IF Init.X AND (Go AND NOT Done) THEN
+    Init.X := FALSE;
+    Filling.X := TRUE;
+  END_IF
+  IF Filling.X AND Finished THEN
+    Filling.X := FALSE;
+    Init.X := TRUE;
+  END_IF
+  IF Filling.X AND NOT Go THEN
+    Filling.X := FALSE;
+    Init.X := TRUE;
+  END_IF
+== Sequence.ACTION OpenValve (ST)
+  Valve := TRUE;
+== Sequence.TRANSITION Finished (ST)
+  Finished := Done;

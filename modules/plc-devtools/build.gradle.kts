@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":frontend-st"))
     implementation(project(":frontend-scl"))
     implementation(project(":frontend-l5x"))
+    implementation(project(":frontend-plcopen"))
     implementation(project(":plc-semantic"))
     implementation(project(":plc-rules"))
 }

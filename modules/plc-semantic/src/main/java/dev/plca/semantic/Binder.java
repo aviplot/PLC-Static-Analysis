@@ -122,6 +122,8 @@ final class Binder {
             }
             case Statement.Region r -> body(r.body(), pou);
             case Statement.Rung r -> body(r.body(), pou);
+            case Statement.Network n -> body(n.body(), pou);
+            case Statement.Chart c -> body(c.body(), pou);
             default -> {}
         }
     }

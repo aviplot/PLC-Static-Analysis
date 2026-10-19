@@ -154,6 +154,19 @@ public final class StText {
                 sb.append('\n');
                 body(r.body(), depth, sb);
             }
+            case Statement.Network n -> {
+                sb.append(in)
+                        .append("// network ")
+                        .append(n.number())
+                        .append(" (")
+                        .append(n.network().summary())
+                        .append(")\n");
+                body(n.body(), depth, sb);
+            }
+            case Statement.Chart c -> {
+                sb.append(in).append("// chart (").append(c.chart().summary()).append(")\n");
+                body(c.body(), depth, sb);
+            }
             case Statement.Empty e -> sb.append(in).append(";\n");
             case Statement.Invalid i -> sb.append(in).append("<invalid>;\n");
         }

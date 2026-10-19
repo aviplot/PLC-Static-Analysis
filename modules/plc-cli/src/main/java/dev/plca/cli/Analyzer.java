@@ -3,6 +3,7 @@ package dev.plca.cli;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.frontend.l5x.L5xFrontend;
+import dev.plca.frontend.plcopen.PlcOpenFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
@@ -14,9 +15,7 @@ import dev.plca.rules.RuleRegistry;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +32,8 @@ import java.util.Set;
  */
 public final class Analyzer {
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
+    private static final Frontends FRONTENDS =
+            Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new, PlcOpenFrontend::new);
 
     /** Extensions of formats not analysed yet; such files are listed as skipped, not ignored silently. */
     private static final Set<String> LATER_DIALECTS = Set.of(".l5k");
@@ -92,7 +92,7 @@ public final class Analyzer {
                 stats);
     }
 
-    /** Files we cannot analyse yet: L5K (Rockwell's text export) by extension, PLCopen XML by its namespace. */
+    /** Files we cannot analyse yet: L5K (Rockwell's text export). */
     static List<String> skipped(Path root) {
         List<String> out = new ArrayList<>();
         try {
@@ -111,7 +111,7 @@ public final class Analyzer {
                     String name = file.getFileName().toString().toLowerCase(Locale.ROOT);
                     int dot = name.lastIndexOf('.');
                     String ext = dot < 0 ? "" : name.substring(dot);
-                    if (LATER_DIALECTS.contains(ext) || ext.equals(".xml") && isPlcOpen(file)) {
+                    if (LATER_DIALECTS.contains(ext)) {
                         out.add(root.relativize(file).toString().replace('\\', '/'));
                     }
                     return FileVisitResult.CONTINUE;
@@ -127,14 +127,5 @@ public final class Analyzer {
         }
         out.sort(null);
         return out;
-    }
-
-    private static boolean isPlcOpen(Path file) {
-        try (InputStream in = Files.newInputStream(file)) {
-            String head = new String(in.readNBytes(4096), StandardCharsets.ISO_8859_1);
-            return head.contains("plcopen.org/xml/tc6");
-        } catch (IOException e) {
-            return false;
-        }
     }
 }

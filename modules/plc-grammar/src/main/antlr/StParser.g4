@@ -38,6 +38,11 @@ statementsOnly
     : statementList EOF
     ;
 
+/** A lone expression: PLCopen initial values, graphical variables, inline SFC conditions. */
+expressionOnly
+    : expression EOF
+    ;
+
 // ================================================================================================
 // Library elements and POUs (IEC 6.6)
 //

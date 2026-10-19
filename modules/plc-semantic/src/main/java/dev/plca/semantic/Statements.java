@@ -29,6 +29,8 @@ public final class Statements {
             case Statement.Repeat r -> action.accept(r.body());
             case Statement.Region r -> action.accept(r.body());
             case Statement.Rung r -> action.accept(r.body());
+            case Statement.Network n -> action.accept(n.body());
+            case Statement.Chart c -> action.accept(c.body());
             case Statement.Try t -> {
                 action.accept(t.body());
                 if (t.catchBody() != null) {

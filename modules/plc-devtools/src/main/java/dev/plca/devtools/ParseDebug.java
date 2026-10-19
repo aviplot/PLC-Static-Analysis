@@ -6,6 +6,7 @@ import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.l5x.L5xFrontend;
+import dev.plca.frontend.plcopen.PlcOpenFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontend;
@@ -19,7 +20,7 @@ public final class ParseDebug {
     private ParseDebug() {}
 
     public static void main(String[] args) throws Exception {
-        Frontends frontends = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
+        Frontends frontends = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new, PlcOpenFrontend::new);
         java.util.List<String> files = new java.util.ArrayList<>();
         for (String a : args) {
             if (a.startsWith("@")) {

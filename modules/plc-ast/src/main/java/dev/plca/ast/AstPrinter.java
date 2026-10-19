@@ -94,7 +94,9 @@ public final class AstPrinter {
         return v instanceof Node
                 && !(v instanceof Identifier)
                 && !(v instanceof QualifiedName)
-                && !(v instanceof Ladder);
+                && !(v instanceof Ladder)
+                && !(v instanceof Network)
+                && !(v instanceof Sfc);
     }
 
     private static String scalar(Object v) {
@@ -104,6 +106,12 @@ public final class AstPrinter {
         }
         if (v instanceof Ladder l) {
             return scalar(l.text());
+        }
+        if (v instanceof Network n) {
+            return scalar(n.summary());
+        }
+        if (v instanceof Sfc c) {
+            return scalar(c.summary());
         }
         if (v instanceof String s) {
             return '"' + s.replace("\\", "\\\\").replace("\n", "\\n").replace("\"", "\\\"") + '"';

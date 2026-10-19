@@ -85,6 +85,10 @@ final class AstBuilder extends BuilderSupport {
         return out;
     }
 
+    Expression expressionOnly(ExpressionOnlyContext ctx) {
+        return expression(ctx.expression(), span(ctx));
+    }
+
     List<Statement> statementsOnly(StatementsOnlyContext ctx) {
         return statementList(ctx.statementList());
     }

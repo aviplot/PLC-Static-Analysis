@@ -1,0 +1,22 @@
+== FUNCTION_BLOCK FB_Average (ST)
+  IF nCount < nSize THEN
+    nCount := nCount + 1;
+  END_IF
+== FB_Average.METHOD Add (ST)
+  aValues[nCount] := rValue;
+  Add := TRUE;
+== FB_Average.PROPERTY Count
+== FB_Average.Count.PROPERTY_GET GET (ST)
+  Count := nCount;
+== PROGRAM PLC_PRG (LD)
+  // network 1 (LD 6 elements)
+  $fbd1 := (xStart OR xMotor) AND NOT xStop;
+  xMotor := $fbd1;
+  xIdleLamp := NOT $fbd1;
+== PLC_PRG.ACTION Scale (FBD)
+  // network 1 (FBD 4 elements)
+  rOut := rIn * 2.5;
+  // network 2 (FBD 2 elements)
+  IF xMotor THEN
+    fbBlink(ENABLE := xMotor);
+  END_IF

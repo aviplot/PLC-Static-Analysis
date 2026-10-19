@@ -136,6 +136,23 @@ public sealed interface Statement extends Node {
         }
     }
 
+    /**
+     * A graphical LD/FBD network (PLCopen XML): its drawing and its lowering to statements, which is what the semantic
+     * model and rules see. {@code number} counts the POU's networks from 1, top to bottom.
+     */
+    record Network(int number, dev.plca.ast.Network network, List<Statement> body, Span span) implements Statement {
+        public Network {
+            body = List.copyOf(body);
+        }
+    }
+
+    /** A sequential function chart and its lowering to guarded statements. */
+    record Chart(Sfc chart, List<Statement> body, Span span) implements Statement {
+        public Chart {
+            body = List.copyOf(body);
+        }
+    }
+
     /** A lone {@code ;} (also the {@code ;} after {@code END_IF}). */
     record Empty(Span span) implements Statement {}
 
