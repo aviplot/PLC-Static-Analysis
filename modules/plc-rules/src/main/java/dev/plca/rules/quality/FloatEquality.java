@@ -20,7 +20,10 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.function.Supplier;
 
 /**
  * PLCA-Q003 (PLCopen CP8): {@code =} or {@code <>} with a REAL/LREAL operand. Comparisons with zero are CP8's own
@@ -47,7 +50,8 @@ public final class FloatEquality implements PouRule {
             }
         });
         boolean rockwell = ctx.pou().dialect() == dev.plca.core.Dialect.ROCKWELL;
-        Set<VariableSymbol> written = rockwell ? written(ctx) : Set.of();
+        // computed only when a comparison gets this far, and shared by the routines of one program or AOI
+        Supplier<Set<VariableSymbol>> written = () -> WRITTEN.computeIfAbsent(owner(ctx.pou()), o -> written(ctx, o));
         ctx.forEachExpression(e -> {
             if (!(e instanceof Expression.Binary b) || b.op() != BinaryOp.EQ && b.op() != BinaryOp.NE) {
                 return;
@@ -67,7 +71,7 @@ public final class FloatEquality implements PouRule {
             if (copies.contains(key(b.left(), b.right()))) {
                 return; // compared with its own copy: change detection
             }
-            if (rockwell && setting(m, b.left(), written) && setting(m, b.right(), written)) {
+            if (rockwell && setting(m, b.left(), written.get()) && setting(m, b.right(), written.get())) {
                 return; // two settings: nothing computed, exact by intent
             }
             ctx.report(
@@ -77,10 +81,16 @@ public final class FloatEquality implements PouRule {
         });
     }
 
+    /** Written variables per program/AOI; weak keys, so models of earlier runs are not kept alive. */
+    private static final Map<PouSymbol, Set<VariableSymbol>> WRITTEN = Collections.synchronizedMap(new WeakHashMap<>());
+
+    private static PouSymbol owner(PouSymbol pou) {
+        return pou.instanceOwner() != null ? pou.instanceOwner() : pou;
+    }
+
     /** Variables written anywhere in the POU's instance (the FB/program and its members: methods, routines). */
-    private static Set<VariableSymbol> written(PouContext ctx) {
+    private static Set<VariableSymbol> written(PouContext ctx, PouSymbol owner) {
         Set<VariableSymbol> out = Collections.newSetFromMap(new IdentityHashMap<>());
-        PouSymbol owner = ctx.pou().instanceOwner() != null ? ctx.pou().instanceOwner() : ctx.pou();
         List<PouSymbol> scope = new ArrayList<>(owner.members().values());
         scope.add(owner);
         for (PouSymbol p : scope) {

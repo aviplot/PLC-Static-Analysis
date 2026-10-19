@@ -190,4 +190,17 @@ would put millions of entries into the source registry. One parse per routine, t
    are hand-written test files.
 
 ## 10. Corpus results (M5)
-*(filled in at the end of M5)*
+`./gradlew :plc-devtools:corpusCheck -Ponly=Rockwell` (one project per L5X file: an export is a complete project), 2,052
+files from 169 repos, 17.8M lines, 59 s on 8 threads including model and rules:
+
+| measure | overall | repo-weighted | repos |
+|---|---|---|---|
+| L5X files without any syntax error | 97.95% | 97.24% | 169 |
+| rungs (3,058,701) parsed without error | 100.00% | 99.57% | 134 |
+| ST routines (1,275) parsed without error | 99.76% | 99.45% | 71 |
+| names resolved / library / external / unresolved | 98.64% / 0.97% / 0.28% / 0.11% | 98.36% resolved+library+external | |
+
+SLL fallbacks: 34 of 34,065 routine texts, all with real syntax errors (no clean fallback). The remaining failures are
+not Studio 5000 syntax: C operators (`&&`, `||`) in tool-generated or hand-edited files, test fixtures with broken
+XML (truncated, XXE, bad UTF-8), `=>` in a CMP (§9.8), one ST routine with an unbalanced `END_IF`.
+

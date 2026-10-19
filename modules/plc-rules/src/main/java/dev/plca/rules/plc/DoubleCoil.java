@@ -89,7 +89,7 @@ public final class DoubleCoil implements ProjectRule {
                 boolean coil = coils.contains(body.get(i));
                 for (Access a : unconditionalWrites(m, body.get(i), coil, rockwell)) {
                     if (!coil && !eligible(a.variable(), pou, includeLocals)
-                            || spare.matcher(a.variable().name()).find()) {
+                            || spare.matcher(a.target()).find()) {
                         continue;
                     }
                     Key key = new Key(a.variable(), a.path());
