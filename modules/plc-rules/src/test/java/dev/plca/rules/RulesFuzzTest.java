@@ -8,6 +8,7 @@ import dev.plca.ast.SourceUnit;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontend;
@@ -34,6 +35,13 @@ class RulesFuzzTest {
     @DictionaryFile(resourcePath = "/scl.dict")
     void fuzzSclRules(byte[] input) {
         check(new SclFrontend(), "fuzz.scl", input);
+    }
+
+    /** The same on Rockwell L5X exports (seeds: the Rockwell rule fixtures). */
+    @FuzzTest(maxDuration = "5m")
+    @DictionaryFile(resourcePath = "/l5x.dict")
+    void fuzzL5xRules(byte[] input) {
+        check(new L5xFrontend(), "fuzz.L5X", input);
     }
 
     private static void check(Frontend frontend, String path, byte[] input) {

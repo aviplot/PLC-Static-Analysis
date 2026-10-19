@@ -356,7 +356,17 @@ public final class L5xFrontend implements Frontend {
                 RungDef d = rungs.get(k);
                 starts[k] = text.length();
                 if (d.text.present()) {
+                    int from = text.length();
                     XmlText.decodeInto(fileText, d.text.start(), d.text.end(), text, map);
+                    if (!endsWithSemicolon(text, from)) {
+                        // every rung's text ends with ';': close it here so it cannot swallow the next rung
+                        sink.report(Diagnostic.warning(
+                                L5xCodes.UNTERMINATED_RUNG,
+                                "rung " + d.number + " does not end with ';'",
+                                whole.span(d.text.start(), d.text.end())));
+                        text.append(';');
+                        map.replacement(d.text.end(), 0, 1);
+                    }
                     text.append('\n');
                     map.replacement(d.text.end(), 0, 1);
                 }
@@ -370,9 +380,17 @@ public final class L5xFrontend implements Frontend {
             boolean[] parsed = new boolean[rungs.size()];
             if (!text.isEmpty()) {
                 SourceText routineText = registry.registerFragment(file, text.toString(), map.build());
-                Parsed p = rungParser.parse(routineText, sink);
+                // where the syntax errors are: a rung with one keeps its number but not its (partial) drawing
+                List<Integer> errors = new ArrayList<>();
+                DiagnosticSink capture = diag -> {
+                    if (diag.severity() == Severity.ERROR && diag.span().textId() == routineText.id()) {
+                        errors.add(diag.span().start());
+                    }
+                    sink.report(diag);
+                };
+                Parsed p = rungParser.parse(routineText, capture);
                 count(p);
-                RungAstBuilder b = new RungAstBuilder(routineText, p.tokens(), sink);
+                RungAstBuilder b = new RungAstBuilder(routineText, p.tokens(), capture);
                 if (p.tree() instanceof RungsContext rs) {
                     for (RungContext rc : rs.rung()) {
                         int k = rungAt(starts, RungAstBuilder.start(rc));
@@ -383,6 +401,12 @@ public final class L5xFrontend implements Frontend {
                     }
                 }
                 b.collectHidden(comments, pragmas);
+                for (int offset : errors) {
+                    int k = rungAt(starts, Math.min(offset, Math.max(0, text.length() - 1)));
+                    if (k >= 0) {
+                        ladders[k] = null;
+                    }
+                }
             }
             RungLowering lowering = new RungLowering(aois);
             List<Statement> body = new ArrayList<>(rungs.size());
@@ -400,6 +424,16 @@ public final class L5xFrontend implements Frontend {
                 }
             }
             return body;
+        }
+
+        private static boolean endsWithSemicolon(StringBuilder text, int from) {
+            for (int i = text.length() - 1; i >= from; i--) {
+                char c = text.charAt(i);
+                if (!Character.isWhitespace(c)) {
+                    return c == ';';
+                }
+            }
+            return true; // empty text: an empty rung
         }
 
         private boolean blank(Range r) {

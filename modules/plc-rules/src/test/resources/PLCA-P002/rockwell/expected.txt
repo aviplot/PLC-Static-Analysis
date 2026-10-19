@@ -1,0 +1,2 @@
+io.L5X:16:46-16:55 PLCA-P002 info: Module I/O tag Local:1:I used in logic; map it to an alias or program tag in one I/O routine and use that name [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+io.L5X:30:40-30:49 PLCA-P002 info: Module I/O tag Local:3:I used in logic; map it to an alias or program tag in one I/O routine and use that name [MainProgram.Calc] {Program:MainProgram/Routine:Calc/Line:2}

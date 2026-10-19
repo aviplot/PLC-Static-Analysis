@@ -1,0 +1,3 @@
+XIC(Auto)Valve(V1,Cmd1,Open1,Pos1)OTE(Done);
+Valve(V2,Cmd2,Open2,Pos2);
+XIC(A)Valve(V3,Cmd3)OTE(B);

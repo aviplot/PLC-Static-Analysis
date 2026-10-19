@@ -460,7 +460,8 @@ final class Binder {
                 argTypes.add(Type.VOID);
             } else if (role == dev.plca.ast.ladder.InstructionSet.Role.NAME
                     || role == dev.plca.ast.ladder.InstructionSet.Role.LABEL
-                    || role == dev.plca.ast.ladder.InstructionSet.Role.DISPLAY) {
+                    || role == dev.plca.ast.ladder.InstructionSet.Role.DISPLAY
+                    || setting(a.value(), pou)) {
                 argTypes.add(Type.UNKNOWN); // a word, a jump label or a display value: not a tag
             } else {
                 argTypes.add(expression(a.value(), pou));
@@ -484,6 +485,23 @@ final class Binder {
             return Builtins.concrete(argTypes.getFirst());
         }
         return Type.VOID;
+    }
+
+    /**
+     * Motion and safety instructions take settings as words ({@code Trapezoidal}, {@code Yes}, {@code S-Curve}): an
+     * operand made only of names that are no tag, routine or type of the project is such a setting, not an unresolved
+     * name.
+     */
+    private boolean setting(Expression e, PouSymbol pou) {
+        return switch (e) {
+            case Expression.NameRef n ->
+                n.name().form() == Identifier.Form.PLAIN
+                        && n.name().name().indexOf(':') < 0
+                        && lookup(n.name().name(), pou).isEmpty();
+            case Expression.Binary b ->
+                b.op() == Expression.BinaryOp.SUB && setting(b.left(), pou) && setting(b.right(), pou);
+            default -> false;
+        };
     }
 
     /** {@code JSR(Fill, 0)}: a routine of the program (or AOI) the calling routine belongs to. */

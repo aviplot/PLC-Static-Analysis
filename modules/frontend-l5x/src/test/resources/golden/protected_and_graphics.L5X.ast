@@ -1,0 +1,43 @@
+SourceUnit dialect=ROCKWELL
+  Pou kind=FUNCTION_BLOCK name=Drive_v3 bodyLanguage="Encrypted" @5:1-5:107
+    varBlocks:
+      VarBlock section=INPUT @7:1-9:128
+        variables:
+          VarDecl name=EnableIn referenceInit=false @7:1-7:134
+            type:
+              Named name=BOOL @7:53-7:57
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @7:122-7:131
+          VarDecl name=Run referenceInit=false @9:1-9:128
+            type:
+              Named name=BOOL @9:48-9:52
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @9:115-9:125
+      VarBlock section=OUTPUT @8:1-8:136
+        variables:
+          VarDecl name=EnableOut referenceInit=false @8:1-8:136
+            type:
+              Named name=BOOL @8:54-8:58
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @8:124-8:133
+  Pou kind=PROGRAM name=P bodyLanguage="L5X" @15:1-15:57
+    members:
+      Pou kind=ROUTINE name=Graph bodyLanguage="FBD" @17:1-17:34
+      Pou kind=ROUTINE name=Steps bodyLanguage="SFC" @22:1-22:34
+      Pou kind=ROUTINE name=Secret bodyLanguage="Encrypted" @23:1-23:82
+    body:
+      CallStatement @15:50-15:55
+        call:
+          Call @15:50-15:55
+            callee:
+              NameRef name=JSR globalScope=false @15:50-15:55
+            arguments:
+              Argument kind=POSITIONAL negated=false @15:50-15:55
+                value:
+                  NameRef name=Graph globalScope=false @15:50-15:55
+  comments: 0
+diagnostics:
+  INFO PLC-L5X-003 @5:61 Add-On Instruction 'Drive_v3' is source-protected; only its parameters are analysed
+  INFO PLC-L5X-002 @17:16 routine 'Graph' is written in FBD, which is not analysed yet
+  INFO PLC-L5X-002 @22:16 routine 'Steps' is written in SFC, which is not analysed yet
+  INFO PLC-L5X-003 @23:42 routine 'Secret' is source-protected and not analysed

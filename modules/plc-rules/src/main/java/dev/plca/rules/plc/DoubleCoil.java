@@ -49,9 +49,10 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * <p>Ladder (Rockwell): an {@code OTE} is a coil by definition, so its lowered assignment counts whatever the rung
- * reads (a seal-in reads its own coil) and whatever happens between two OTEs; any tag counts, and routines are compared
- * like program bodies — the classic "duplicate destructive bit" check. {@code OTL}/{@code OTU} latches never count.
- * REGION and rung containers are opened: their statements run in sequence like top-level ones.
+ * reads (a seal-in reads its own coil) and whatever happens between two OTEs; any tag counts, and program routines are
+ * compared like program bodies — the classic "duplicate destructive bit" check (an AOI's scan-mode routines are not:
+ * they run instead of its logic). {@code OTL}/{@code OTU} latches never count. REGION and rung containers are opened:
+ * their statements run in sequence like top-level ones.
  */
 public final class DoubleCoil implements ProjectRule {
 
@@ -142,7 +143,10 @@ public final class DoubleCoil implements ProjectRule {
      */
     private static boolean cyclic(PouSymbol p) {
         return p.kind() == Declaration.PouKind.PROGRAM
+                // program routines run in the scan; an AOI's Prescan/Postscan/EnableInFalse run instead of its Logic
                 || p.kind() == Declaration.PouKind.ROUTINE
+                        && p.owner() != null
+                        && p.owner().kind() == Declaration.PouKind.PROGRAM
                 || p.kind() == Declaration.PouKind.ORGANIZATION_BLOCK && !startupOb(p)
                 || p.kind() == Declaration.PouKind.FUNCTION_BLOCK;
     }

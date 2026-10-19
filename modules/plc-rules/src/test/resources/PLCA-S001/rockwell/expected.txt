@@ -1,0 +1,2 @@
+secrets.L5X:16:35-16:50 PLCA-S001 warning: Hard-coded IP address '192.168.10.20'; read it from configuration instead [MainProgram.Main] {Program:MainProgram/Routine:Main/Line:1}
+secrets.L5X:17:43-17:53 PLCA-S001 warning: Hard-coded credential: string literal used for 'Ftp_Password'; keep secrets out of the PLC program [MainProgram.Main] {Program:MainProgram/Routine:Main/Line:2}

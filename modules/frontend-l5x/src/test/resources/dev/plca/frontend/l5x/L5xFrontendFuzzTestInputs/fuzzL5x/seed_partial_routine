@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="36.00" TargetName="Fill" TargetType="Routine" TargetSubType="RLL" ContainsContext="true">
+<Controller Use="Context" Name="Cell">
+<DataTypes Use="Context"/>
+<Tags Use="Context">
+<Tag Name="Level" TagType="Base" DataType="REAL" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs Use="Context">
+<Program Use="Context" Name="Tank">
+<Tags Use="Context"/>
+<Routines Use="Context">
+<Routine Use="Target" Name="Fill" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text>
+<![CDATA[LES(Level,80.0)XIO(Overfill)OTE(Fill_Valve);]]>
+</Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text>XIC(Fill_Valve)GRT(Level,95.0)OTL(Overfill);</Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text>CMP(Level &lt; 5.0 AND Level &gt; 1.0)OTE(Low);</Text>
+</Rung>
+</RLLContent>
+</Routine>
+<Routine Use="Reference" Name="Drain"/>
+</Routines>
+</Program>
+</Programs>
+</Controller>
+</RSLogix5000Content>

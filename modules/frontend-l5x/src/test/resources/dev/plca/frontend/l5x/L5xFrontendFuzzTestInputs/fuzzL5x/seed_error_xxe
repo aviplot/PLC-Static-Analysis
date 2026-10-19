@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE RSLogix5000Content [ <!ENTITY xxe SYSTEM "file:///etc/hostname"> ]>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetType="Controller">
+<Controller Use="Target" Name="&xxe;">
+</Controller>
+</RSLogix5000Content>

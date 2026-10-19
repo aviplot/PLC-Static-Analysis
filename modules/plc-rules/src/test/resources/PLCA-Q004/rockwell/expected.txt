@@ -1,0 +1,2 @@
+divide.L5X:17:55-17:56 PLCA-Q004 error: Division by zero: the divisor is always 0 [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+divide.L5X:20:55-20:56 PLCA-Q004 error: Modulo by zero: the divisor is always 0 [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:3}

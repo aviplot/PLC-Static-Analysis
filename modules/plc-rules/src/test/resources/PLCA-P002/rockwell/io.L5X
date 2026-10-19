@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cell" TargetType="Controller" ContainsContext="false">
+<Controller Use="Target" Name="Cell">
+<Tags>
+<Tag Name="Run" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Speed" TagType="Base" DataType="INT" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Ready" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs>
+<Program Name="MainProgram" MainRoutineName="Main" Disabled="false">
+<Tags>
+</Tags>
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIC(Local:1:I.Data.0)XIC(Ready)OTE(Run);]]></Text></Rung> <!-- PLCA-P002 -->
+<Rung Number="1" Type="N"><Text><![CDATA[XIC(S:FS)CLR(Speed);]]></Text></Rung>
+<Rung Number="2" Type="N"><Text><![CDATA[JSR(Map_Inputs,0)JSR(Calc,0);]]></Text></Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Map_Inputs" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIC(Local:1:I.Data.1)OTE(Ready);]]></Text></Rung>
+<Rung Number="1" Type="N"><Text><![CDATA[MOV(Local:3:I.Ch0Data,Speed);]]></Text></Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Calc" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[IF Ready THEN]]></Line>
+<Line Number="1"><![CDATA[    Speed := Local:3:I.Ch1Data + 1; // PLCA-P002]]></Line>
+<Line Number="2"><![CDATA[END_IF;]]></Line>
+</STContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="MainProgram"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

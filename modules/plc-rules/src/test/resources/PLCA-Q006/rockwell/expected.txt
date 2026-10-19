@@ -1,0 +1,1 @@
+aoi.L5X:22:58-22:63 PLCA-Q006 warning: Input 'Reset' of Valve is written inside the POU; inputs should only be read (copy it to a local) [Valve] {AOI:Valve/Routine:Logic/Rung:3}

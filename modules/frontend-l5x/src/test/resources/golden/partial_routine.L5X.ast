@@ -1,0 +1,74 @@
+SourceUnit dialect=ROCKWELL
+  GlobalVars listName=Cell @6:1-6:79
+    block:
+      VarBlock section=GLOBAL @6:1-6:79
+        variables:
+          VarDecl name=Level referenceInit=false @6:1-6:79
+            type:
+              Named name=REAL @6:44-6:48
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @6:66-6:76
+  Pou kind=PROGRAM name=Tank bodyLanguage="L5X" @9:1-9:36
+    members:
+      Pou kind=ROUTINE name=Fill bodyLanguage="RLL" @12:1-12:46
+        body:
+          Rung number=0 type="N" ladder="LES(Level,80.0)XIO(Overfill)OTE(Fill_Valve);" @16:10-16:54
+            body:
+              Assignment op=ASSIGN @16:38-16:53
+                target:
+                  NameRef name=Fill_Valve globalScope=false @16:42-16:52
+                value:
+                  Binary op=AND @16:10-16:38
+                    left:
+                      Binary op=LT @16:10-16:25
+                        left:
+                          NameRef name=Level globalScope=false @16:14-16:19
+                        right:
+                          Literal kind=REAL text="80.0" @16:20-16:24
+                    right:
+                      Unary op=NOT @16:25-16:38
+                        operand:
+                          NameRef name=Overfill globalScope=false @16:29-16:37
+          Rung number=1 type="N" ladder="XIC(Fill_Valve)GRT(Level,95.0)OTL(Overfill);" @20:7-20:51
+            body:
+              If @20:37-20:50
+                branches:
+                  Branch @20:37-20:50
+                    condition:
+                      Binary op=AND @20:11-20:37
+                        left:
+                          NameRef name=Fill_Valve globalScope=false @20:11-20:21
+                        right:
+                          Binary op=GT @20:22-20:37
+                            left:
+                              NameRef name=Level globalScope=false @20:26-20:31
+                            right:
+                              Literal kind=REAL text="95.0" @20:32-20:36
+                    body:
+                      Assignment op=ASSIGN @20:37-20:50
+                        target:
+                          NameRef name=Overfill globalScope=false @20:41-20:49
+                        value:
+                          Literal kind=BOOL text="TRUE" @20:37-20:50
+          Rung number=2 type="N" ladder="CMP(Level < 5.0 AND Level > 1.0)OTE(Low);" @23:7-23:54
+            body:
+              Assignment op=ASSIGN @23:45-23:53
+                target:
+                  NameRef name=Low globalScope=false @23:49-23:52
+                value:
+                  Binary op=AND @23:11-23:44
+                    left:
+                      Binary op=LT @23:11-23:25
+                        left:
+                          NameRef name=Level globalScope=false @23:11-23:16
+                        right:
+                          Literal kind=REAL text="5.0" @23:22-23:25
+                    right:
+                      Binary op=GT @23:30-23:44
+                        left:
+                          NameRef name=Level globalScope=false @23:30-23:35
+                        right:
+                          Literal kind=REAL text="1.0" @23:41-23:44
+      Pou kind=ROUTINE name=Drain @27:1-27:40
+  comments: 0
+diagnostics:

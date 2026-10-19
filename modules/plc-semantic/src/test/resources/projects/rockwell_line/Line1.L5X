@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Line1" TargetType="Controller" ContainsContext="false" ExportOptions="NoRawData L5KData DecoratedData">
+<Controller Use="Target" Name="Line1" ProcessorType="1756-L83E" MajorRev="35" MinorRev="11">
+<DataTypes>
+<DataType Name="UDT_Motor" Family="NoFamily" Class="User">
+<Members>
+<Member Name="Speed" DataType="REAL" Dimension="0" Radix="Float" Hidden="false" ExternalAccess="Read/Write"/>
+<Member Name="ZZZZZZZZZZUDT_Motor1" DataType="SINT" Dimension="0" Radix="Decimal" Hidden="true" ExternalAccess="Read/Write"/>
+<Member Name="Run" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZUDT_Motor1" BitNumber="0" ExternalAccess="Read/Write"/>
+<Member Name="Fault" DataType="BIT" Dimension="0" Radix="Decimal" Hidden="false" Target="ZZZZZZZZZZUDT_Motor1" BitNumber="1" ExternalAccess="Read/Write"/>
+</Members>
+</DataType>
+</DataTypes>
+<Modules>
+<Module Name="Local" CatalogNumber="1756-L83E" ParentModule="Local" ParentModPortId="1"/>
+<Module Name="Rack1" CatalogNumber="1756-EN2T" ParentModule="Local" ParentModPortId="1"/>
+</Modules>
+<AddOnInstructionDefinitions>
+<AddOnInstructionDefinition Name="Valve" Revision="1.0" ExecutePrescan="true" ExecutePostscan="false" ExecuteEnableInFalse="false">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="Cmd" TagType="Base" DataType="BOOL" Usage="Input" Required="true" Visible="true" ExternalAccess="Read/Write"/>
+<Parameter Name="Open" TagType="Base" DataType="BOOL" Usage="Output" Required="true" Visible="true" ExternalAccess="Read Only"/>
+<Parameter Name="Delay" TagType="Base" DataType="DINT" Usage="Input" Required="false" Visible="true" ExternalAccess="Read/Write"/>
+</Parameters>
+<LocalTags>
+<LocalTag Name="Tmr" DataType="TIMER" ExternalAccess="None"/>
+<LocalTag Name="Spare1" DataType="DINT" ExternalAccess="None"/>
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text><![CDATA[XIC(Cmd)TON(Tmr,?,?)XIC(Tmr.DN)OTE(Open);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text><![CDATA[MOV(Delay,Tmr.PRE);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Prescan" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text><![CDATA[RES(Tmr);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+<Tags>
+<Tag Name="StartPB" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="StopPB" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Motor1" TagType="Base" DataType="UDT_Motor" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Horn" TagType="Alias" Radix="Decimal" AliasFor="Rack1:2:O.Data.4" ExternalAccess="Read/Write"/>
+<Tag Name="MotorRun" TagType="Alias" Radix="Decimal" AliasFor="Motor1.Run" ExternalAccess="Read/Write"/>
+<Tag Name="Counts" TagType="Base" DataType="DINT" Dimensions="10" Radix="Decimal" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Line_Name" TagType="Base" DataType="STRING" Constant="false" ExternalAccess="Read Only">
+<Data Format="String" Length="5"><![CDATA['Line1']]></Data>
+</Tag>
+</Tags>
+<Programs>
+<Program Name="MainProgram" TestEdits="false" MainRoutineName="MainRoutine" FaultRoutineName="Faults" Disabled="false" UseAsFolder="false">
+<Tags>
+<Tag Name="Seal" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="None"/>
+<Tag Name="Ready" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write" Usage="Output"/>
+<Tag Name="V1" TagType="Base" DataType="Valve" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="OS" TagType="Base" DataType="BOOL" Dimensions="4" Radix="Decimal" Constant="false" ExternalAccess="None"/>
+<Tag Name="Unused_Work" TagType="Base" DataType="DINT" Radix="Decimal" Constant="false" ExternalAccess="None"/>
+<Tag Name="T_Delay" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Routines>
+<Routine Name="MainRoutine" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment><![CDATA[Seal-in start circuit]]></Comment>
+<Text><![CDATA[[XIC(StartPB) ,XIC(Seal) ]XIO(StopPB)XIO(Motor1.Fault)OTE(Seal);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text><![CDATA[XIC(Seal)OTE(MotorRun)TON(T_Delay,5000,0);]]></Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text><![CDATA[XIC(T_Delay.DN)ONS(OS[0])ADD(Counts[0],1,Counts[0]);]]></Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text><![CDATA[Valve(V1,Seal,Ready)OTE(Horn);]]></Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text><![CDATA[JSR(Calc,0)JSR(Alarms,0);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Calc" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[IF MotorRun AND NOT S:FS THEN]]></Line>
+<Line Number="1"><![CDATA[    Motor1.Speed := Motor1.Speed + 10.0;]]></Line>
+<Line Number="2"><![CDATA[ELSE]]></Line>
+<Line Number="3"><![CDATA[    Motor1.Speed [:=] 0.0;]]></Line>
+<Line Number="4"><![CDATA[END_IF;]]></Line>
+<Line Number="5"><![CDATA[COP(Counts[0], Counts[5], 5);]]></Line>
+</STContent>
+</Routine>
+<Routine Name="Alarms" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text><![CDATA[XIC(Rack1:1:I.Data.3)OTE(MotorRun);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text><![CDATA[XIC(Seal)VENDOR_THING(Counts[1],Counts[2]);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Faults" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text><![CDATA[OTU(Seal);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+<Program Name="Monitor" TestEdits="false" MainRoutineName="Main" Disabled="false" UseAsFolder="false">
+<Tags/>
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Text><![CDATA[XIC(\MainProgram.Ready)OTE(MotorRun);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10" Watchdog="500" DisableUpdateOutputs="false" InhibitTask="false">
+<ScheduledPrograms>
+<ScheduledProgram Name="MainProgram"/>
+</ScheduledPrograms>
+</Task>
+<Task Name="Fast" Type="PERIODIC" Rate="10" Priority="5" Watchdog="500" DisableUpdateOutputs="false" InhibitTask="false">
+<ScheduledPrograms>
+<ScheduledProgram Name="Monitor"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

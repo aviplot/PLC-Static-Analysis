@@ -1,0 +1,4 @@
+SourceUnit dialect=ROCKWELL
+  comments: 0
+diagnostics:
+  INFO PLC-L5X-001 @1:1 'error_not_l5x.L5X' is not a Logix 5000 export (no RSLogix5000Content root); skipped

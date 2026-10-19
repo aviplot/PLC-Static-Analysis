@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cell" TargetType="Controller" ContainsContext="false">
+<Controller Use="Target" Name="Cell">
+<AddOnInstructionDefinitions>
+<AddOnInstructionDefinition Name="Valve" Revision="1.0">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="Cmd" TagType="Base" DataType="BOOL" Usage="Input" Required="true" Visible="true" ExternalAccess="Read/Write"/>
+<Parameter Name="Reset" TagType="Base" DataType="BOOL" Usage="Input" Required="true" Visible="true" ExternalAccess="Read/Write"/>
+<Parameter Name="Open" TagType="Base" DataType="BOOL" Usage="Output" Required="true" Visible="true" ExternalAccess="Read Only"/>
+</Parameters>
+<LocalTags>
+<LocalTag Name="Latched" DataType="BOOL" ExternalAccess="None"/>
+<LocalTag Name="Never" DataType="DINT" ExternalAccess="None"/> <!-- PLCA-Q001 -->
+</LocalTags>
+<Routines>
+<Routine Name="Logic" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIC(Cmd)OTL(Latched);]]></Text></Rung>
+<Rung Number="1" Type="N"><Text><![CDATA[XIC(Reset)OTU(Latched)OTU(Cmd);]]></Text></Rung>
+<Rung Number="2" Type="N"><Text><![CDATA[XIC(Latched)OTE(Open);]]></Text></Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+<Tags>
+<Tag Name="Cmd1" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Open1" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs>
+<Program Name="MainProgram" MainRoutineName="Main" Disabled="false">
+<Tags>
+<Tag Name="Hmi_Setpoint" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Scratch" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="None"/> <!-- PLCA-Q001 -->
+<Tag Name="Used" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="None"/>
+<Tag Name="V1" TagType="Base" DataType="Valve" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Base" TagType="Base" DataType="DINT" Dimensions="4" Constant="false" ExternalAccess="None"/>
+<Tag Name="View" TagType="Alias" AliasFor="Base[2]" ExternalAccess="None"/>
+</Tags>
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIC(Cmd1)ADD(Used,1,Used);]]></Text></Rung>
+<Rung Number="1" Type="N"><Text><![CDATA[Valve(V1,Cmd1,Cmd1,Open1);]]></Text></Rung>
+<Rung Number="2" Type="N"><Text><![CDATA[XIC(Cmd1)MOV(5,View);]]></Text></Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="MainProgram"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

@@ -1,0 +1,2 @@
+tags.L5X:15:17-15:22 PLCA-Q001 warning: Variable 'Never' is declared but never used [Valve] {AOI:Valve}
+tags.L5X:36:12-36:19 PLCA-Q001 warning: Variable 'Scratch' is declared but never used [MainProgram] {Program:MainProgram}

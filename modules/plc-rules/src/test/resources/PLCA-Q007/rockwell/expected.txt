@@ -1,0 +1,2 @@
+jsr.L5X:20:49-20:57 PLCA-Q007 error: Recursive call cycle: MainProgram.A -> MainProgram.B -> MainProgram.A [MainProgram.A] {Program:MainProgram/Routine:A/Rung:0}
+    jsr.L5X:25:59-25:67 MainProgram.B calls MainProgram.A

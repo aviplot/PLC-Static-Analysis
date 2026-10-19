@@ -1,0 +1,72 @@
+pous:
+  FUNCTION_BLOCK Valve
+    INPUT EnableIn : BOOL
+    INPUT Cmd : BOOL
+    INPUT Delay : DINT
+    OUTPUT EnableOut : BOOL
+    OUTPUT Open : BOOL
+    VAR Tmr : TIMER
+    VAR Spare1 : DINT
+    ROUTINE Prescan
+  PROGRAM MainProgram
+    VAR Seal : BOOL
+    VAR V1 : Valve
+    VAR OS : ARRAY[0..3] OF BOOL
+    VAR Unused_Work : DINT
+    VAR T_Delay : TIMER
+    OUTPUT Ready : BOOL
+    ROUTINE MainRoutine
+    ROUTINE Calc
+    ROUTINE Alarms
+    ROUTINE Faults
+  PROGRAM Monitor
+    ROUTINE Main
+types:
+  STRUCT UDT_Motor { Speed : REAL, Run : BOOL, Fault : BOOL }
+gvls:
+  Line1 { StartPB : BOOL, StopPB : BOOL, Motor1 : UDT_Motor, Horn : ?, MotorRun : BOOL, Counts : ARRAY[0..9] OF DINT, Line_Name : STRING }
+effects:
+  Valve Line1.L5X:35:24 CallStatement: read_write(Tmr) read(Cmd)
+  Valve Line1.L5X:35:47 Assignment: write(Open) read(Cmd) read(Tmr.DN)
+  Valve Line1.L5X:38:16 Assignment: write(Tmr.PRE) read(Delay)
+  Valve.Prescan Line1.L5X:45:16 CallStatement: read_write(Tmr)
+  MainProgram Line1.L5X:64:64 CallStatement: call(ROUTINE MainProgram.MainRoutine)
+  MainProgram.MainRoutine Line1.L5X:78:70 Assignment: write(Seal) read(StartPB) read(Seal) read(StopPB) read(Motor1.Fault)
+  MainProgram.MainRoutine Line1.L5X:81:25 Assignment: write(Motor1.Run) read(Seal)
+  MainProgram.MainRoutine Line1.L5X:81:38 CallStatement: read_write(T_Delay) read(Seal)
+  MainProgram.MainRoutine Line1.L5X:84:20 Assignment: read(T_Delay.DN) read_write(OS[0])
+  MainProgram.MainRoutine Line1.L5X:84:41 Assignment: write(Counts[0]) read(Counts[0])
+  MainProgram.MainRoutine Line1.L5X:87:16 CallStatement: write(V1.Cmd) read(Seal) read(V1.Open) write(Ready) write(V1.EnableIn) call(FB_INSTANCE Valve via V1)
+  MainProgram.MainRoutine Line1.L5X:87:36 Assignment: write(Horn) read(V1.EnableOut)
+  MainProgram.MainRoutine Line1.L5X:90:16 CallStatement: call(ROUTINE MainProgram.Calc)
+  MainProgram.MainRoutine Line1.L5X:90:27 CallStatement: call(ROUTINE MainProgram.Alarms)
+  MainProgram.Calc Line1.L5X:96:27 If: read(Motor1.Run)
+  MainProgram.Calc Line1.L5X:97:31 Assignment: write(Motor1.Speed) read(Motor1.Speed)
+  MainProgram.Calc Line1.L5X:99:31 Assignment: write(Motor1.Speed)
+  MainProgram.Calc Line1.L5X:101:27 CallStatement: read(Counts[0]) write(Counts[5])
+  MainProgram.Alarms Line1.L5X:107:37 Assignment: write(Motor1.Run)
+  MainProgram.Alarms Line1.L5X:110:25 If: read(Seal)
+  MainProgram.Alarms Line1.L5X:110:25 CallStatement: unknown(Counts[1]) unknown(Counts[2])
+  MainProgram.Faults Line1.L5X:117:16 Assignment: write(Seal)
+  Monitor Line1.L5X:123:60 CallStatement: call(ROUTINE Monitor.Main)
+  Monitor.Main Line1.L5X:129:39 Assignment: write(Motor1.Run) read(Ready)
+call graph:
+  MainProgram -> MainProgram.MainRoutine (ROUTINE Line1.L5X:64:64)
+  MainProgram -> MainProgram.Faults (ROUTINE Line1.L5X:64:95)
+  MainProgram.MainRoutine -> Valve (FB_INSTANCE Line1.L5X:87:16)
+  MainProgram.MainRoutine -> MainProgram.Calc (ROUTINE Line1.L5X:90:16)
+  MainProgram.MainRoutine -> MainProgram.Alarms (ROUTINE Line1.L5X:90:27)
+  Monitor -> Monitor.Main (ROUTINE Line1.L5X:123:60)
+  Valve -> Valve.Prescan (ROUTINE Line1.L5X:42:16)
+instances:
+  MainProgram : MainProgram
+    MainProgram.V1 : Valve
+  Monitor : Monitor
+tasks:
+  MainTask priority=10 interval=? programs=[MainProgram]
+  Fast priority=5 interval=10.0ms programs=[Monitor]
+  MainProgram runs in [MainTask]
+  Monitor runs in [Fast]
+  Valve runs in [MainTask]
+names: 65 resolved=61 library=2 unresolved=0 external=2
+diagnostics:

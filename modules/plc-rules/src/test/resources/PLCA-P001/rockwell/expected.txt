@@ -1,0 +1,6 @@
+cell.L5X:23:56-23:60 PLCA-P001 warning: 'Lamp' is written unconditionally more than once in MainProgram.Main; only the last write takes effect (double coil) [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:2}
+    cell.L5X:22:55-22:59 previous write
+cell.L5X:32:56-32:60 PLCA-P001 warning: 'Seal' is written unconditionally in both MainProgram.Main and MainProgram.Sub; the POU that runs last wins (double coil) [MainProgram.Sub] {Program:MainProgram/Routine:Sub/Rung:0}
+    cell.L5X:21:79-21:83 also written in MainProgram.Main
+cell.L5X:33:56-33:60 PLCA-P001 warning: 'Horn' is written unconditionally in both MainProgram.Main and MainProgram.Sub; the POU that runs last wins (double coil) [MainProgram.Sub] {Program:MainProgram/Routine:Sub/Rung:1}
+    cell.L5X:26:55-26:59 also written in MainProgram.Main

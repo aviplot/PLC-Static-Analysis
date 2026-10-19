@@ -10,5 +10,8 @@ public final class L5xCodes {
     /** A source-protected AOI or routine ({@code EncodedData}): only its interface is analysed. */
     public static final String PROTECTED = "PLC-L5X-003";
 
+    /** Rung text that does not end with {@code ;}; the frontend closes the rung there. */
+    public static final String UNTERMINATED_RUNG = "PLC-L5X-004";
+
     private L5xCodes() {}
 }

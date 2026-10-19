@@ -35,6 +35,12 @@ designatorRoot
     | BACKSLASH identifier
     ;
 
+identifier
+    : IDENT
+    | softKeyword
+    | SETTING_WORD
+    ;
+
 /** An argument may be left out: GSV(WallClockTime, , CurrentValue, TNow) (as in rung text). */
 argumentList
     : argument (COMMA argument?)*

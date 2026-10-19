@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.01" TargetName="Drive" TargetType="AddOnInstructionDefinition">
+<Controller Use="Context" Name="Cell">
+<AddOnInstructionDefinitions Use="Context">
+<EncodedData EncodedType="AddOnInstructionDefinition" Name="Drive_v3" Revision="3.0" EncryptionConfig="9">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Required="false" Visible="false" ExternalAccess="Read Only"/>
+<Parameter Name="Run" TagType="Base" DataType="BOOL" Usage="Input" Required="true" Visible="true" ExternalAccess="Read/Write"/>
+</Parameters>
+<![CDATA[AAcoYftsPAnaBw3TPqCxDneK9jIomlVGduV]]>
+</EncodedData>
+</AddOnInstructionDefinitions>
+<Programs Use="Context">
+<Program Use="Context" Name="P" MainRoutineName="Graph">
+<Routines>
+<Routine Name="Graph" Type="FBD">
+<FBDContent SheetSize="Letter - 8.5 x 11 in" SheetOrientation="Landscape">
+<Sheet Number="1"><TextBox ID="0" X="100" Y="100" Width="0"><Text><![CDATA[Not ladder text]]></Text></TextBox></Sheet>
+</FBDContent>
+</Routine>
+<Routine Name="Steps" Type="SFC"><SFCContent/></Routine>
+<EncodedData EncodedType="Routine" Name="Secret" Type="RLL" EncryptionConfig="9"><![CDATA[QUJD]]></EncodedData>
+</Routines>
+</Program>
+</Programs>
+</Controller>
+</RSLogix5000Content>

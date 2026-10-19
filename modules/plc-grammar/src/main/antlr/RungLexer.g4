@@ -18,7 +18,8 @@ XOR             : 'XOR';
 NOT             : 'NOT';
 MOD             : 'MOD';
 
-BASED_INTEGER   : ('2' | '8' | '16') '#' [0-9A-F_]+ ;
+// 10#1: decimal radix written out (seen in exports with Decimal display style)
+BASED_INTEGER   : ('2' | '8' | '10' | '16') '#' [0-9A-F_]+ ;
 REAL            : DIGITS '.' DIGITS EXPONENT? | DIGITS EXPONENT ;
 INTEGER         : DIGITS ;
 STRING_LITERAL  : '\'' ( '$' . | ~['$\r\n] )* '\'' ;

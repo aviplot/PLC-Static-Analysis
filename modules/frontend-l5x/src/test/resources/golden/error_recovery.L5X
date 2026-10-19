@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.00" TargetName="Bad" TargetType="Controller">
+<Controller Use="Target" Name="Bad">
+<Programs>
+<Program Name="P" MainRoutineName="R">
+<Routines>
+<Routine Name="R" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[XIC(A)OTE(B);]]></Text></Rung>
+<Rung Number="1" Type="N"><Text><![CDATA[XIC(A OTE(B);]]></Text></Rung>
+<Rung Number="2" Type="N"><Text><![CDATA[XIC(A)[XIC(B),XIC(C)OTE(D);]]></Text></Rung>
+<Rung Number="3" Type="N"><Text><![CDATA[XIC(C)OTE(E)]]></Text></Rung>
+<Rung Number="4" Type="N"><Text><![CDATA[XIC(F)OTE(G);]]></Text></Rung>
+<Rung Number="5" Type="N"></Rung>
+<Rung Number="6" Type="N"><Text><![CDATA[XIC(H)MOV(1 + ,X)OTE(I);]]></Text></Rung>
+</RLLContent>
+</Routine>
+<Routine Name="S" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[a := 1 +;]]></Line>
+<Line Number="1"><![CDATA[IF b THEN c := 2; END_IF;]]></Line>
+<Line Number="2"><![CDATA[d := 'unterminated;]]></Line>
+<Line Number="3"><![CDATA[e := 3;]]></Line>
+</STContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="T" Type="CONTINUOUS" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="P"/>

@@ -6,6 +6,7 @@ import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
 /** Shared helpers: load a project, run rules, print findings, read inline expectation markers. */
 final class RuleTesting {
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
 
     static final RuleRegistry REGISTRY = RuleRegistry.standard();
 
@@ -83,6 +84,7 @@ final class RuleTesting {
                     .append(": ")
                     .append(f.message())
                     .append(f.pou() == null ? "" : " [" + f.pou() + "]")
+                    .append(f.place() == null ? "" : " {" + f.place() + "}")
                     .append('\n');
             for (Diagnostic.Related r : f.related()) {
                 sb.append("    ")
@@ -106,12 +108,12 @@ final class RuleTesting {
                 .toList();
     }
 
-    private static final Pattern MARKER = Pattern.compile("(?://|\\(\\*).*?\\b(PLCA-[QPS]\\d{3})\\b");
+    private static final Pattern MARKER = Pattern.compile("(?://|\\(\\*|<!--).*?\\b(PLCA-[QPS]\\d{3})\\b");
     private static final Pattern MORE = Pattern.compile("\\b(PLCA-[QPS]\\d{3})\\b");
 
     /**
-     * Expected findings from comments: every rule id inside a {@code //} or {@code (* *)} comment on a line expects one
-     * finding of that rule starting on that line ({@code // PLCA-Q003 PLCA-Q003} expects two).
+     * Expected findings from comments: every rule id inside a {@code //}, {@code (* *)} or XML {@code <!-- -->} comment
+     * on a line expects one finding of that rule starting on that line ({@code // PLCA-Q003 PLCA-Q003} expects two).
      */
     static List<String> expectedMarkers(Path dir) {
         List<String> r = new ArrayList<>();
