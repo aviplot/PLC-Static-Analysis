@@ -8,8 +8,10 @@ import dev.plca.core.diag.Severity;
 import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontend;
+import dev.plca.frontend.st.kit.Frontends;
 import dev.plca.rules.RuleEngine;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
@@ -33,10 +35,11 @@ import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 /**
- * Parses every CODESYS/TwinCAT file of the harvested corpus ({@code corpus/MANIFEST.csv}), builds the semantic model
- * per project (a TwinCAT {@code .plcproj} directory, else the repository) and reports how much real-world code the
- * frontend accepts, how many names the model resolves, and what the rules report (see {@link RuleCorpusStats}). Run
- * with {@code ./gradlew :plc-devtools:corpusCheck}.
+ * Parses every CODESYS/TwinCAT and Siemens SCL file of the harvested corpus ({@code corpus/MANIFEST.csv}), builds the
+ * semantic model per project (a TwinCAT {@code .plcproj} directory, else the repository; Siemens files of a repository
+ * form their own project) and reports how much real-world code the frontends accept, how many names the model resolves,
+ * and what the rules report (see {@link RuleCorpusStats}). Siemens files are reported per format, with classic STEP 7
+ * sources (unquoted block names) as {@code <format>-classic}. Run with {@code ./gradlew :plc-devtools:corpusCheck}.
  *
  * <p>Fails (exit 1) when a rule fails on any project, when the SLL-fallback rate on error-free texts exceeds
  * {@value #MAX_CLEAN_FALLBACK_RATE}, or when a rate drops below {@code corpus-baseline.properties}. With
@@ -46,6 +49,11 @@ public final class CorpusCheck {
 
     static final double MAX_CLEAN_FALLBACK_RATE = 0.02;
     private static final Pattern QUOTED = Pattern.compile("'[^']*'");
+    /** A block header with an unquoted name: classic STEP 7 SCL (TIA always quotes block names). */
+    private static final Pattern CLASSIC_HEADER =
+            Pattern.compile("(?im)^\\s*(FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK|DATA_BLOCK|TYPE)\\s+[A-Za-z_]");
+
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
 
     record FileResult(
             String repo,
@@ -91,7 +99,6 @@ public final class CorpusCheck {
             t.setDaemon(true);
             return t;
         });
-        ThreadLocal<StFrontend> frontends = ThreadLocal.withInitial(StFrontend::new);
         long t0 = System.nanoTime();
         List<Future<Map.Entry<List<FileResult>, ProjectResult>>> futures = new ArrayList<>();
         // largest projects first so one huge repository does not finish last on its own
@@ -99,7 +106,7 @@ public final class CorpusCheck {
         ordered.sort(Comparator.comparingInt(
                 (Map.Entry<String, List<String[]>> e) -> -e.getValue().size()));
         for (var project : ordered) {
-            futures.add(pool.submit(() -> parseProject(corpus, project.getKey(), project.getValue(), frontends.get())));
+            futures.add(pool.submit(() -> parseProject(corpus, project.getKey(), project.getValue())));
         }
         List<FileResult> results = new ArrayList<>();
         List<ProjectResult> projectResults = new ArrayList<>();
@@ -152,23 +159,27 @@ public final class CorpusCheck {
                     best = dir;
                 }
             }
-            out.computeIfAbsent(r[0] + "|" + best, k -> new ArrayList<>()).add(r);
+            String family = r[3].equals("Siemens") ? "|siemens" : "";
+            out.computeIfAbsent(r[0] + "|" + best + family, k -> new ArrayList<>())
+                    .add(r);
         }
         return out;
     }
 
     private static Map.Entry<List<FileResult>, ProjectResult> parseProject(
-            Path corpus, String key, List<String[]> rows, StFrontend frontend) {
+            Path corpus, String key, List<String[]> rows) {
         SourceRegistry registry = new SourceRegistry();
         List<FileResult> results = new ArrayList<>();
         List<SourceUnit> units = new ArrayList<>();
         rows.sort(Comparator.comparing(r -> r[2]));
         boolean twinCat = false;
+        boolean siemens = false;
         long parseStart = System.nanoTime();
         for (String[] r : rows) {
             twinCat |= r[3].equals("TwinCat");
+            siemens |= r[3].equals("Siemens");
             try {
-                var parsed = parseOne(corpus, r, frontend, registry);
+                var parsed = parseOne(corpus, r, registry);
                 if (parsed != null) {
                     results.add(parsed.getKey());
                     units.add(parsed.getValue());
@@ -184,7 +195,7 @@ public final class CorpusCheck {
         long parseNanos = t - parseStart;
         RuleCorpusStats.Outcome rules = RuleCorpusStats.Outcome.NONE;
         long modelNanos = 0;
-        SemanticModel.ResolutionStats stats = new SemanticModel.ResolutionStats(0, 0, 0, 0);
+        SemanticModel.ResolutionStats stats = SemanticModel.ResolutionStats.NONE;
         String escaped = null;
         List<String> unresolved = new ArrayList<>();
         try {
@@ -221,7 +232,7 @@ public final class CorpusCheck {
                 new ProjectResult(
                         repo,
                         key,
-                        twinCat ? "TwinCat" : "st",
+                        siemens ? "Siemens" : twinCat ? "TwinCat" : "st",
                         rows.size(),
                         stats,
                         modelNanos,
@@ -234,8 +245,8 @@ public final class CorpusCheck {
     private static Map<String, Double> semanticReport(List<ProjectResult> projects, PrintStream out, Path reportDir)
             throws IOException {
         StringBuilder md = new StringBuilder("\n## Semantic model (per project)\n\n");
-        md.append("| group | projects | names | resolved | library | unresolved | resolved+library (repo-weighted) |"
-                + " model time |\n|---|---|---|---|---|---|---|---|\n");
+        md.append("| group | projects | names | resolved | library | external tags | unresolved |"
+                + " resolved+library+external (repo-weighted) | model time |\n|---|---|---|---|---|---|---|---|---|\n");
         Map<String, Double> rates = new LinkedHashMap<>();
         Map<String, List<ProjectResult>> byGroup = new TreeMap<>();
         projects.forEach(
@@ -246,6 +257,7 @@ public final class CorpusCheck {
             long resolved = ps.stream().mapToLong(p -> p.stats().resolved()).sum();
             long library = ps.stream().mapToLong(p -> p.stats().library()).sum();
             long unresolved = ps.stream().mapToLong(p -> p.stats().unresolved()).sum();
+            long external = ps.stream().mapToLong(p -> p.stats().external()).sum();
             Map<String, double[]> perRepo = new HashMap<>();
             for (ProjectResult p : ps) {
                 if (p.stats().names() > 0) {
@@ -262,12 +274,13 @@ public final class CorpusCheck {
             double ms = ps.stream().mapToLong(ProjectResult::nanos).sum() / 1e6;
             md.append(String.format(
                     Locale.ROOT,
-                    "| %s | %,d | %,d | %.2f%% | %.2f%% | %.2f%% | %.2f%% | %,.0f ms |%n",
+                    "| %s | %,d | %,d | %.2f%% | %.2f%% | %.2f%% | %.2f%% | %.2f%% | %,.0f ms |%n",
                     e.getKey(),
                     ps.size(),
                     names,
                     pct(resolved, names),
                     pct(library, names),
+                    pct(external, names),
                     pct(unresolved, names),
                     100 * repoRate,
                     ms));
@@ -283,6 +296,16 @@ public final class CorpusCheck {
                         .append(p.escaped())
                         .append('\n'));
 
+        for (var e : byGroup.entrySet()) {
+            topUnresolved(e.getKey(), e.getValue(), md);
+        }
+        out.print(md);
+        Files.writeString(reportDir.resolve("summary.md"), md, java.nio.file.StandardOpenOption.APPEND);
+        return rates;
+    }
+
+    /** The most widespread unresolved names of one group: what the builtins table or the grammar misses. */
+    private static void topUnresolved(String group, List<ProjectResult> projects, StringBuilder md) {
         Map<String, int[]> names = new HashMap<>();
         Map<String, java.util.Set<String>> repos = new HashMap<>();
         Map<String, String> examples = new HashMap<>();
@@ -294,12 +317,12 @@ public final class CorpusCheck {
                 examples.putIfAbsent(n, p.repo() + "/" + entry.substring(entry.indexOf('|') + 1));
             }
         }
-        md.append("\n## Top unresolved names (occurrences, repos)\n\n");
+        md.append("\n## Top unresolved names in ").append(group).append(" (occurrences, repos)\n\n");
         repos.entrySet().stream()
                 .sorted(Comparator.comparingInt((Map.Entry<String, java.util.Set<String>> x) ->
                                 -x.getValue().size())
                         .thenComparing(Map.Entry::getKey))
-                .limit(40)
+                .limit(25)
                 .forEach(x -> md.append(String.format(
                         Locale.ROOT,
                         "- `%s` × %,d in %,d repos — e.g. %s%n",
@@ -307,9 +330,6 @@ public final class CorpusCheck {
                         names.get(x.getKey())[0],
                         x.getValue().size(),
                         examples.get(x.getKey()))));
-        out.print(md);
-        Files.writeString(reportDir.resolve("summary.md"), md, java.nio.file.StandardOpenOption.APPEND);
-        return rates;
     }
 
     private static double pct(long a, long b) {
@@ -327,7 +347,9 @@ public final class CorpusCheck {
             }
             String format = f[4];
             if ((f[3].equals("Codesys") && format.equals("st"))
-                    || (f[3].equals("TwinCat") && format.matches("TcPOU|TcDUT|TcGVL|TcIO|TcTTO|plcproj"))) {
+                    || (f[3].equals("TwinCat") && format.matches("TcPOU|TcDUT|TcGVL|TcIO|TcTTO|plcproj"))
+                    // Siemens .st files are SIMATIC AX (IEC OOP ST), out of scope for M4
+                    || (f[3].equals("Siemens") && format.matches("scl|db|udt"))) {
                 rows.add(f);
             }
         }
@@ -362,8 +384,7 @@ public final class CorpusCheck {
         return out.toArray(String[]::new);
     }
 
-    private static Map.Entry<FileResult, SourceUnit> parseOne(
-            Path corpus, String[] r, StFrontend frontend, SourceRegistry registry) {
+    private static Map.Entry<FileResult, SourceUnit> parseOne(Path corpus, String[] r, SourceRegistry registry) {
         String repoUrl = r[0];
         String rel = repoUrl.replace("https://github.com/", "github/").replace("https://gitlab.com/", "gitlab/");
         Path file = corpus.resolve("external").resolve(rel).resolve(r[2]);
@@ -374,6 +395,10 @@ public final class CorpusCheck {
             return null;
         }
         SourceFile sf = SourceFile.fromBytes(r[2], data);
+        Frontend frontend = FRONTENDS.forPath(r[2]);
+        if (frontend == null) {
+            return null;
+        }
         DiagnosticCollector diags = new DiagnosticCollector();
         Frontend.Result result = frontend.parse(sf, registry, diags);
         List<String> errors = new ArrayList<>();
@@ -389,8 +414,10 @@ public final class CorpusCheck {
             }
         }
         long lines = parseLongOr(r[8]);
+        String format =
+                r[3].equals("Siemens") && CLASSIC_HEADER.matcher(sf.text()).find() ? r[4] + "-classic" : r[4];
         return Map.entry(
-                new FileResult(repoUrl, r[2], r[4], lines, errors.isEmpty(), result.stats(), errors, first),
+                new FileResult(repoUrl, r[2], format, lines, errors.isEmpty(), result.stats(), errors, first),
                 result.unit());
     }
 
@@ -404,7 +431,7 @@ public final class CorpusCheck {
         Frontend.Stats total =
                 results.stream().map(FileResult::stats).reduce(Frontend.Stats.NONE, Frontend.Stats::plus);
 
-        StringBuilder md = new StringBuilder("# frontend-st corpus check\n\n");
+        StringBuilder md = new StringBuilder("# Frontend corpus check\n\n");
         md.append(String.format(
                 Locale.ROOT,
                 "%,d files, %,d lines in %.1f s on %d threads (%,.0f lines/s)%n%n",

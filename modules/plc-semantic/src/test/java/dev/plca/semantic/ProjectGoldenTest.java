@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.testing.Golden;
+import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontends;
@@ -15,10 +16,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 /** Golden dump of the whole model for each project under {@code src/test/resources/projects/}. */
 class ProjectGoldenTest {
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
 
     @ParameterizedTest
-    @ValueSource(strings = {"plant"})
+    @ValueSource(strings = {"plant", "tia_line"})
     void modelMatchesGolden(String project) {
         Path root = Path.of(System.getProperty("golden.root"), "projects", project);
         ProjectLoader.Project p = ProjectLoader.load(root, FRONTENDS, 2);

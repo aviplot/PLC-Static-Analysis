@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":frontend-st"))
+    implementation(project(":frontend-scl"))
     implementation(project(":plc-semantic"))
     implementation(project(":plc-rules"))
 }

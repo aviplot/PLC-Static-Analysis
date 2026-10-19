@@ -1,0 +1,14 @@
+FUNCTION "FC_Scale" : Real
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Raw : Int;
+   END_VAR
+BEGIN
+	#FC_Scale := INT_TO_REAL(#Raw) / 27648.0;
+END_FUNCTION
+
+FUNCTION "FC_Log" : Void
+BEGIN
+	"DB_Counters".Total := 0;
+END_FUNCTION

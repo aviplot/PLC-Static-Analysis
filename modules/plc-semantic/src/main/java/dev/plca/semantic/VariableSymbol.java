@@ -19,6 +19,7 @@ public final class VariableSymbol implements Symbol {
     private final Symbol owner;
     private final boolean result;
     private Type type = Type.UNKNOWN;
+    private VariableSymbol overlayOf;
 
     VariableSymbol(
             String name, VarDecl declaration, VarBlock block, VarBlock.Section section, Symbol owner, boolean result) {
@@ -89,6 +90,15 @@ public final class VariableSymbol implements Symbol {
 
     void setType(Type t) {
         this.type = t;
+    }
+
+    /** The variable a Siemens {@code name AT other : T;} view overlays (accesses through the view hit it), or null. */
+    public VariableSymbol overlayOf() {
+        return overlayOf;
+    }
+
+    void setOverlayOf(VariableSymbol base) {
+        this.overlayOf = base;
     }
 
     @Override

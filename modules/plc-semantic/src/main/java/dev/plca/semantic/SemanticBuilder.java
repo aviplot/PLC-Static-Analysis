@@ -12,6 +12,7 @@ import dev.plca.ast.SourceUnit;
 import dev.plca.ast.TypeRef;
 import dev.plca.ast.VarBlock;
 import dev.plca.ast.VarDecl;
+import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticSink;
 import dev.plca.core.diag.Severity;
@@ -117,13 +118,36 @@ public final class SemanticBuilder {
                     }
                 }
                 case Declaration.Using u -> {}
-                // Siemens DBs are declared by the M4 semantic step (global DB / instance DB / typed DB)
-                case Declaration.DataBlock db -> {}
+                case Declaration.DataBlock db -> declareDataBlock(db);
             }
         }
     }
 
     private record StructExtends(TypeSymbol type, QualifiedName base) {}
+
+    /**
+     * A Siemens DB becomes one global variable: of its own STRUCT (global DB), of its FB (instance DB: a global FB
+     * instance) or of its UDT (typed DB). Which of the last two {@code basedOn} names is up to type resolution.
+     */
+    private void declareDataBlock(Declaration.DataBlock db) {
+        TypeRef layout;
+        if (db.basedOn() != null) {
+            layout = new TypeRef.Named(
+                    db.basedOn(), List.of(), null, null, null, db.basedOn().span());
+        } else if (db.layout() != null) {
+            layout = db.layout();
+        } else {
+            List<VarDecl> members = new ArrayList<>();
+            db.varBlocks().forEach(b -> members.addAll(b.variables()));
+            layout = new TypeRef.StructType(members, db.span());
+        }
+        VarDecl decl = new VarDecl(db.name(), null, null, layout, null, false, db.pragmas(), db.span());
+        GvlSymbol dbs = global.dataBlocks();
+        VariableSymbol v = new VariableSymbol(db.name().name(), decl, null, VarBlock.Section.GLOBAL, dbs, false);
+        dbs.addVariable(v);
+        pendingTypes.add(new PendingType(v, layout, null));
+        reportDuplicate(global.addGlobal(v), v, db.name());
+    }
 
     private PouSymbol declarePou(SourceUnit unit, Pou p, PouSymbol owner) {
         PouSymbol s = new PouSymbol(p.kind(), p.name().name(), p, owner, unit, false);
@@ -135,7 +159,12 @@ public final class SemanticBuilder {
                 pendingTypes.add(new PendingType(vs, v.type(), s));
             }
         }
+        boolean siemens = unit != null && unit.dialect() == Dialect.SIEMENS;
+        if (siemens) {
+            siemensImplicits(p, s);
+        }
         boolean hasResult = p.returnType() != null
+                && !(siemens && isVoid(p.returnType()))
                 && (p.kind() == PouKind.FUNCTION || p.kind() == PouKind.METHOD || p.kind() == PouKind.PROPERTY);
         if (hasResult) {
             VariableSymbol result = new VariableSymbol(p.name().name(), null, null, VarBlock.Section.OUTPUT, s, true);
@@ -153,6 +182,40 @@ public final class SemanticBuilder {
     }
 
     private record ResultOf(PouSymbol pou, VariableSymbol result) {}
+
+    /** {@code FUNCTION "f" : Void} has no result. */
+    private static boolean isVoid(TypeRef t) {
+        return t instanceof TypeRef.Named n
+                && n.name().parts().size() == 1
+                && n.name().last().is("Void");
+    }
+
+    /**
+     * Siemens blocks: overlay views ({@code x AT y}) point at their base variable, and FBs/FCs have the implicit
+     * {@code EN} input and {@code ENO} output (TIA "EN/ENO mechanism") unless they declare them.
+     */
+    private static void siemensImplicits(Pou p, PouSymbol s) {
+        for (VarBlock b : p.varBlocks()) {
+            for (VarDecl v : b.variables()) {
+                if (v.overlay() != null) {
+                    s.variable(v.name().name())
+                            .ifPresent(view -> s.variable(v.overlay().name())
+                                    .filter(base -> base != view)
+                                    .ifPresent(view::setOverlayOf));
+                }
+            }
+        }
+        if (p.kind() == PouKind.FUNCTION_BLOCK || p.kind() == PouKind.FUNCTION) {
+            for (String name : List.of("EN", "ENO")) {
+                if (s.variable(name).isEmpty()) {
+                    VarBlock.Section section = name.equals("EN") ? VarBlock.Section.INPUT : VarBlock.Section.OUTPUT;
+                    VariableSymbol v = new VariableSymbol(name, null, null, section, s, false);
+                    v.setType(Type.BOOL);
+                    s.addVariable(v);
+                }
+            }
+        }
+    }
 
     private TypeSymbol declareType(String name, Node decl, TypeRef ref, List<Pragma> pragmas, PouSymbol context) {
         TypeSymbol.Kind kind = switch (ref) {
@@ -250,7 +313,8 @@ public final class SemanticBuilder {
         for (int i = 0; i < pendingTypes.size(); i++) {
             PendingType t = pendingTypes.get(i);
             switch (t.target()) {
-                case VariableSymbol v -> v.setType(resolve(t.ref(), t.context()));
+                case VariableSymbol v ->
+                    v.setType(t.ref() == null ? constantType(v, t.context()) : resolve(t.ref(), t.context()));
                 case ResultOf r -> {
                     Type rt = resolve(t.ref(), t.context());
                     r.pou().setReturnType(rt);
@@ -264,6 +328,23 @@ public final class SemanticBuilder {
                 default -> {}
             }
         }
+    }
+
+    /** Classic SCL {@code CONST n := 10; END_CONST} has no declared type: it follows from the value. */
+    private Type constantType(VariableSymbol v, PouSymbol context) {
+        if (!(v.initializer() instanceof Expression e)) {
+            return Type.UNKNOWN;
+        }
+        return switch (model.constants.evaluate(e, x -> constantScope(x, context))) {
+            case Constant.Int i -> Builtins.concrete(new Type.IntLiteral(i.value()));
+            case Constant.Real r -> Type.of(ElementaryKind.LREAL);
+            case Constant.Bool b -> Type.BOOL;
+            case Constant.Duration d -> Type.of(ElementaryKind.TIME);
+            case null ->
+                e instanceof Expression.Literal l && l.kind() == Expression.LiteralKind.STRING
+                        ? new Type.StringType(false, 254)
+                        : Type.UNKNOWN;
+        };
     }
 
     private static boolean inheritsFrom(PouSymbol p, PouSymbol ancestor) {
@@ -477,6 +558,14 @@ public final class SemanticBuilder {
         List<TaskModel.Task> tasks = new ArrayList<>();
         for (Declaration.Configuration c : configurations) {
             collectTasks(c.elements(), tasks);
+        }
+        // Siemens: every OB is an entry point the operating system calls. Its event class and priority are not part of
+        // SCL exports (TIA keeps them in the OB's properties), so they stay unknown rather than guessed from the name.
+        for (PouSymbol p : model.pous) {
+            if (p.kind() == PouKind.ORGANIZATION_BLOCK) {
+                tasks.add(new TaskModel.Task(
+                        p.name(), null, null, List.of(p), p.declaration().name().span()));
+            }
         }
         model.taskModel = new TaskModel(tasks, model.callGraph);
     }

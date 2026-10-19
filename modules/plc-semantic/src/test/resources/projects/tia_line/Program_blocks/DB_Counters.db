@@ -1,0 +1,12 @@
+DATA_BLOCK "DB_Counters"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   STRUCT 
+      Line1 : "UDT_Counters";
+      Total : DInt;
+   END_STRUCT;
+
+BEGIN
+   Total := 0;
+END_DATA_BLOCK

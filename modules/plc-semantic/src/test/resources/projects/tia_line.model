@@ -1,0 +1,87 @@
+pous:
+  FUNCTION_BLOCK FB10
+    VAR LIMIT : DINT CONSTANT
+    VAR Count : INT
+    INPUT EN : BOOL
+    OUTPUT ENO : BOOL
+  ORGANIZATION_BLOCK Cyclic interrupt
+  FUNCTION_BLOCK FB_Conveyor
+    INPUT Start : BOOL
+    INPUT Stop : BOOL
+    OUTPUT Running : BOOL
+    OUTPUT Status : WORD
+    IN_OUT Counters : UDT_Counters
+    VAR Motor : FB_Motor
+    VAR JamTimer : TON_TIME
+    VAR Edge : R_TRIG
+    VAR Raw : ARRAY[0..3] OF BYTE
+    VAR RawWord : DWORD
+    TEMP i : INT
+    INPUT EN : BOOL
+    OUTPUT ENO : BOOL
+  FUNCTION_BLOCK FB_Motor
+    INPUT Enable : BOOL
+    OUTPUT Busy : BOOL
+    INPUT EN : BOOL
+    OUTPUT ENO : BOOL
+  FUNCTION FC_Scale : REAL
+    INPUT Raw : INT
+    INPUT EN : BOOL
+    OUTPUT ENO : BOOL
+  FUNCTION FC_Log
+    INPUT EN : BOOL
+    OUTPUT ENO : BOOL
+  ORGANIZATION_BLOCK Main
+    TEMP scaled : REAL
+types:
+  STRUCT UDT_Counters { Values : ARRAY[0..9] OF DINT, Reset : BOOL }
+gvls:
+  <data blocks> { Conveyor_DB : FB_Conveyor, DB_Counters : <anonymous 1>, IEC_Timer_0_DB : IEC_TIMER }
+effects:
+  FB10 Program_blocks/Classic_FB.scl:9:5 If: read(Count) read(LIMIT)
+  FB10 Program_blocks/Classic_FB.scl:10:9 Assignment: write(Count) read(Count)
+  Cyclic interrupt Program_blocks/Cyclic_100ms.scl:5:2 Assignment: write(DB_Counters.Total) read(DB_Counters.Total)
+  Cyclic interrupt Program_blocks/Cyclic_100ms.scl:6:2 CallStatement: read(IEC_Timer_0_DB.Q)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:28:6 CallStatement: write(Edge.CLK) read(Start)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:29:6 If: read(Edge.Q) read(Stop)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:30:10 Assignment: write(Running)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:32:10 Assignment: write(Running)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:35:2 CallStatement: write(Motor.Enable) read(Running) call(FB_INSTANCE FB_Motor via Motor)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:36:2 CallStatement: write(JamTimer.IN) read(Running) read(Motor.Busy) write(JamTimer.PT)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:37:2 Assignment: write(Status.%X0) read(JamTimer.Q)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:38:2 Assignment: write(Raw)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:39:2 For: write(i)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:40:6 Assignment: write(Counters.Values[*]) read(i) read(Counters.Values[*]) read(i)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:42:2 Assignment: write(DB_Counters.Line1.Reset) read(Stop)
+  FB_Conveyor Program_blocks/FB_Conveyor.scl:43:2 Assignment: write(ENO) read(Running)
+  FB_Motor Program_blocks/FB_Motor.scl:11:2 Assignment: write(Busy) read(Enable)
+  FC_Scale Program_blocks/FC_Scale.scl:8:2 Assignment: write(FC_Scale) read(Raw)
+  FC_Log Program_blocks/FC_Scale.scl:13:2 Assignment: write(DB_Counters.Total)
+  Main Program_blocks/Main.scl:10:2 CallStatement: write(Conveyor_DB.Start) write(Conveyor_DB.Stop) read_write(DB_Counters.Line1) call(FB_INSTANCE FB_Conveyor via Conveyor_DB)
+  Main Program_blocks/Main.scl:11:2 Assignment: read(Conveyor_DB.Running)
+  Main Program_blocks/Main.scl:12:2 Assignment: write(scaled) call(FUNCTION FC_Scale)
+  Main Program_blocks/Main.scl:13:2 CallStatement: call(FUNCTION FC_Log)
+call graph:
+  FB_Conveyor -> FB_Motor (FB_INSTANCE Program_blocks/FB_Conveyor.scl:35:2)
+  Main -> FB_Conveyor (FB_INSTANCE Program_blocks/Main.scl:10:2)
+  Main -> FC_Scale (FUNCTION Program_blocks/Main.scl:12:13)
+  Main -> FC_Log (FUNCTION Program_blocks/Main.scl:13:2)
+instances:
+  Cyclic interrupt : Cyclic interrupt
+  Main : Main
+  Conveyor_DB : FB_Conveyor
+    Conveyor_DB.Motor : FB_Motor
+    Conveyor_DB.JamTimer : TON_TIME
+    Conveyor_DB.Edge : R_TRIG
+  IEC_Timer_0_DB : IEC_TIMER
+tasks:
+  Cyclic interrupt priority=null interval=? programs=[Cyclic interrupt]
+  Main priority=null interval=? programs=[Main]
+  Cyclic interrupt runs in [Cyclic interrupt]
+  FB_Conveyor runs in [Main]
+  FB_Motor runs in [Main]
+  FC_Log runs in [Main]
+  FC_Scale runs in [Main]
+  Main runs in [Main]
+names: 62 resolved=57 library=0 unresolved=0 external=5
+diagnostics:

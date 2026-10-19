@@ -90,6 +90,13 @@ public final class GlobalScope {
         return types.putIfAbsent(PouSymbol.key(qualifiedName), t);
     }
 
+    /** The list holding one global variable per Siemens data block. */
+    GvlSymbol dataBlocks() {
+        return gvls.computeIfAbsent(PouSymbol.key(DATA_BLOCKS), k -> new GvlSymbol(DATA_BLOCKS, false, null, true));
+    }
+
+    static final String DATA_BLOCKS = "<data blocks>";
+
     GvlSymbol gvlOrCreate(String name, boolean qualifiedOnly, dev.plca.ast.Node declaration) {
         return gvls.computeIfAbsent(PouSymbol.key(name), k -> new GvlSymbol(name, qualifiedOnly, declaration));
     }

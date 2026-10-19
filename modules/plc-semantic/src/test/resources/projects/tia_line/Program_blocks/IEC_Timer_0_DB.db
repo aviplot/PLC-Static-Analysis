@@ -1,0 +1,8 @@
+DATA_BLOCK "IEC_Timer_0_DB"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+IEC_TIMER
+
+BEGIN
+END_DATA_BLOCK

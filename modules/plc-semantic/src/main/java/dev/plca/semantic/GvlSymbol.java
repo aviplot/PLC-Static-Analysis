@@ -15,13 +15,19 @@ public final class GvlSymbol implements Symbol {
 
     private final String name;
     private final boolean qualifiedOnly;
+    private final boolean dataBlocks;
     private final Node declaration;
     private final Map<String, VariableSymbol> variables = new LinkedHashMap<>();
 
     GvlSymbol(String name, boolean qualifiedOnly, Node declaration) {
+        this(name, qualifiedOnly, declaration, false);
+    }
+
+    GvlSymbol(String name, boolean qualifiedOnly, Node declaration, boolean dataBlocks) {
         this.name = name;
         this.qualifiedOnly = qualifiedOnly;
         this.declaration = declaration;
+        this.dataBlocks = dataBlocks;
     }
 
     @Override
@@ -40,6 +46,14 @@ public final class GvlSymbol implements Symbol {
 
     public boolean qualifiedOnly() {
         return qualifiedOnly;
+    }
+
+    /**
+     * The project's Siemens data blocks: one global variable per DB, typed by its own STRUCT, its UDT, or its FB
+     * (instance DB). HMIs and other PLCs read and write DBs, so their members are never "unused".
+     */
+    public boolean isDataBlocks() {
+        return dataBlocks;
     }
 
     public Map<String, VariableSymbol> variables() {

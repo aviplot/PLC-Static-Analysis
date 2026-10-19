@@ -20,9 +20,17 @@ import java.util.Optional;
 public final class SemanticModel {
 
     /** How many name occurrences in bodies were bound, and how the rest split. */
-    public record ResolutionStats(int names, int resolved, int library, int unresolved) {
+    /**
+     * Name-resolution counts. {@code library}: names of libraries or types the project does not contain;
+     * {@code external}: Siemens {@code "quoted"} names the project does not define (PLC tags from tag tables, blocks
+     * outside the export). Both count as resolved for {@link #rate()}: the model cannot know them, but they are not
+     * errors.
+     */
+    public record ResolutionStats(int names, int resolved, int library, int unresolved, int external) {
+        public static final ResolutionStats NONE = new ResolutionStats(0, 0, 0, 0, 0);
+
         public double rate() {
-            return names == 0 ? 1.0 : (resolved + library) / (double) names;
+            return names == 0 ? 1.0 : (resolved + library + external) / (double) names;
         }
     }
 
@@ -38,7 +46,7 @@ public final class SemanticModel {
     final CallGraph callGraph = new CallGraph();
     InstanceGraph instanceGraph = new InstanceGraph();
     TaskModel taskModel;
-    ResolutionStats stats = new ResolutionStats(0, 0, 0, 0);
+    ResolutionStats stats = ResolutionStats.NONE;
     ConstantEvaluator constants;
 
     SemanticModel(List<SourceUnit> units, GlobalScope global) {

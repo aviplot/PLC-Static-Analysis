@@ -1,0 +1,44 @@
+FUNCTION_BLOCK "FB_Conveyor"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Start : Bool;
+      Stop : Bool;
+   END_VAR
+   VAR_OUTPUT 
+      Running : Bool;
+      Status : Word;
+   END_VAR
+   VAR_IN_OUT 
+      Counters : "UDT_Counters";
+   END_VAR
+   VAR 
+      Motor : "FB_Motor";
+      JamTimer : TON_TIME;
+      Edge : R_TRIG;
+      Raw : Array[0..3] of Byte;
+      RawWord AT Raw : DWord;
+   END_VAR
+   VAR_TEMP 
+      i : Int;
+   END_VAR
+
+BEGIN
+	REGION Start/stop
+	    #Edge(CLK := #Start);
+	    IF #Edge.Q THEN
+	        #Running := TRUE;
+	    ELSIF #Stop THEN
+	        #Running := FALSE;
+	    END_IF;
+	END_REGION
+	#Motor(Enable := #Running);
+	#JamTimer(IN := #Running AND NOT #Motor.Busy, PT := T#5s);
+	#Status.%X0 := #JamTimer.Q;
+	#RawWord := 0;
+	FOR #i := 0 TO 9 DO
+	    #Counters.Values[#i] := #Counters.Values[#i] + 1;
+	END_FOR;
+	"DB_Counters".Line1.Reset := #Stop;
+	ENO := #Running;
+END_FUNCTION_BLOCK

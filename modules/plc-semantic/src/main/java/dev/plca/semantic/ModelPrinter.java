@@ -228,8 +228,11 @@ public final class ModelPrinter {
                 .append(" library=")
                 .append(s.library())
                 .append(" unresolved=")
-                .append(s.unresolved())
-                .append('\n');
+                .append(s.unresolved());
+        if (s.external() > 0) {
+            out.append(" external=").append(s.external());
+        }
+        out.append('\n');
     }
 
     private String pos(Span s) {

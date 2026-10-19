@@ -1,0 +1,7 @@
+ORGANIZATION_BLOCK "Cyclic interrupt"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+BEGIN
+	"DB_Counters".Total := "DB_Counters".Total + 1;
+	"IEC_Timer_0_DB".TON(IN := NOT "IEC_Timer_0_DB".Q, PT := T#1s);
+END_ORGANIZATION_BLOCK

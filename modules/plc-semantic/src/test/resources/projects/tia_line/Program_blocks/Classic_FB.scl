@@ -1,0 +1,12 @@
+FUNCTION_BLOCK FB10
+CONST
+    LIMIT := 100;
+END_CONST
+VAR
+    Count : INT;
+END_VAR
+BEGIN
+    IF Count < LIMIT THEN
+        Count := Count + 1;
+    END_IF;
+END_FUNCTION_BLOCK

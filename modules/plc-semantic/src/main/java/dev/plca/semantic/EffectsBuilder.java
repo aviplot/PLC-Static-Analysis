@@ -59,6 +59,11 @@ final class EffectsBuilder {
                 if (a.op() == Statement.AssignOp.REF) {
                     write(a.target(), c);
                     address(a.value(), c);
+                } else if (a.op().isCompound()) {
+                    // x += v has the effects of x := x + v
+                    write(a.target(), c);
+                    read(a.target(), c);
+                    read(a.value(), c);
                 } else {
                     write(a.target(), c);
                     read(a.value(), c);
@@ -93,7 +98,13 @@ final class EffectsBuilder {
 
     private PathRef path(Expression e) {
         return switch (e) {
-            case Expression.NameRef n -> model.symbols.get(n) instanceof VariableSymbol v ? new PathRef(v, "") : null;
+            case Expression.NameRef n -> {
+                if (!(model.symbols.get(n) instanceof VariableSymbol v)) {
+                    yield null;
+                }
+                // an overlay view (Siemens `x AT y`) shares y's storage
+                yield new PathRef(v.overlayOf() != null ? v.overlayOf() : v, "");
+            }
             case Expression.MemberAccess m -> {
                 Symbol s = model.symbols.get(m);
                 if (!(s instanceof VariableSymbol v)) {

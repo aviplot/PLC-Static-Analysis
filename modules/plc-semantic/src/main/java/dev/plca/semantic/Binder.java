@@ -3,6 +3,7 @@ package dev.plca.semantic;
 import dev.plca.ast.Declaration.PouKind;
 import dev.plca.ast.Expression;
 import dev.plca.ast.Expression.Argument;
+import dev.plca.ast.Identifier;
 import dev.plca.ast.Initializer;
 import dev.plca.ast.Statement;
 import dev.plca.ast.TypeRef.PointerKind;
@@ -27,6 +28,7 @@ final class Binder {
     private int resolved;
     private int library;
     private int unresolved;
+    private int external;
 
     Binder(SemanticModel model, DiagnosticSink sink) {
         this.model = model;
@@ -49,7 +51,7 @@ final class Binder {
                 bindInitializer(v.initializer(), null);
             }
         }
-        model.stats = new SemanticModel.ResolutionStats(names, resolved, library, unresolved);
+        model.stats = new SemanticModel.ResolutionStats(names, resolved, library, unresolved, external);
     }
 
     private void bindInitializer(Initializer init, PouSymbol pou) {
@@ -195,7 +197,23 @@ final class Binder {
     private Type name(Expression.NameRef n, PouSymbol pou) {
         names++;
         String name = n.name().name();
-        Optional<Symbol> s = n.globalScope() ? global.lookup(name) : lookup(name, pou);
+        // Siemens: #x is a local of the block, "x" a global block/DB/UDT/tag; plain names follow the IEC chain
+        Optional<Symbol> s = switch (n.name().form()) {
+            case LOCAL -> localLookup(name, pou);
+            case QUOTED -> global.lookup(name);
+            case PLAIN -> n.globalScope() ? global.lookup(name) : lookup(name, pou);
+        };
+        if (s.isEmpty() && n.name().form() == Identifier.Form.PLAIN && isTypeName(name)) {
+            // a type used as an operand: Siemens TypeOf comparisons, TypeOf(#v) = Real
+            resolved++;
+            return Type.UNKNOWN;
+        }
+        if (s.isEmpty() && n.name().form() == Identifier.Form.QUOTED) {
+            // a PLC tag (tag tables are not part of SCL exports) or a block outside the export: never guessed
+            external++;
+            model.symbols.put(n, new LibrarySymbol(name));
+            return new Type.Unknown(name);
+        }
         if (s.isEmpty()) {
             unresolved++;
             model.unresolved.add(n);
@@ -204,6 +222,21 @@ final class Binder {
         resolved++;
         model.symbols.put(n, s.get());
         return typeOfSymbol(s.get());
+    }
+
+    private static boolean isTypeName(String name) {
+        return ElementaryKind.byName(name).isPresent() || name.equalsIgnoreCase("DTL");
+    }
+
+    /** Siemens {@code #name}: a variable of the block itself (or of the FB a member belongs to), nothing global. */
+    private static Optional<Symbol> localLookup(String name, PouSymbol pou) {
+        for (PouSymbol p = pou; p != null; p = p.owner()) {
+            Optional<VariableSymbol> v = p.isInstantiable() ? p.findVariable(name) : p.variable(name);
+            if (v.isPresent()) {
+                return Optional.of(v.get());
+            }
+        }
+        return Optional.empty();
     }
 
     /** CODESYS scope chain for an unqualified name used in the body of {@code pou}. */

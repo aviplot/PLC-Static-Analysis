@@ -1,0 +1,8 @@
+TYPE "UDT_Counters"
+VERSION : 0.1
+   STRUCT
+      Values : Array[0..9] of DInt;
+      Reset : Bool;
+   END_STRUCT;
+
+END_TYPE
