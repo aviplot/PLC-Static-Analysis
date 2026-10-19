@@ -6,6 +6,8 @@ dependencies {
     api(project(":plc-rules"))
     implementation(libs.jackson.databind)
     testImplementation(project(":frontend-st"))
+    testImplementation(project(":frontend-l5x"))
+    testImplementation(project(":frontend-plcopen"))
     testImplementation(testFixtures(project(":plc-core")))
     testImplementation(libs.json.schema.validator)
 }

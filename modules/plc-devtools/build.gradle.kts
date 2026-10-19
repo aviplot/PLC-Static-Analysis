@@ -50,6 +50,17 @@ tasks.register<JavaExec>("navigationCheck") {
     workingDir = rootProject.projectDir
 }
 
+// ./gradlew :plc-devtools:renderCheck [--args="--sample=build/render-sample.html"] draws every rung and network of the
+// Rockwell and PLCopen corpus files as the workbench does (M9).
+tasks.register<JavaExec>("renderCheck") {
+    group = "verification"
+    description = "Draws every ladder rung and PLCopen network of the local corpus and checks the SVG."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "dev.plca.devtools.RenderCheck"
+    maxHeapSize = "6g"
+    workingDir = rootProject.projectDir
+}
+
 // ./gradlew :plc-devtools:parseDebug --args="<file> ... | @listfile" prints diagnostics with source lines.
 tasks.register<JavaExec>("parseDebug") {
     group = "verification"
