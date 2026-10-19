@@ -10,7 +10,13 @@ import picocli.CommandLine.Command;
         mixinStandardHelpOptions = true,
         versionProvider = Main.Version.class,
         description = "Static analysis for PLC programs (CODESYS / TwinCAT Structured Text).",
-        subcommands = {AnalyzeCommand.class, RulesCommand.class, LspCommand.class, CommandLine.HelpCommand.class})
+        subcommands = {
+            AnalyzeCommand.class,
+            RulesCommand.class,
+            LspCommand.class,
+            WebCommand.class,
+            CommandLine.HelpCommand.class
+        })
 public final class Main implements Runnable {
 
     @CommandLine.Spec

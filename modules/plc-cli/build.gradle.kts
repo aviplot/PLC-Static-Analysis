@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation(project(":plc-analysis"))
     implementation(project(":plc-lsp"))
+    implementation(project(":plc-web"))
     testImplementation(libs.jackson.databind)
 }
 

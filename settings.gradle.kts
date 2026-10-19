@@ -10,7 +10,7 @@ dependencyResolutionManagement {
 rootProject.name = "plca"
 
 // Dependency direction (design rule 3: rules never see ANTLR parse trees):
-//   plc-core <- plc-ast <- plc-semantic <- plc-rules <- plc-report <- plc-analysis <- plc-cli, plc-lsp
+//   plc-core <- plc-ast <- plc-semantic <- plc-rules <- plc-report <- plc-analysis <- plc-lsp <- plc-web <- plc-cli
 //   plc-grammar <- frontend-* (implementation only) -> plc-ast; frontend-* <- plc-analysis
 //   plc-devtools: corpus check, parse debugging, JMH benchmarks (never shipped)
 listOf(
@@ -26,6 +26,7 @@ listOf(
     "plc-report",
     "plc-analysis",
     "plc-lsp",
+    "plc-web",
     "plc-cli",
     "plc-devtools",
 ).forEach { name ->
