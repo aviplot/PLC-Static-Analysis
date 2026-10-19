@@ -122,6 +122,9 @@ public final class UncheckedExternalInput implements ProjectRule {
             if (p.declaration() == null || p.declaration().body() == null) {
                 continue;
             }
+            if (!hasSink(m, p.declaration().body())) {
+                continue; // no physical output written and no array indexed: nothing to check
+            }
             Set<Key> checked = new HashSet<>();
             body(ctx, p, p.declaration().body(), new ArrayList<>(), checked, written, names);
         }
@@ -229,6 +232,21 @@ public final class UncheckedExternalInput implements ProjectRule {
                 "Output " + output + " is driven directly by '" + source.display() + "', which can be written from"
                         + " outside the PLC (HMI, SCADA), with no range or validity check",
                 List.of(new Diagnostic.Related(via.span(), "externally writable value")));
+    }
+
+    private static boolean hasSink(SemanticModel m, List<Statement> body) {
+        boolean[] any = {false};
+        Statements.forEachDeep(body, s -> {
+            if (any[0]) {
+                return;
+            }
+            if (s instanceof Statement.Assignment a && output(m, a.target()) != null) {
+                any[0] = true;
+                return;
+            }
+            Walk.ownExpressions(s, e -> Walk.deep(e, x -> any[0] |= x instanceof Expression.Index));
+        });
+        return any[0];
     }
 
     /** The physical output an assignment target writes, as text, or null. */

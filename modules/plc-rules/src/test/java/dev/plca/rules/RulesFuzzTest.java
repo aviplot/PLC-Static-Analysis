@@ -58,7 +58,7 @@ class RulesFuzzTest {
         SourceUnit unit = frontend.parse(SourceFile.fromBytes(path, input), registry, diags)
                 .unit();
         SemanticModel m = SemanticBuilder.build(List.of(unit), diags);
-        RuleEngine.Result r = ENGINE.run(m, registry, RuleConfig.defaults(), 1);
+        RuleEngine.Result r = ENGINE.run(m, registry, RuleConfig.only("all"), 1);
         assertThat(r.diagnostics()).isEmpty();
         for (Finding f : r.findings()) {
             registry.resolve(f.span());

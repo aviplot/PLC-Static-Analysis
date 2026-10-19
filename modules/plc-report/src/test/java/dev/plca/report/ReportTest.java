@@ -110,6 +110,16 @@ class ReportTest {
     }
 
     @Test
+    void htmlGoldenAndWellFormed() throws IOException {
+        String html = render(ReportFormat.HTML, analyze(RESOURCES.resolve("project")));
+        Golden.assertMatches(html, "report.html");
+        assertThat(HtmlCheck.problems(html)).isEmpty();
+        // self-contained: no external resources of any kind
+        assertThat(html).doesNotContainPattern("(?i)(src|href)\\s*=\\s*\"(https?:)?//");
+        assertThat(html).doesNotContainPattern("(?i)<link\\b|@import|url\\(");
+    }
+
+    @Test
     void fingerprintsSurviveCodeMovingDown(@TempDir Path tmp) throws IOException {
         Path a = tmp.resolve("a");
         Path b = tmp.resolve("b");

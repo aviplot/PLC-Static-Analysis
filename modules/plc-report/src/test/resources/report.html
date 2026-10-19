@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="plca 0.1.0-SNAPSHOT">
+<title>plca report</title>
+<style>
+:root { --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #d9dee6; --card: #f5f7fa;
+  --code: #f3f4f6; --hit: #fff3c4; --err: #c62828; --warn: #b26a00; --info: #1565c0; --link: #1a56db; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171c; --fg: #e3e7ee; --muted: #9aa3b2; --line: #2c323c; --card: #1c2028;
+    --code: #1a1e25; --hit: #4a3f12; --err: #ef6b6b; --warn: #f0a83a; --info: #6aa8f0; --link: #7aa7ff; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; } h2 { font-size: 1.25rem; margin: 32px 0 12px; }
+h4 { margin: 18px 0 6px; } a { color: var(--link); }
+.muted { color: var(--muted); }
+.cards { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0 8px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px;
+  min-width: 130px; }
+.card .value { font-size: 1.6rem; font-weight: 600; } .card .label { color: var(--muted); }
+.card .note { font-size: 0.8rem; color: var(--muted); }
+.card.sev-error .value { color: var(--err); } .card.sev-warning .value { color: var(--warn); }
+.card.sev-info .value { color: var(--info); }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px; position: sticky; top: 0; }
+.filters select, .filters input { font: inherit; color: inherit; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 100%; }
+details.file { border: 1px solid var(--line); border-radius: 8px; margin: 12px 0; }
+details.file > summary { padding: 8px 12px; cursor: pointer; background: var(--card);
+  border-radius: 8px; overflow-wrap: anywhere; }
+.path { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9rem; }
+.finding { padding: 10px 12px; border-top: 1px solid var(--line); }
+.finding .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.msg { margin: 6px 0 2px; } .title { margin: 0 0 6px; font-size: 0.85rem; }
+.badge { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 1px 6px;
+  border-radius: 4px; border: 1px solid currentColor; }
+.badge.sev-error { color: var(--err); } .badge.sev-warning { color: var(--warn); }
+.badge.sev-info, .badge.sev-hint { color: var(--info); }
+.rule, .loc, .place { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
+.place { color: var(--muted); overflow-wrap: anywhere; }
+pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 8px 0;
+  overflow-x: auto; font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace; margin: 6px 0; }
+pre code { padding: 0 10px; display: block; }
+.src .ln { display: block; padding: 0 10px; white-space: pre; }
+.src .ln.hit { background: var(--hit); }
+.src .no { display: inline-block; min-width: 4.5em; color: var(--muted); user-select: none; }
+ul.related { margin: 4px 0; padding-left: 20px; font-size: 0.9rem; }
+ul.problems { padding-left: 0; list-style: none; } ul.problems li { margin: 4px 0; overflow-wrap: anywhere; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.num { text-align: right; }
+details.help { border-bottom: 1px solid var(--line); padding: 6px 0; }
+details.help > summary { cursor: pointer; font-weight: 600; }
+.md code { background: var(--code); padding: 0 3px; border-radius: 3px; }
+summary h2 { display: inline; }
+@media (max-width: 600px) { .card { min-width: calc(50% - 6px); } table { font-size: 0.8rem; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>PLC analysis report</h1>
+<p class="muted">file:///project/ &middot; plca 0.1.0-SNAPSHOT</p>
+</header>
+<section class="cards">
+<div class="card findings"><div class="value">8</div><div class="label">Findings</div></div>
+<div class="card sev-error"><div class="value">0</div><div class="label">Errors</div></div>
+<div class="card sev-warning"><div class="value">7</div><div class="label">Warnings</div></div>
+<div class="card sev-info"><div class="value">1</div><div class="label">Info</div></div>
+<div class="card "><div class="value">0</div><div class="label">Suppressed</div><div class="note">0 in the source, 0 by plca.yaml</div></div>
+</section>
+<p class="muted">3 files, 37 lines, 3 POUs &middot; names resolved 100.0% &middot; analysed in 0.0 s &middot; <a href="#problems">1 input problem</a></p>
+<section class="filters" id="filters" hidden>
+<label>Severity <select id="f-sev"><option value="">all</option><option value="error">error and above</option><option value="warning">warning and above</option><option value="info">info and above</option></select></label>
+<label>Rule <select id="f-rule"><option value="">all</option><option value="PLCA-Q001">PLCA-Q001 Unused variable (1)</option><option value="PLCA-Q002">PLCA-Q002 CASE without ELSE (1)</option><option value="PLCA-Q003">PLCA-Q003 Equality comparison of floating-point values (1)</option><option value="PLCA-Q006">PLCA-Q006 Write to a VAR_INPUT (1)</option><option value="PLCA-P001">PLCA-P001 Double coil (2)</option><option value="PLCA-P002">PLCA-P002 Direct addressing in code (1)</option><option value="PLCA-S001">PLCA-S001 Hard-coded credential or IP address (1)</option></select></label>
+<label>Language <select id="f-lang"><option value="">all</option><option>TwinCAT</option><option>Structured Text</option></select></label>
+<label>Text <input id="f-text" type="search" placeholder="message, POU, path"></label>
+<span id="f-count" class="muted"></span>
+</section>
+<section id="findings">
+<h2>Findings</h2>
+<details class="file" open>
+<summary><span class="path">FB_Valve.TcPOU</span> <span class="muted">2 findings</span></summary>
+<article class="finding" data-sev="2" data-rule="PLCA-P001" data-lang="TwinCAT" data-text="&#39;bisopen&#39; is written unconditionally more than once in fb_valve; only the last write takes effect (double coil) fb_valve fb_valve.tcpou">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-P001">PLCA-P001</a> <span class="loc">13:2</span> <span class="place">FB_Valve</span></div>
+<p class="msg">&#39;bIsOpen&#39; is written unconditionally more than once in FB_Valve; only the last write takes effect (double coil)</p>
+<p class="title muted">Double coil</p>
+<pre class="src"><span class="ln"><span class="no">12</span>bIsOpen := bOpen;</span>
+<span class="ln hit"><span class="no">13</span>    bIsOpen := NOT bOpen;</span>
+<span class="ln"><span class="no">14</span>bOpen := FALSE;</span>
+</pre>
+<ul class="related">
+<li><span class="loc">12:20</span> previous write</li>
+</ul>
+</article>
+<article class="finding" data-sev="2" data-rule="PLCA-Q006" data-lang="TwinCAT" data-text="input &#39;bopen&#39; of fb_valve is written inside the pou; inputs should only be read (copy it to a local) fb_valve fb_valve.tcpou">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-Q006">PLCA-Q006</a> <span class="loc">14:1</span> <span class="place">FB_Valve</span></div>
+<p class="msg">Input &#39;bOpen&#39; of FB_Valve is written inside the POU; inputs should only be read (copy it to a local)</p>
+<p class="title muted">Write to a VAR_INPUT</p>
+<pre class="src"><span class="ln"><span class="no">12</span>bIsOpen := bOpen;</span>
+<span class="ln"><span class="no">13</span>    bIsOpen := NOT bOpen;</span>
+<span class="ln hit"><span class="no">14</span>bOpen := FALSE;</span>
+</pre>
+</article>
+</details>
+<details class="file" open>
+<summary><span class="path">MAIN.st</span> <span class="muted">6 findings</span></summary>
+<article class="finding" data-sev="2" data-rule="PLCA-Q001" data-lang="Structured Text" data-text="variable &#39;spassword&#39; is declared but never used main main.st">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-Q001">PLCA-Q001</a> <span class="loc">6:5</span> <span class="place">MAIN</span></div>
+<p class="msg">Variable &#39;sPassword&#39; is declared but never used</p>
+<p class="title muted">Unused variable</p>
+<pre class="src"><span class="ln"><span class="no">4</span>    rLevel : REAL;</span>
+<span class="ln"><span class="no">5</span>    nStep : INT;</span>
+<span class="ln hit"><span class="no">6</span>    sPassword : STRING := &#39;secret1&#39;;</span>
+<span class="ln"><span class="no">7</span>    nUnused : INT;</span>
+<span class="ln"><span class="no">8</span>END_VAR</span>
+</pre>
+</article>
+<article class="finding" data-sev="2" data-rule="PLCA-S001" data-lang="Structured Text" data-text="hard-coded credential: string literal used for &#39;spassword&#39;; keep secrets out of the plc program main main.st">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-S001">PLCA-S001</a> <span class="loc">6:27</span> <span class="place">MAIN</span></div>
+<p class="msg">Hard-coded credential: string literal used for &#39;sPassword&#39;; keep secrets out of the PLC program</p>
+<p class="title muted">Hard-coded credential or IP address</p>
+<pre class="src"><span class="ln"><span class="no">4</span>    rLevel : REAL;</span>
+<span class="ln"><span class="no">5</span>    nStep : INT;</span>
+<span class="ln hit"><span class="no">6</span>    sPassword : STRING := &#39;secret1&#39;;</span>
+<span class="ln"><span class="no">7</span>    nUnused : INT;</span>
+<span class="ln"><span class="no">8</span>END_VAR</span>
+</pre>
+</article>
+<article class="finding" data-sev="2" data-rule="PLCA-Q003" data-lang="Structured Text" data-text="exact floating-point comparison with &#39;=&#39;; compare the difference against a tolerance, e.g. abs(a - b) &lt; eps main main.st">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-Q003">PLCA-Q003</a> <span class="loc">9:10</span> <span class="place">MAIN</span></div>
+<p class="msg">Exact floating-point comparison with &#39;=&#39;; compare the difference against a tolerance, e.g. ABS(a - b) &lt; eps</p>
+<p class="title muted">Equality comparison of floating-point values</p>
+<pre class="src"><span class="ln"><span class="no">7</span>    nUnused : INT;</span>
+<span class="ln"><span class="no">8</span>END_VAR</span>
+<span class="ln hit"><span class="no">9</span>qPump := rLevel = 100.0;</span>
+<span class="ln"><span class="no">10</span>CASE nStep OF</span>
+<span class="ln"><span class="no">11</span>    0: nStep := 1;</span>
+</pre>
+</article>
+<article class="finding" data-sev="2" data-rule="PLCA-Q002" data-lang="Structured Text" data-text="case statement has no else branch main main.st">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-Q002">PLCA-Q002</a> <span class="loc">10:1</span> <span class="place">MAIN</span></div>
+<p class="msg">CASE statement has no ELSE branch</p>
+<p class="title muted">CASE without ELSE</p>
+<pre class="src"><span class="ln"><span class="no">8</span>END_VAR</span>
+<span class="ln"><span class="no">9</span>qPump := rLevel = 100.0;</span>
+<span class="ln hit"><span class="no">10</span>CASE nStep OF</span>
+<span class="ln"><span class="no">11</span>    0: nStep := 1;</span>
+<span class="ln"><span class="no">12</span>END_CASE</span>
+</pre>
+</article>
+<article class="finding" data-sev="2" data-rule="PLCA-P001" data-lang="Structured Text" data-text="&#39;qpump&#39; is written unconditionally more than once in main; only the last write takes effect (double coil) main main.st">
+<div class="head"><span class="badge sev-warning">warning</span> <a class="rule" href="#rule-PLCA-P001">PLCA-P001</a> <span class="loc">13:1</span> <span class="place">MAIN</span></div>
+<p class="msg">&#39;qPump&#39; is written unconditionally more than once in MAIN; only the last write takes effect (double coil)</p>
+<p class="title muted">Double coil</p>
+<pre class="src"><span class="ln"><span class="no">11</span>    0: nStep := 1;</span>
+<span class="ln"><span class="no">12</span>END_CASE</span>
+<span class="ln hit"><span class="no">13</span>qPump := %IX0.1;</span>
+<span class="ln"><span class="no">14</span>END_PROGRAM</span>
+<span class="ln"><span class="no">15</span></span>
+</pre>
+<ul class="related">
+<li><span class="loc">9:1</span> previous write</li>
+</ul>
+</article>
+<article class="finding" data-sev="1" data-rule="PLCA-P002" data-lang="Structured Text" data-text="direct address %ix0.1 used in code; declare a variable at %ix0.1 and use its name main main.st">
+<div class="head"><span class="badge sev-info">info</span> <a class="rule" href="#rule-PLCA-P002">PLCA-P002</a> <span class="loc">13:10</span> <span class="place">MAIN</span></div>
+<p class="msg">Direct address %IX0.1 used in code; declare a variable AT %IX0.1 and use its name</p>
+<p class="title muted">Direct addressing in code</p>
+<pre class="src"><span class="ln"><span class="no">11</span>    0: nStep := 1;</span>
+<span class="ln"><span class="no">12</span>END_CASE</span>
+<span class="ln hit"><span class="no">13</span>qPump := %IX0.1;</span>
+<span class="ln"><span class="no">14</span>END_PROGRAM</span>
+<span class="ln"><span class="no">15</span></span>
+</pre>
+</article>
+</details>
+</section>
+<section id="problems">
+<details>
+<summary><h2>Input problems (1)</h2></summary>
+<p class="muted">Syntax errors, unreadable files and rule failures: results in those places may be incomplete.</p>
+<ul class="problems">
+<li><span class="badge sev-error">error</span> <span class="path">with space.st:2:16</span> <span class="muted">PLC-SYN-001</span> unexpected &#39;;&#39;</li>
+</ul>
+</details>
+</section>
+<section id="rules">
+<h2>Rules</h2>
+<table>
+<thead><tr><th>Rule</th><th>Title</th><th>Severity</th><th>PLCopen</th><th>Findings</th></tr></thead>
+<tbody>
+<tr><td><a href="#rule-PLCA-Q001">PLCA-Q001</a></td><td>Unused variable</td><td>warning</td><td>CP24</td><td class="num">1</td></tr>
+<tr><td><a href="#rule-PLCA-Q002">PLCA-Q002</a></td><td>CASE without ELSE</td><td>warning</td><td></td><td class="num">1</td></tr>
+<tr><td><a href="#rule-PLCA-Q003">PLCA-Q003</a></td><td>Equality comparison of floating-point values</td><td>warning</td><td>CP8</td><td class="num">1</td></tr>
+<tr><td><a href="#rule-PLCA-Q004">PLCA-Q004</a></td><td>Division by zero</td><td>error</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q005">PLCA-Q005</a></td><td>FOR loop variable modified in the loop body</td><td>warning</td><td>L12</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q006">PLCA-Q006</a></td><td>Write to a VAR_INPUT</td><td>warning</td><td>CP17</td><td class="num">1</td></tr>
+<tr><td><a href="#rule-PLCA-Q007">PLCA-Q007</a></td><td>Recursion</td><td>error</td><td>CP13</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-P001">PLCA-P001</a></td><td>Double coil</td><td>warning</td><td>CP12</td><td class="num">2</td></tr>
+<tr><td><a href="#rule-PLCA-P002">PLCA-P002</a></td><td>Direct addressing in code</td><td>info</td><td>N1</td><td class="num">1</td></tr>
+<tr><td><a href="#rule-PLCA-S001">PLCA-S001</a></td><td>Hard-coded credential or IP address</td><td>warning</td><td></td><td class="num">1</td></tr>
+<tr><td><a href="#rule-PLCA-Q009">PLCA-Q009</a></td><td>Unreachable code</td><td>warning</td><td>CP2</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q012">PLCA-Q012</a></td><td>Loop without evident exit</td><td>error</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q013">PLCA-Q013</a></td><td>Complex POU body</td><td>info</td><td>CP9</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-P006">PLCA-P006</a></td><td>Jump instruction</td><td>info</td><td>CP19</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q008">PLCA-Q008</a></td><td>Unused POU</td><td>warning</td><td>CP2</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-P003">PLCA-P003</a></td><td>Function block instance called more than once per cycle</td><td>warning</td><td>CP20</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-P004">PLCA-P004</a></td><td>Global variable written from several tasks</td><td>warning</td><td>CP10</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q010">PLCA-Q010</a></td><td>Temporary variable read before assignment</td><td>warning</td><td>CP3</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q011">PLCA-Q011</a></td><td>Implicit narrowing conversion</td><td>warning</td><td>CP25</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-P005">PLCA-P005</a></td><td>Pointer dereference without a check</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-S002">PLCA-S002</a></td><td>Externally writable value used without a check</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-S003">PLCA-S003</a></td><td>Suspicious hidden trigger</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q014">PLCA-Q014</a></td><td>Magic number</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-Q015">PLCA-Q015</a></td><td>Naming convention</td><td>info</td><td>N2</td><td class="num">0</td></tr>
+</tbody>
+</table>
+<details class="help" id="rule-PLCA-Q001">
+<summary>PLCA-Q001 Unused variable</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A local variable (VAR, VAR_TEMP, VAR_STAT, VAR_INST) is declared but never read or written by any code, initial value or declaration in the project.</p>
+<p>Siemens SCL: static variables live in the instance DB, which HMIs and other PLCs may access, so they are reported only when the declaration hides them with <code>{ ExternalAccessible := &#39;False&#39; }</code>. Temporaries and constants are always checked; data block members are never reported.</p>
+<h4>Rationale</h4>
+<p>Unused declarations make a POU harder to read and suggest unfinished or dead logic; they also use memory. PLCopen Coding Guidelines rule CP24 <em>Do not declare variables that are not used</em>.</p>
+<p>Not reported, because something outside the parsed code may use the variable: variables with an attribute pragma (HMI, OPC UA or ADS exposure), variables with an <code>AT</code> address (I/O mapping), names matching <code>sparePattern</code>, and every variable of a POU with a graphical or unparsable body. Inputs and outputs are interface, not locals, and are not checked here.</p>
+<p>Rockwell (L5X): every tag carries <code>ExternalAccess</code>. Tags an HMI can read or write (<code>Read/Write</code>, <code>Read Only</code>) are not reported; tags with <code>None</code> are. A base tag used only through an alias tag counts as used.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Pump
+VAR_INPUT
+    bStart : BOOL;
+END_VAR
+VAR
+    bRunning : BOOL;
+    nOldCounter : INT;
+END_VAR
+bRunning := bStart;
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Pump
+VAR_INPUT
+    bStart : BOOL;
+END_VAR
+VAR
+    bRunning : BOOL;
+    nSpare1 : INT;
+END_VAR
+bRunning := bStart;
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q002">
+<summary>PLCA-Q002 CASE without ELSE</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A CASE statement has no ELSE branch, so an unexpected selector value silently does nothing.</p>
+<h4>Rationale</h4>
+<p>State machines are usually written as CASE statements. If the state variable takes a value no branch handles (a new state, a corrupted value, a bad HMI write), the machine stops in an undefined state without any alarm. An ELSE branch makes that case explicit: raise an error or go to a safe state. PLCopen rule L17 asks the same for IF; the guidelines have no CASE rule, so no PLCopen id is given.</p>
+<p>A CASE on an enumeration that handles every value is not reported by default.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Sequence
+VAR
+    nStep : INT;
+END_VAR
+CASE nStep OF
+    0: nStep := 10;
+    10: nStep := 0;
+END_CASE
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Sequence
+VAR
+    nStep : INT;
+    bFault : BOOL;
+END_VAR
+CASE nStep OF
+    0: nStep := 10;
+    10: nStep := 0;
+ELSE
+    bFault := TRUE;
+END_CASE
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q003">
+<summary>PLCA-Q003 Equality comparison of floating-point values</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A REAL or LREAL value is compared with <code>=</code> or <code>&lt;&gt;</code>.</p>
+<h4>Rationale</h4>
+<p>Floating-point values carry rounding errors, so a computed value is rarely exactly equal to another; the comparison may never become TRUE (a sequence that never advances) or flicker. Compare the difference against a tolerance instead. PLCopen Coding Guidelines rule CP8 <em>Floating point comparison shall not be equality or inequality</em>.</p>
+<p>Comparisons with zero are not reported by default (CP8 lists them as its exception: a value set to 0.0 compares exactly), nor is <code>x = x</code>, the usual test for NaN.</p>
+<p>A value compared with its own copy (<code>IF a &lt;&gt; last THEN last := a;</code>, ladder <code>NEQ(a,last) MOV(a,last)</code>) is change detection, exact by construction, and not reported. Rockwell (L5X): comparing two tags that no code of the program or AOI writes (<code>EQU(Cfg_InpMax,Cfg_InpMin)</code> to flag an empty range) compares settings and is not reported either.</p>
+<p>Ladder (Rockwell) findings are <code>info</code> by default: in ladder, exact REAL comparisons are mostly sentinel and configuration checks. Raise them with <code>dialects: {rockwell: {severity: {PLCA-Q003: warning}}}</code> in <code>plca.yaml</code>.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_AtTarget : BOOL
+VAR_INPUT
+    rPosition : REAL;
+    rTarget : REAL;
+END_VAR
+F_AtTarget := rPosition = rTarget;
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_AtTarget : BOOL
+VAR_INPUT
+    rPosition : REAL;
+    rTarget : REAL;
+END_VAR
+F_AtTarget := ABS(rPosition - rTarget) &lt; 0.001;
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q004">
+<summary>PLCA-Q004 Division by zero</summary>
+<div class="md">
+<h4>Description</h4>
+<p>The divisor of <code>/</code>, <code>MOD</code>, <code>DIV(…)</code> or <code>MOD(…)</code> is a literal or constant that evaluates to zero.</p>
+<h4>Rationale</h4>
+<p>An integer division by zero raises an exception on most runtimes and stops the PLC; a REAL division yields infinity or NaN that spreads through the calculation. A divisor that is always zero is a bug, often a constant that was changed or not yet set.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_Average : INT
+VAR_INPUT
+    nSum : INT;
+END_VAR
+VAR CONSTANT
+    cSamples : INT := 0;
+END_VAR
+F_Average := nSum / cSamples;
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_Average : INT
+VAR_INPUT
+    nSum : INT;
+END_VAR
+VAR CONSTANT
+    cSamples : INT := 8;
+END_VAR
+F_Average := nSum / cSamples;
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q005">
+<summary>PLCA-Q005 FOR loop variable modified in the loop body</summary>
+<div class="md">
+<h4>Description</h4>
+<p>The control variable of a FOR loop is assigned inside the loop body, passed to an output or VAR_IN_OUT parameter, or reused as the control variable of a nested FOR.</p>
+<h4>Rationale</h4>
+<p>IEC 61131-3 says the control variable shall not be altered by the repeated statements. Changing it makes the number of iterations unpredictable and can cause an endless loop, which trips the task watchdog. Use WHILE or REPEAT when the iteration count is not known in advance. PLCopen Coding Guidelines rule <em>Loop variables should not be modified inside a FOR loop</em>: the rule section says L12, the document&#39;s table of contents says L22.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_FindFirst : INT
+VAR_INPUT
+    aValues : ARRAY[1..10] OF INT;
+END_VAR
+VAR
+    i : INT;
+END_VAR
+F_FindFirst := 0;
+FOR i := 1 TO 10 DO
+    IF aValues[i] &gt; 0 THEN
+        F_FindFirst := i;
+        i := 10;
+    END_IF
+END_FOR
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_FindFirst : INT
+VAR_INPUT
+    aValues : ARRAY[1..10] OF INT;
+END_VAR
+VAR
+    i : INT;
+END_VAR
+F_FindFirst := 0;
+FOR i := 1 TO 10 DO
+    IF aValues[i] &gt; 0 THEN
+        F_FindFirst := i;
+        EXIT;
+    END_IF
+END_FOR
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q006">
+<summary>PLCA-Q006 Write to a VAR_INPUT</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A VAR_INPUT of a function, function block or method is written inside that POU (or a method or action of it).</p>
+<h4>Rationale</h4>
+<p>Inputs are set by the caller on every call. Overwriting one inside the POU hides the caller&#39;s value, and the effect depends on whether the caller passes the input on the next call; for function blocks the changed value can also be read back from outside. Copy the input to a local variable and change that. PLCopen Coding Guidelines rule CP17 <em>Usage of parameters shall match their declaration mode</em> (&quot;each input parameter should not be written&quot;). Writes through a POINTER or REFERENCE input change the caller&#39;s data and are not reported.</p>
+<p>Rockwell (L5X) Add-On Instructions: writing a constant to an input is a documented idiom — clearing a command an HMI or program set (<code>OTU(PCmd_Start)</code>), or replacing an invalid setting by a default (<code>LEQ(Rate,0) MOV(1000,Rate)</code>) — and is not reported; other writes are.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Scale
+VAR_INPUT
+    rRaw : REAL;
+END_VAR
+VAR_OUTPUT
+    rScaled : REAL;
+END_VAR
+IF rRaw &lt; 0.0 THEN
+    rRaw := 0.0;
+END_IF
+rScaled := rRaw * 0.1;
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Scale
+VAR_INPUT
+    rRaw : REAL;
+END_VAR
+VAR_OUTPUT
+    rScaled : REAL;
+END_VAR
+VAR
+    rClamped : REAL;
+END_VAR
+rClamped := MAX(rRaw, 0.0);
+rScaled := rClamped * 0.1;
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q007">
+<summary>PLCA-Q007 Recursion</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A POU calls itself, directly or through a chain of other POUs (functions, methods, actions, FB bodies, property accessors).</p>
+<h4>Rationale</h4>
+<p>Each recursive call uses stack space, and PLC stacks are small and fixed; deep recursion can stop the controller. Support for recursion also differs between vendors, so the code is less portable. Replace the recursion with a loop. PLCopen Coding Guidelines rule CP13 <em>POUs shall not call themselves directly or indirectly</em>.</p>
+<p>Cycles through a name that is declared more than once (overloaded methods in SIMATIC AX, duplicate copies of a POU) are not reported, because which declaration a call refers to is not known.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_Factorial : DINT
+VAR_INPUT
+    n : DINT;
+END_VAR
+IF n &lt;= 1 THEN
+    F_Factorial := 1;
+ELSE
+    F_Factorial := n * F_Factorial(n - 1);
+END_IF
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_Factorial : DINT
+VAR_INPUT
+    n : DINT;
+END_VAR
+VAR
+    i : DINT;
+END_VAR
+F_Factorial := 1;
+FOR i := 2 TO n DO
+    F_Factorial := F_Factorial * i;
+END_FOR
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-P001">
+<summary>PLCA-P001 Double coil</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An output-like variable — a physical output (<code>AT %Q…</code>), a global variable, or the POU&#39;s own VAR_OUTPUT — is written unconditionally in more than one place, so only the last write of each cycle takes effect.</p>
+<h4>Rationale</h4>
+<p>This is the structured-text form of the ladder &quot;double coil&quot;: two rungs driving the same coil. The earlier write is dead, the behaviour depends on execution order, and the logic that decides the output is spread over the application. Compute the value once, in one place. PLCopen Coding Guidelines rule CP12 <em>Physical outputs shall be written once per PLC cycle</em> covers physical outputs; this rule also checks globals and FB outputs.</p>
+<p>To stay quiet on correct code, only unconditional writes count (<code>:=</code> or <code>=&gt;</code> in a top-level statement of a body), <code>S=</code>/<code>R=</code> latches, read-modify-write statements (<code>n := n + 1</code>) and writes inside IF/CASE/loops are ignored, and a second write in the same body is not reported when the variable is read in between (sequential use of a working variable).</p>
+<p>In ladder (Rockwell L5X) an <code>OTE</code> is a coil by definition: it counts even when its rung reads the coil (seal-in) and whatever happens between two OTEs, for any tag — the &quot;duplicate destructive bit&quot; check Studio 5000&#39;s verification warns about. Across routines only OTE coils are compared, since routines are often called conditionally as alternatives; an AOI&#39;s Prescan/Postscan/EnableInFalse routines are never compared with its logic (they run instead of it), and outputs of AOI calls do not count (a required AOI output must be bound to a tag, often a scratch tag). Tags whose name matches <code>sparePattern</code> are exempt.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Conveyor
+VAR
+    bStart : BOOL;
+    bJog : BOOL;
+    qMotor AT %QX0.0 : BOOL;
+END_VAR
+qMotor := bStart;
+qMotor := bJog;
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Conveyor
+VAR
+    bStart : BOOL;
+    bJog : BOOL;
+    qMotor AT %QX0.0 : BOOL;
+END_VAR
+qMotor := bStart OR bJog;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-P002">
+<summary>PLCA-P002 Direct addressing in code</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A direct address such as <code>%IX0.1</code>, <code>%QW4</code> or <code>%MD10</code> is used in code instead of a symbolic variable.</p>
+<h4>Rationale</h4>
+<p>A bare address says nothing about what it is, makes the code depend on one hardware layout, and is easily missed when the I/O configuration changes. Declare a variable with <code>AT %…</code> once and use its name. PLCopen Coding Guidelines rule N1 <em>Avoid physical addresses</em>.</p>
+<p>Siemens SCL: absolute operands (<code>%I0.0</code>, <code>%DB1.DBX0.0</code>, classic <code>DB10.DBW2</code>) and ANY pointers (<code>P#DB1.DBX0.0 BYTE 10</code>) are reported; use a PLC tag (<code>&quot;Start_Button&quot;</code>) or a data block member (<code>&quot;DB_IO&quot;.Valve</code>) instead.</p>
+<p>Rockwell (L5X) has no direct addresses; the equivalent is logic on raw module tags (<code>Local:1:I.Data.5</code>, <code>Rack1:2:O.Data[0]</code>). They are reported except in routines that only map I/O (every rung a contact driving a coil, a <code>MOV</code>/<code>COP</code>, or every ST statement a plain assignment) and when a whole module tag is handed to a device AOI (<code>PF755_Drive(Pump, Pump:I, Pump:O, …)</code>), the device-object form Rockwell recommends. Alias tags of module points are the compliant form. Controller status flags (<code>S:FS</code>) are not I/O.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Lamp
+%QX0.1 := %IX0.0;
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Lamp
+VAR
+    iButton AT %IX0.0 : BOOL;
+    qLamp AT %QX0.1 : BOOL;
+END_VAR
+qLamp := iButton;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-S001">
+<summary>PLCA-S001 Hard-coded credential or IP address</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A string literal is used as a password, token or other secret (assigned to, initialising, passed as or compared with a variable or parameter whose name matches <code>namePattern</code>), or a string literal is an IPv4 address.</p>
+<h4>Rationale</h4>
+<p>Credentials in the PLC program are visible to anyone who can read the project or upload it from the controller, cannot be rotated without a program change, and are often identical across machines. A password check against a literal is a back door. Hard-coded IP addresses tie the program to one network layout and hide communication partners from reviews. Keep secrets in a protected store and network settings in configuration.</p>
+<p>Not reported: empty strings and masks such as <code>&#39;*****&#39;</code>, loopback addresses and netmasks, and dotted numbers given to a version-like name (<code>sVersion := &#39;1.0.0.0&#39;</code>, <code>sFirmwareRev</code>), which look like IPv4 addresses but are not.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Login
+VAR_INPUT
+    sUser : STRING;
+    sPassword : STRING;
+END_VAR
+VAR_OUTPUT
+    bAuthorized : BOOL;
+END_VAR
+VAR
+    sServerIp : STRING := &#39;192.168.10.20&#39;;
+END_VAR
+bAuthorized := sUser = &#39;service&#39; AND sPassword = &#39;Service#2024&#39;;
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Login
+VAR_INPUT
+    sUser : STRING;
+    sPassword : STRING;
+    sExpectedHash : STRING;
+END_VAR
+VAR_OUTPUT
+    bAuthorized : BOOL;
+END_VAR
+bAuthorized := F_Hash(sPassword) = sExpectedHash;
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q009">
+<summary>PLCA-Q009 Unreachable code</summary>
+<div class="md">
+<h4>Description</h4>
+<p>Code that can never run: statements after <code>RETURN</code>, <code>EXIT</code>, <code>CONTINUE</code> or <code>JMP</code> in the same statement list, an IF, ELSIF or WHILE whose condition is always FALSE, ELSIF/ELSE branches after a condition that is always TRUE, and Rockwell rungs disabled by an <code>AFI</code> instruction.</p>
+<h4>Rationale</h4>
+<p>Dead code misleads the reader, who must work out that it never runs, and often hides a mistake: a <code>RETURN</code> left over from debugging, or logic switched off with <code>IF FALSE THEN</code> and forgotten. PLCopen Coding Guidelines rule CP2 <em>All code shall be used in the application</em>.</p>
+<p>Only conditions built from literals are reported by default. A condition on a named constant (<code>IF cSimulation THEN</code>) is usually a deliberate configuration switch; set <code>includeNamedConstants</code> to report those too. A label after a jump makes the following code reachable again. TwinCAT&#39;s <code>RETURN(expression)</code> is not treated as an unconditional exit. Conditions generated from ladder, FBD and SFC are not checked, but a rung whose main series contains <code>AFI</code> is reported: it is switched off for good.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_Limit : INT
+VAR_INPUT
+    nValue : INT;
+END_VAR
+F_Limit := nValue;
+RETURN;
+IF nValue &gt; 100 THEN
+    F_Limit := 100;
+END_IF
+END_FUNCTION
+</code></pre>
+<pre><code>PROGRAM P_Test
+VAR
+    bPump : BOOL;
+END_VAR
+IF FALSE THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_Limit : INT
+VAR_INPUT
+    nValue : INT;
+END_VAR
+F_Limit := nValue;
+IF nValue &gt; 100 THEN
+    F_Limit := 100;
+END_IF
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q012">
+<summary>PLCA-Q012 Loop without evident exit</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A WHILE or REPEAT loop whose condition is constant (<code>WHILE TRUE</code>, <code>UNTIL FALSE</code>) or reads only variables that the loop body never changes, and whose body has no <code>EXIT</code>, <code>RETURN</code> or <code>JMP</code> out of the loop.</p>
+<h4>Rationale</h4>
+<p>A PLC program runs inside a cyclic task: a loop that never ends keeps the cycle from finishing, the watchdog trips and the controller stops, with every output in its fault state. Waiting for an input inside a loop never works either — inputs are only read between cycles. Change the condition inside the loop, add an iteration limit, or restructure the wait as a step of a state machine that is checked once per cycle.</p>
+<p>Not reported when the loop may end in ways the analysis cannot see: the condition calls a function, method or property or assigns a variable, reads through a pointer, reference or VAR_IN_OUT, or reads a global, an instance member or a function block instance while the body calls other code; or a variable it reads has its address taken anywhere in the POU.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Wait
+VAR_INPUT
+    bReady : BOOL;
+END_VAR
+VAR
+    nTries : INT;
+END_VAR
+WHILE NOT bReady DO
+    nTries := nTries + 1;
+END_WHILE
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Wait
+VAR_INPUT
+    bReady : BOOL;
+END_VAR
+VAR
+    nTries : INT;
+END_VAR
+WHILE NOT bReady AND nTries &lt; 10 DO
+    nTries := nTries + 1;
+END_WHILE
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q013">
+<summary>PLCA-Q013 Complex POU body</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A POU body nests IF, CASE, FOR, WHILE or REPEAT statements deeper than <code>maxNesting</code>, or its cyclomatic complexity is above <code>maxComplexity</code>. Complexity is 1 plus one for every IF/ELSIF condition, CASE branch, FOR, WHILE and REPEAT.</p>
+<h4>Rationale</h4>
+<p>Deeply nested and highly branched code is hard to read, review and test, and is where commissioning changes go wrong. PLCopen Coding Guidelines rule CP9 <em>Limit the complexity of POU code</em>. Split the logic into methods, actions or functions, or replace nested IFs with a CASE state machine. The limits are parameters; CODESYS and TwinCAT ship their own metric checks off by default, and so this rule reports at <code>info</code>.</p>
+<p>Bodies generated from ladder, FBD and SFC are not measured: a ladder routine is a list of rungs, and each rung&#39;s lowered conditions are not nesting the engineer wrote.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_Deep : INT
+VAR_INPUT
+    a, b, c, d, e, f : BOOL;
+END_VAR
+IF a THEN
+    IF b THEN
+        IF c THEN
+            IF d THEN
+                IF e THEN
+                    IF f THEN
+                        F_Deep := 1;
+                    END_IF
+                END_IF
+            END_IF
+        END_IF
+    END_IF
+END_IF
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_Flat : INT
+VAR_INPUT
+    a, b, c, d, e, f : BOOL;
+END_VAR
+IF a AND b AND c AND d AND e AND f THEN
+    F_Flat := 1;
+END_IF
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-P006">
+<summary>PLCA-P006 Jump instruction</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A jump: ST <code>JMP</code>, Siemens SCL <code>GOTO</code>, a jump in a PLCopen LD/FBD network, or a Rockwell ladder <code>JMP</code>.</p>
+<h4>Rationale</h4>
+<p>Jumps make the order of execution hard to follow. In ladder they are worse: the rungs a <code>JMP</code> skips are not scanned, so their outputs keep their last state, which is easy to miss when reading the logic. PLCopen Coding Guidelines rule CP19 <em>Usage of Jump and Return should be avoided</em>. Use IF, CASE or loops in text languages and explicit conditions in ladder. One finding per jump; the label is not reported separately.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Jump
+VAR
+    nStep : INT;
+END_VAR
+IF nStep = 0 THEN
+    JMP lEnd;
+END_IF
+nStep := nStep + 1;
+lEnd:
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Jump
+VAR
+    nStep : INT;
+END_VAR
+IF nStep &lt;&gt; 0 THEN
+    nStep := nStep + 1;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q008">
+<summary>PLCA-Q008 Unused POU</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A program, function block, function, class or Rockwell routine that nothing runs: it is not scheduled in a task, not called, not instantiated and not referenced from code that runs.</p>
+<h4>Rationale</h4>
+<p>Code that never runs still has to be read, reviewed and maintained, and a routine that was meant to run but is not called (a missing <code>JSR</code>, a program left out of the task) is a bug that testing on site may not reveal. PLCopen Coding Guidelines rule CP2 <em>All code shall be used in the application</em>.</p>
+<p>Reachability starts at the entry points: the programs of the configured tasks and Siemens organisation blocks. From there it follows calls, <code>JSR</code>s, instance declarations (anywhere, including global variable lists and structures), <code>EXTENDS</code>/<code>IMPLEMENTS</code> and references to POUs in expressions. Methods, actions and properties are not reported on their own.</p>
+<p>The rule needs a complete export to be right, so it stays silent when it cannot see every caller: code without a task configuration (or, for Siemens, without an OB), a dialect with bodies in a language that is not parsed (LD, FBD, CFC; Rockwell FBD and SFC routines silence their program), and Siemens code that calls instance data blocks the export does not contain. Names declared twice, the CODESYS implicit check functions (<code>CheckBounds</code>, <code>CheckPointer</code>, …) and a dialect in which most POUs are unused — a library bundled with a small test program — are not reported either.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Main
+VAR
+    nCount : INT;
+END_VAR
+nCount := F_Used(nCount);
+END_PROGRAM
+
+FUNCTION F_Used : INT
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Used := n + 1;
+END_FUNCTION
+
+FUNCTION F_Forgotten : INT
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Forgotten := n - 1;
+END_FUNCTION
+
+CONFIGURATION Cfg
+    RESOURCE Res ON PLC
+        TASK tMain(INTERVAL := T#10MS, PRIORITY := 1);
+        PROGRAM iMain WITH tMain : P_Main;
+    END_RESOURCE
+END_CONFIGURATION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Main
+VAR
+    nCount : INT;
+END_VAR
+nCount := F_Used(nCount);
+END_PROGRAM
+
+FUNCTION F_Used : INT
+VAR_INPUT
+    n : INT;
+END_VAR
+F_Used := n + 1;
+END_FUNCTION
+
+CONFIGURATION Cfg
+    RESOURCE Res ON PLC
+        TASK tMain(INTERVAL := T#10MS, PRIORITY := 1);
+        PROGRAM iMain WITH tMain : P_Main;
+    END_RESOURCE
+END_CONFIGURATION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-P003">
+<summary>PLCA-P003 Function block instance called more than once per cycle</summary>
+<div class="md">
+<h4>Description</h4>
+<p>The same function block instance — a timer, counter, edge detector or user FB — is called more than once in a cycle: twice in one body (not as alternatives in different IF/CASE branches), or from two programs, function blocks or routines when the instance is global. Rockwell: the same TIMER in two TON/TOF/RTO instructions, or the same COUNTER in two CTU (or two CTD) instructions.</p>
+<h4>Rationale</h4>
+<p>A function block keeps state between calls and expects to be called once per cycle. A second call works on what the first left behind: a timer called with two different IN values restarts or never elapses, an R_TRIG sees no edge, a counter counts twice. In ladder the second timer instruction runs even when its rung is false, and resets the timer. PLCopen Coding Guidelines rule CP20 <em>Function block instances should be called only once</em>. Call the instance once and use its outputs where needed.</p>
+<p>Not compared: calls inside loops, calls through a variable array index (<code>afbAxis[i]()</code>), calls in SFC actions, where the active step decides what runs, and <code>tmr(IN := FALSE)</code>, the usual way to reset a timer when a state machine changes step. CTU and CTD on the same Rockwell counter form an up/down counter and are not reported. Rockwell Add-On Instructions are not compared: Logix has no functions, so stateless AOIs are routinely called several times.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Conveyor
+VAR
+    fbDelay : TON;
+    bStart, bStop, bRun : BOOL;
+END_VAR
+fbDelay(IN := bStart, PT := T#2S);
+IF fbDelay.Q THEN
+    bRun := TRUE;
+END_IF
+fbDelay(IN := bStop, PT := T#5S);
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Conveyor
+VAR
+    fbStartDelay : TON;
+    fbStopDelay : TON;
+    bStart, bStop, bRun : BOOL;
+END_VAR
+fbStartDelay(IN := bStart, PT := T#2S);
+fbStopDelay(IN := bStop, PT := T#5S);
+IF fbStartDelay.Q THEN
+    bRun := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-P004">
+<summary>PLCA-P004 Global variable written from several tasks</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A global variable is written by code running in more than one task, according to the project&#39;s task configuration (IEC configurations, TwinCAT task objects, PLCopen instances, Rockwell tasks).</p>
+<h4>Rationale</h4>
+<p>Tasks of different priority interrupt each other. If two tasks write the same global, one task can preempt the other between reading and writing it, and an update is lost; a structure or string can be seen half written. PLCopen Coding Guidelines rule CP10 <em>Avoid multiple writes from multiple tasks</em>. Let one task own the variable and hand data over through separate variables, or use the runtime&#39;s synchronisation (CODESYS <code>SysSem</code>, TwinCAT <code>TestAndSet</code>).</p>
+<p>The rule needs a task configuration with at least two tasks; without one it is silent. A POU runs in every task whose programs call it, directly or indirectly; Siemens organisation blocks are tasks. Startup tasks (<code>startupTaskPattern</code>, by default the TIA names of OB100–OB102) do not count, since they finish before the cyclic tasks start. One finding per variable.</p>
+<h4>Noncompliant</h4>
+<pre><code>VAR_GLOBAL
+    gnParts : INT;
+END_VAR
+
+PROGRAM P_Fast
+gnParts := gnParts + 1;
+END_PROGRAM
+
+PROGRAM P_Slow
+gnParts := 0;
+END_PROGRAM
+
+CONFIGURATION Cfg
+    RESOURCE Res ON PLC
+        TASK tFast(INTERVAL := T#2MS, PRIORITY := 1);
+        TASK tSlow(INTERVAL := T#100MS, PRIORITY := 10);
+        PROGRAM iFast WITH tFast : P_Fast;
+        PROGRAM iSlow WITH tSlow : P_Slow;
+    END_RESOURCE
+END_CONFIGURATION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>VAR_GLOBAL
+    gnParts : INT;
+    gbResetParts : BOOL;
+END_VAR
+
+PROGRAM P_Fast
+IF gbResetParts THEN
+    gnParts := 0;
+ELSE
+    gnParts := gnParts + 1;
+END_IF
+END_PROGRAM
+
+PROGRAM P_Slow
+gbResetParts := TRUE;
+END_PROGRAM
+
+CONFIGURATION Cfg
+    RESOURCE Res ON PLC
+        TASK tFast(INTERVAL := T#2MS, PRIORITY := 1);
+        TASK tSlow(INTERVAL := T#100MS, PRIORITY := 10);
+        PROGRAM iFast WITH tFast : P_Fast;
+        PROGRAM iSlow WITH tSlow : P_Slow;
+    END_RESOURCE
+END_CONFIGURATION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q010">
+<summary>PLCA-Q010 Temporary variable read before assignment</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A temporary variable without an initial value is read on some path before anything assigns it. Temporaries are the locals of functions, methods and property accessors, VAR_TEMP of any POU, and a function&#39;s result.</p>
+<h4>Rationale</h4>
+<p>IEC 61131-3 sets every variable to its type&#39;s default before it is used, so nothing is ever undefined — but a temporary starts from that default on every call. Code that reads it first usually expects the value of the last call (which only a function block&#39;s static variable keeps) or forgot an assignment on one branch. On Siemens S7 classic (non-optimised) blocks, temporaries are not initialised at all and hold whatever the stack held. PLCopen Coding Guidelines rule CP3 <em>All variables shall be initialized before being used</em>.</p>
+<p>The analysis follows the structure of the body: IF and CASE branches are merged, a loop body may run zero times (REPEAT at least once), and RETURN, EXIT and CONTINUE end a path. Passing the variable as VAR_IN_OUT or to a call whose parameters are not known (library code), taking its address or writing a part of it counts as an assignment. An accumulator that builds on the default (<code>nSum := nSum + x</code>, <code>F := SHL(F, 1)</code>) is deliberate in CODESYS-style code and is reported only for Siemens, where classic blocks do not initialise temporaries. Static variables of function blocks and programs are not checked: keeping a value from one cycle to the next is what they are for. Structures and arrays, bodies with JMP or <code>__TRY</code>, and Rockwell code (which has no temporaries) are not checked.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Door
+VAR_INPUT
+    bOpenCmd : BOOL;
+END_VAR
+VAR_OUTPUT
+    bMotor : BOOL;
+END_VAR
+VAR_TEMP
+    bWasOpen : BOOL;
+END_VAR
+IF bOpenCmd AND NOT bWasOpen THEN
+    bMotor := TRUE;
+END_IF
+bWasOpen := bOpenCmd;
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Door
+VAR_INPUT
+    bOpenCmd : BOOL;
+END_VAR
+VAR_OUTPUT
+    bMotor : BOOL;
+END_VAR
+VAR
+    bWasOpen : BOOL;
+END_VAR
+IF bOpenCmd AND NOT bWasOpen THEN
+    bMotor := TRUE;
+END_IF
+bWasOpen := bOpenCmd;
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q011">
+<summary>PLCA-Q011 Implicit narrowing conversion</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A value is converted implicitly to a type that cannot hold every value of its own type: a wider integer or bit string to a narrower one (<code>DINT</code> to <code>INT</code>, <code>DWORD</code> to <code>WORD</code>), a real to an integer, or <code>LREAL</code> to <code>REAL</code> — in an assignment, an input argument or an output argument. Also an integer constant that does not fit the target type.</p>
+<h4>Rationale</h4>
+<p>Implicit narrowing silently truncates: a counter stored in an INT wraps at 32767, a REAL assigned to an INT loses its fraction (and overflows above 32767), an LREAL position loses precision. Making the conversion explicit with a conversion function shows the reader that the range was considered, and is where a LIMIT belongs. PLCopen Coding Guidelines rule CP25 <em>Data types conversion should be explicit</em>.</p>
+<p>Untyped literals take the type of the other operand (<code>nInt + 1</code> stays INT, <code>MAX(0.0, rSpeed)</code> stays REAL), so they never cause a finding by themselves; named constants count by value, and one that fits is fine. Conversions between signed and unsigned types of the same size, and from integers to reals, are not reported. Rockwell code is not checked: Logix converts on assignment by design and has no conversion functions to make it explicit.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Count
+VAR_INPUT
+    diPulses : DINT;
+    rSpeed : REAL;
+END_VAR
+VAR
+    nPulses : INT;
+    nSpeed : INT;
+END_VAR
+nPulses := diPulses;
+nSpeed := rSpeed;
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Count
+VAR_INPUT
+    diPulses : DINT;
+    rSpeed : REAL;
+END_VAR
+VAR
+    nPulses : INT;
+    nSpeed : INT;
+END_VAR
+nPulses := DINT_TO_INT(LIMIT(-32768, diPulses, 32767));
+nSpeed := REAL_TO_INT(rSpeed);
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-P005">
+<summary>PLCA-P005 Pointer dereference without a check</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A pointer is dereferenced (<code>p^</code>) in a body that never compares it with 0, tests it with <code>__ISVALIDREF</code> or assigns it from <code>ADR(…)</code> before the dereference.</p>
+<h4>Rationale</h4>
+<p>Dereferencing a null pointer raises an access violation and stops the PLC (CODESYS, TwinCAT); a stale or zero pointer passed in by a caller is a classic cause of a controller crash after an online change. Check the pointer before using it, or use a REFERENCE with <code>__ISVALIDREF</code>. The check is approximate: any comparison of the pointer with 0 earlier in the body, or in a condition around the dereference, counts. A pointer member of a function block that the block&#39;s own code assigns (in <code>FB_init</code> or a setter method) is treated as part of the object&#39;s contract and not reported. One finding per pointer and body.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_Read : INT
+VAR_INPUT
+    pValue : POINTER TO INT;
+END_VAR
+F_Read := pValue^;
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_Read : INT
+VAR_INPUT
+    pValue : POINTER TO INT;
+END_VAR
+IF pValue &lt;&gt; 0 THEN
+    F_Read := pValue^;
+END_IF
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-S002">
+<summary>PLCA-S002 Externally writable value used without a check</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A value that can be written from outside the PLC — by an HMI, a SCADA system or another network client — drives a physical output, or is used as an array index, with no range or validity check in between.</p>
+<h4>Rationale</h4>
+<p>Anything an operator panel or network client can write must be treated as untrusted: a typing error, a misconfigured HMI or an attacker can send any value. A setpoint passed straight to an analog output can drive the process outside its limits; a command bit wired straight to an output bypasses every interlock; an index that is out of range faults the controller (Rockwell major fault, CODESYS exception) or overwrites neighbouring data. <em>Top 20 Secure PLC Coding Practices</em> (ISA GCA / admeritia, 2021), practice 8 &quot;Validate HMI input variables at the PLC, not just at the HMI&quot; and practice 9 &quot;Validate indirections&quot;.</p>
+<p>Externally writable means: Rockwell controller and program tags with <code>ExternalAccess=&quot;Read/Write&quot;</code> (the default) that no logic of the project writes; Siemens data block members that are not <code>ExternalWritable := &#39;False&#39;</code> and that no block writes; in CODESYS, TwinCAT and PLCopen, where any symbol may be reachable, variables with an OPC UA attribute or whose name or list name matches <code>externalPattern</code> (HMI, SCADA, VISU, OPC as a word of the name). Function block and Add-On Instruction instances are never sources: their members are written by the block&#39;s own logic.</p>
+<p>A use counts as checked when the value is compared, limited (<code>LIMIT</code>, <code>MIN</code>, <code>MAX</code>, <code>SEL</code>, <code>MUX</code>, ladder <code>LIM</code>), used as a CASE selector or overwritten earlier in the body or in a condition around the use. Only pass-through is reported: an output assigned from the value and constants alone, or set under a condition on the value alone. An interlock in the expression is a check and silences the finding.</p>
+<h4>Noncompliant</h4>
+<pre><code>VAR_GLOBAL
+    GVL_HMI_rSpeedSetpoint : REAL;
+    GVL_HMI_nRecipe : INT;
+END_VAR
+
+PROGRAM P_Drive
+VAR
+    qrSpeedOut AT %QD4 : REAL;
+    arRecipes : ARRAY[0..9] OF REAL;
+    rRecipe : REAL;
+END_VAR
+qrSpeedOut := GVL_HMI_rSpeedSetpoint;
+rRecipe := arRecipes[GVL_HMI_nRecipe];
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>VAR_GLOBAL
+    GVL_HMI_rSpeedSetpoint : REAL;
+    GVL_HMI_nRecipe : INT;
+END_VAR
+
+PROGRAM P_Drive
+VAR
+    qrSpeedOut AT %QD4 : REAL;
+    arRecipes : ARRAY[0..9] OF REAL;
+    rRecipe : REAL;
+END_VAR
+qrSpeedOut := LIMIT(0.0, GVL_HMI_rSpeedSetpoint, 1500.0);
+IF GVL_HMI_nRecipe &gt;= 0 AND GVL_HMI_nRecipe &lt;= 9 THEN
+    rRecipe := arRecipes[GVL_HMI_nRecipe];
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-S003">
+<summary>PLCA-S003 Suspicious hidden trigger</summary>
+<div class="md">
+<h4>Description</h4>
+<p>Logic that waits for a moment or a value nobody sets by accident: a comparison with an absolute date, a real-time clock value compared with a calendar year, an equality comparison with a &quot;magic&quot; constant (hexspeak such as <code>16#DEADBEEF</code>, <code>16#C0FFEE</code>, or leet numbers such as 1337), or a timer that runs from start-up and fires only after a long delay.</p>
+<h4>Rationale</h4>
+<p>This is the shape of a logic bomb or a backdoor: code that behaves normally during commissioning and tests, and does something else on a given date, after weeks of operation, or when a value only an insider knows is written. Such code has been found in sabotage and research cases, and a code review is the best place to catch it. Each finding asks a reviewer to confirm what the condition enables. Daily schedules (time-of-day comparisons) and short start-up delays are normal and not reported.</p>
+<p>Clock sources recognised: the IEC <code>RTC</code> block, CODESYS <code>SysTimeRtcGet</code>, TwinCAT <code>NT_GetTime</code>, <code>FB_LocalSystemTime</code>, <code>F_GetSystemTime</code>, Siemens <code>RD_LOC_T</code>/<code>RD_SYS_T</code>, and Rockwell <code>GSV(WallClockTime, …)</code>.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Pump
+VAR
+    fbClock : RTC;
+    bRun : BOOL;
+    nCode : DINT;
+END_VAR
+fbClock(EN := TRUE);
+IF fbClock.CDT &gt;= DT#2027-01-01-00:00:00 THEN
+    bRun := FALSE;
+END_IF
+IF nCode = 16#DEADBEEF THEN
+    bRun := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Pump
+VAR
+    fbClock : RTC;
+    bRun : BOOL;
+    bNight : BOOL;
+END_VAR
+fbClock(EN := TRUE);
+bNight := DT_TO_TOD(fbClock.CDT) &gt;= TOD#22:00:00;
+bRun := NOT bNight;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q014">
+<summary>PLCA-Q014 Magic number</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A decimal number in logic other than 0, 1, -1 and the <code>allowed</code> values. Off by default; select <code>PLCA-Q014</code> (or <code>all</code>) to run it.</p>
+<h4>Rationale</h4>
+<p>A bare number says nothing about what it is: is 4500 a speed, a limit or an error code? Naming it as a constant or a parameter documents it, and changing it later means changing one place. Not reported: CASE labels, array indexes, FOR bounds, initial values, typed and based literals (<code>T#5S</code>, <code>16#FF</code>, <code>INT#3</code>), and code generated from ladder, FBD and SFC.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Tank
+VAR_INPUT
+    rLevel : REAL;
+END_VAR
+VAR_OUTPUT
+    bHigh : BOOL;
+END_VAR
+bHigh := rLevel &gt; 87.5;
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Tank
+VAR_INPUT
+    rLevel : REAL;
+END_VAR
+VAR_OUTPUT
+    bHigh : BOOL;
+END_VAR
+VAR CONSTANT
+    cHighLevel : REAL := 87.5;
+END_VAR
+bHigh := rLevel &gt; cHighLevel;
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-Q015">
+<summary>PLCA-Q015 Naming convention</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A variable whose name does not start with the prefix for its type (<code>bStart</code> for a BOOL, <code>fbTimer</code> for an instance), or a function block, function, interface or user type whose name does not start with its kind&#39;s prefix (<code>FB_</code>, <code>F_</code>, <code>I_</code>, <code>ST_</code>, <code>E_</code>). Off by default; select <code>PLCA-Q015</code> to run it, and set the prefixes to your team&#39;s convention.</p>
+<h4>Rationale</h4>
+<p>Type prefixes let a reader see what a name holds without looking up its declaration, and a consistent style makes code from different engineers read alike. PLCopen Coding Guidelines rules N2 <em>Define type prefixes for variables</em> and N10 <em>Define prefixes for user defined types</em>. The defaults follow the widespread CODESYS/Beckhoff style; every prefix is a regular expression parameter. A scope prefix (<code>scopePrefix</code>, e.g. <code>g_</code> for globals) may come first, and the type prefix must be followed by an upper-case letter, a digit or <code>_</code>.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION_BLOCK Motor
+VAR_INPUT
+    Start : BOOL;
+    speed : REAL;
+END_VAR
+END_FUNCTION_BLOCK
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION_BLOCK FB_Motor
+VAR_INPUT
+    bStart : BOOL;
+    rSpeed : REAL;
+END_VAR
+END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+</section>
+</main>
+<script>
+(function () {
+  var f = document.getElementById('filters'); if (!f) return; f.hidden = false;
+  var sev = document.getElementById('f-sev'), rule = document.getElementById('f-rule'),
+      lang = document.getElementById('f-lang'), text = document.getElementById('f-text'),
+      count = document.getElementById('f-count');
+  var ranks = { error: 3, warning: 2, info: 1 };
+  function apply() {
+    var min = sev.value ? ranks[sev.value] : 0, r = rule.value, l = lang.value,
+        t = text.value.trim().toLowerCase(), shown = 0;
+    document.querySelectorAll('details.file').forEach(function (file) {
+      var any = false;
+      file.querySelectorAll('article.finding').forEach(function (a) {
+        var ok = Number(a.dataset.sev) >= min && (!r || a.dataset.rule === r)
+            && (!l || a.dataset.lang === l) && (!t || a.dataset.text.indexOf(t) >= 0);
+        a.hidden = !ok; if (ok) { any = true; shown++; }
+      });
+      file.hidden = !any;
+    });
+    count.textContent = shown + ' shown';
+  }
+  [sev, rule, lang].forEach(function (e) { e.addEventListener('change', apply); });
+  text.addEventListener('input', apply);
+  apply();
+})();
+</script>
+</body>
+</html>

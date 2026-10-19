@@ -1,7 +1,10 @@
 package dev.plca.cli;
 
+import dev.plca.ast.SourceUnit;
+import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
+import dev.plca.core.source.SourceFile;
 import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.plcopen.PlcOpenFrontend;
 import dev.plca.frontend.scl.SclFrontend;
@@ -26,12 +29,14 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * One analysis run: load (parallel parse), build the model, run the rules. The pipeline a future LSP or web backend
@@ -75,9 +80,16 @@ public final class Analyzer {
         ProjectLoader.Project project = ProjectLoader.load(root, files, FRONTENDS, threads);
         long t1 = System.nanoTime();
         DiagnosticCollector semantic = new DiagnosticCollector();
-        SemanticModel model = SemanticBuilder.build(project.units(), semantic);
+        List<SemanticModel> models = new ArrayList<>();
+        for (List<SourceUnit> group : modelGroups(project)) {
+            models.add(SemanticBuilder.build(group, semantic));
+        }
         long t2 = System.nanoTime();
-        RuleEngine.Result rules = new RuleEngine(registry).run(model, project.registry(), config, threads);
+        List<RuleEngine.Result> results = new ArrayList<>();
+        for (SemanticModel model : models) {
+            results.add(new RuleEngine(registry).run(model, project.registry(), config, threads));
+        }
+        RuleEngine.Result rules = RuleEngine.Result.merge(results, project.registry());
         long t3 = System.nanoTime();
 
         List<Diagnostic> diagnostics = new ArrayList<>(project.diagnostics());
@@ -86,14 +98,23 @@ public final class Analyzer {
         int lines = project.registry().files().stream()
                 .mapToInt(f -> f.lineIndex().lineCount())
                 .sum();
+        int names = 0;
+        int bound = 0;
+        int pous = 0;
+        for (SemanticModel model : models) {
+            SemanticModel.ResolutionStats rs = model.resolutionStats();
+            names += rs.names();
+            bound += rs.resolved() + rs.library() + rs.external();
+            pous += model.pous().size();
+        }
         AnalysisResult.Stats stats = new AnalysisResult.Stats(
                 files.size(),
                 lines,
-                model.pous().size(),
+                pous,
                 (t1 - t0) / 1_000_000,
                 (t2 - t1) / 1_000_000,
                 (t3 - t2) / 1_000_000,
-                model.resolutionStats().rate(),
+                names == 0 ? 1.0 : bound / (double) names,
                 Files.isDirectory(path) ? skipped(root) : List.of());
         String rootUri = root.toUri().toString();
 
@@ -144,6 +165,52 @@ public final class Analyzer {
                 summary,
                 fingerprints);
     }
+
+    /**
+     * The units that form one semantic model each. Every Rockwell controller export (an L5X with
+     * {@code TargetType="Controller"}) is a project of its own: two versions of one controller in a folder must not
+     * merge into duplicate symbols and cross-file double coils. Partial Rockwell exports (routines, programs, AOIs)
+     * join the controller when there is exactly one, else the shared model, which holds everything else.
+     */
+    static List<List<SourceUnit>> modelGroups(ProjectLoader.Project project) {
+        Map<String, SourceFile> files = new HashMap<>();
+        project.registry().files().forEach(f -> files.put(f.path(), f));
+        List<List<SourceUnit>> controllers = new ArrayList<>();
+        List<SourceUnit> partial = new ArrayList<>();
+        List<SourceUnit> shared = new ArrayList<>();
+        for (SourceUnit u : project.units()) {
+            if (u.dialect() != Dialect.ROCKWELL) {
+                shared.add(u);
+            } else if (isController(files.get(u.path()))) {
+                controllers.add(new ArrayList<>(List.of(u)));
+            } else {
+                partial.add(u);
+            }
+        }
+        if (controllers.size() == 1) {
+            controllers.getFirst().addAll(partial);
+        } else {
+            shared.addAll(partial);
+        }
+        List<List<SourceUnit>> out = new ArrayList<>();
+        if (!shared.isEmpty() || controllers.isEmpty()) {
+            out.add(shared);
+        }
+        out.addAll(controllers);
+        return out;
+    }
+
+    /** {@code TargetType="Controller"} on the root element, which comes first in every L5X. */
+    private static boolean isController(SourceFile f) {
+        if (f == null) {
+            return false;
+        }
+        String head = f.text().substring(0, Math.min(f.text().length(), 4096));
+        return CONTROLLER.matcher(head).find();
+    }
+
+    private static final Pattern CONTROLLER =
+            Pattern.compile("<RSLogix5000Content\\b[^>]*\\bTargetType\\s*=\\s*\"Controller\"");
 
     /** Files we cannot analyse yet: L5K (Rockwell's text export). */
     static List<String> skipped(Path root) {

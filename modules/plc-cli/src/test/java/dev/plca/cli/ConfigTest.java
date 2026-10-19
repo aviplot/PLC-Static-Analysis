@@ -138,6 +138,65 @@ class ConfigTest {
         assertThat(bad.err()).contains("PLCA-Q999");
     }
 
+    private static String controller(String name) {
+        return """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="%s" TargetType="Controller">
+                <Controller Use="Target" Name="%s">
+                <Tags>
+                <Tag Name="Start" TagType="Base" DataType="BOOL" ExternalAccess="None"/>
+                <Tag Name="Motor" TagType="Base" DataType="BOOL" ExternalAccess="None"/>
+                </Tags>
+                <Programs>
+                <Program Name="Main" MainRoutineName="R">
+                <Routines>
+                <Routine Name="R" Type="RLL">
+                <RLLContent>
+                <Rung Number="0" Type="N"><Text><![CDATA[XIC(Start)OTE(Motor);]]></Text></Rung>
+                </RLLContent>
+                </Routine>
+                </Routines>
+                </Program>
+                </Programs>
+                <Tasks>
+                <Task Name="T" Type="CONTINUOUS" Priority="10"><ScheduledPrograms><ScheduledProgram Name="Main"/></ScheduledPrograms></Task>
+                </Tasks>
+                </Controller>
+                </RSLogix5000Content>
+                """.formatted(name, name);
+    }
+
+    @Test
+    void eachControllerIsItsOwnProject() throws IOException {
+        Path dir = Files.createDirectories(tmp.resolve("ctl"));
+        // two versions of one controller: one model each, so no double coil across the files
+        Files.writeString(dir.resolve("Line_v1.L5X"), controller("Line"));
+        Files.writeString(dir.resolve("Line_v2.L5X"), controller("Line"));
+        Path out = tmp.resolve("c.json");
+        assertThat(run("analyze", dir.toString(), "--format", "json", "-o", out.toString())
+                        .exit())
+                .isZero();
+        JsonNode j = json(out);
+        assertThat(j.get("findings").findValuesAsString("ruleId")).doesNotContain("PLCA-P001");
+        // one shared model would declare program Main twice (PLC-SEM-002)
+        assertThat(j.get("diagnostics").findValuesAsString("code")).isEmpty();
+        assertThat(j.get("stats").get("pous").asInt()).isEqualTo(4);
+    }
+
+    @Test
+    void writesSelfContainedHtml() throws IOException {
+        Path p = project();
+        Path out = tmp.resolve("r.html");
+        assertThat(run("analyze", p.toString(), "--format", "html", "-o", out.toString(), "--fail-on", "never")
+                        .exit())
+                .isZero();
+        String html = Files.readString(out);
+        assertThat(html)
+                .startsWith("<!DOCTYPE html>")
+                .contains("PLCA-Q003", "sentinel value")
+                .doesNotContain("http://");
+    }
+
     @Test
     void baselineRoundTrip() throws IOException {
         Path p = project();

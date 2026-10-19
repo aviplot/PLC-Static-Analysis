@@ -51,7 +51,7 @@ public class RuleBenchmark {
             units.add(fe.parse(f, registry, DiagnosticSink.discard()).unit());
         }
         model = SemanticBuilder.build(units, DiagnosticSink.discard());
-        config = rule.equals("all") ? RuleConfig.defaults() : RuleConfig.only(rule);
+        config = RuleConfig.only(rule);
     }
 
     @Benchmark

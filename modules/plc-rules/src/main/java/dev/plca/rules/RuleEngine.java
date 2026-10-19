@@ -47,6 +47,25 @@ public final class RuleEngine {
             diagnostics = List.copyOf(diagnostics);
             nanosPerRule = Map.copyOf(nanosPerRule);
         }
+
+        /** Results of several models over one source registry, in report order. */
+        public static Result merge(List<Result> results, SourceRegistry sources) {
+            if (results.size() == 1) {
+                return results.getFirst();
+            }
+            List<Finding> findings = new ArrayList<>();
+            List<Suppressions.Suppressed> suppressed = new ArrayList<>();
+            List<Diagnostic> diagnostics = new ArrayList<>();
+            Map<String, Long> nanos = new LinkedHashMap<>();
+            for (Result r : results) {
+                findings.addAll(r.findings());
+                suppressed.addAll(r.suppressed());
+                diagnostics.addAll(r.diagnostics());
+                r.nanosPerRule().forEach((k, v) -> nanos.merge(k, v, Long::sum));
+            }
+            findings.sort(order(sources));
+            return new Result(findings, suppressed, diagnostics, nanos);
+        }
     }
 
     /** A rule's resolved settings per dialect, and the dialect of a span's file. */

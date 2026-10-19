@@ -7,13 +7,15 @@ import java.io.Writer;
 public enum ReportFormat {
     CONSOLE,
     JSON,
-    SARIF;
+    SARIF,
+    HTML;
 
     public void write(AnalysisResult result, Writer out) throws IOException {
         switch (this) {
             case CONSOLE -> new ConsoleReport(false).write(result, out);
             case JSON -> JsonReport.write(result, out);
             case SARIF -> SarifReport.write(result, out);
+            case HTML -> HtmlReport.write(result, out);
         }
     }
 }
