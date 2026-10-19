@@ -11,6 +11,7 @@ import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.l5x.L5xFrontend;
+import dev.plca.frontend.plcopen.PlcOpenFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontend;
@@ -58,7 +59,8 @@ public final class CorpusCheck {
     private static final Pattern CLASSIC_HEADER =
             Pattern.compile("(?im)^\\s*(FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK|DATA_BLOCK|TYPE)\\s+[A-Za-z_]");
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
+    private static final Frontends FRONTENDS =
+            Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new, PlcOpenFrontend::new);
 
     record FileResult(
             String repo,
@@ -71,9 +73,12 @@ public final class CorpusCheck {
             String firstError,
             Parts parts) {}
 
-    /** Rockwell: rungs and ST routines of a file, and how many of them failed to parse. */
-    record Parts(int rungs, int failedRungs, int stRoutines, int failedStRoutines) {
-        static final Parts NONE = new Parts(0, 0, 0, 0);
+    /**
+     * Rockwell: rungs and ST routines of a file; PLCopen: graphical networks/charts and ST bodies — and how many of
+     * them failed ({@code family} names the rows: {@code L5X-rungs}, {@code PlcOpen-graphical}, …).
+     */
+    record Parts(String family, int rungs, int failedRungs, int stRoutines, int failedStRoutines) {
+        static final Parts NONE = new Parts("", 0, 0, 0, 0);
     }
 
     /** Semantic results of one project. */
@@ -151,7 +156,11 @@ public final class CorpusCheck {
         for (FileResult r : results) {
             String g = r.format().matches("scl.*|db.*|udt.*")
                     ? "Siemens"
-                    : r.format().equals("L5X") ? "Rockwell" : r.format().startsWith("Tc") ? "TwinCat" : "st";
+                    : r.format().equals("L5X")
+                            ? "Rockwell"
+                            : r.format().startsWith("plcopen")
+                                    ? "PlcOpen"
+                                    : r.format().startsWith("Tc") ? "TwinCat" : "st";
             linesByGroup.merge(g, r.lines(), Long::sum);
         }
         int ruleFailures = RuleCorpusStats.report(
@@ -194,7 +203,10 @@ public final class CorpusCheck {
                 }
             }
             // an L5X export is a complete project of its own: one project per file
-            String family = r[3].equals("Siemens") ? "|siemens" : r[3].equals("Rockwell") ? "|rockwell|" + r[2] : "";
+            // an L5X or PLCopen export is a complete project of its own: one project per file
+            String family = r[3].equals("Siemens")
+                    ? "|siemens"
+                    : r[3].equals("Rockwell") ? "|rockwell|" + r[2] : r[3].equals("PlcOpen") ? "|plcopen|" + r[2] : "";
             out.computeIfAbsent(r[0] + "|" + best + family, k -> new ArrayList<>())
                     .add(r);
         }
@@ -210,11 +222,13 @@ public final class CorpusCheck {
         boolean twinCat = false;
         boolean siemens = false;
         boolean rockwell = false;
+        boolean plcopen = false;
         long parseStart = System.nanoTime();
         for (String[] r : rows) {
             twinCat |= r[3].equals("TwinCat");
             siemens |= r[3].equals("Siemens");
             rockwell |= r[3].equals("Rockwell");
+            plcopen |= r[3].equals("PlcOpen");
             try {
                 var parsed = parseOne(corpus, r, registry);
                 if (parsed != null) {
@@ -264,10 +278,14 @@ public final class CorpusCheck {
             modelNanos = System.nanoTime() - t;
             try {
                 rules = RuleCorpusStats.run(
-                        rows.getFirst()[0], key, group(siemens, twinCat, rockwell), model, registry);
+                        rows.getFirst()[0], key, group(siemens, twinCat, rockwell, plcopen), model, registry);
             } catch (Throwable e) {
                 rules = new RuleCorpusStats.Outcome(
-                        group(siemens, twinCat, rockwell), Map.of(), Map.of(), List.of("ESCAPED " + e), List.of());
+                        group(siemens, twinCat, rockwell, plcopen),
+                        Map.of(),
+                        Map.of(),
+                        List.of("ESCAPED " + e),
+                        List.of());
             }
         } catch (Throwable e) {
             escaped = "ESCAPED " + e;
@@ -279,7 +297,7 @@ public final class CorpusCheck {
                 new ProjectResult(
                         repo,
                         key,
-                        group(siemens, twinCat, rockwell),
+                        group(siemens, twinCat, rockwell, plcopen),
                         rows.size(),
                         stats,
                         modelNanos,
@@ -289,8 +307,8 @@ public final class CorpusCheck {
                         rules));
     }
 
-    private static String group(boolean siemens, boolean twinCat, boolean rockwell) {
-        return siemens ? "Siemens" : rockwell ? "Rockwell" : twinCat ? "TwinCat" : "st";
+    private static String group(boolean siemens, boolean twinCat, boolean rockwell, boolean plcopen) {
+        return siemens ? "Siemens" : rockwell ? "Rockwell" : plcopen ? "PlcOpen" : twinCat ? "TwinCat" : "st";
     }
 
     private static Map<String, Double> semanticReport(List<ProjectResult> projects, PrintStream out, Path reportDir)
@@ -401,7 +419,8 @@ public final class CorpusCheck {
                     || (f[3].equals("TwinCat") && format.matches("TcPOU|TcDUT|TcGVL|TcIO|TcTTO|plcproj"))
                     // Siemens .st files are SIMATIC AX (IEC OOP ST), out of scope for M4
                     || (f[3].equals("Siemens") && format.matches("scl|db|udt"))
-                    || (f[3].equals("Rockwell") && format.equals("L5X"))) {
+                    || (f[3].equals("Rockwell") && format.equals("L5X"))
+                    || (f[3].equals("PlcOpen") && format.startsWith("plcopen"))) {
                 rows.add(f);
             }
         }
@@ -468,14 +487,16 @@ public final class CorpusCheck {
         long lines = parseLongOr(r[8]);
         String format =
                 r[3].equals("Siemens") && CLASSIC_HEADER.matcher(sf.text()).find() ? r[4] + "-classic" : r[4];
-        Parts parts = r[3].equals("Rockwell") ? parts(result.unit(), diags) : Parts.NONE;
+        Parts parts = r[3].equals("Rockwell")
+                ? parts("L5X", result.unit(), diags)
+                : r[3].equals("PlcOpen") ? parts("PlcOpen", result.unit(), diags) : Parts.NONE;
         return Map.entry(
                 new FileResult(repoUrl, r[2], format, lines, errors.isEmpty(), result.stats(), errors, first, parts),
                 result.unit());
     }
 
     /** Rungs that did not parse (no drawing, an Invalid lowering) and ST routines with a syntax error in their text. */
-    private static Parts parts(SourceUnit unit, DiagnosticCollector diags) {
+    private static Parts parts(String family, SourceUnit unit, DiagnosticCollector diags) {
         java.util.Set<Integer> failedTexts = new java.util.HashSet<>();
         for (Diagnostic d : diags.diagnostics()) {
             if (d.severity() == Severity.ERROR) {
@@ -488,11 +509,21 @@ public final class CorpusCheck {
                 countParts(p, failedTexts, n);
             }
         }
-        return new Parts(n[0], n[1], n[2], n[3]);
+        return new Parts(family, n[0], n[1], n[2], n[3]);
     }
 
     private static void countParts(Declaration.Pou p, java.util.Set<Integer> failedTexts, int[] n) {
-        if (p.body() != null && "RLL".equalsIgnoreCase(p.bodyLanguage())) {
+        if (p.body() != null && List.of("LD", "FBD", "SFC").contains(p.bodyLanguage())) {
+            // PLCopen graphics: a network or chart fails when its lowering holds an Invalid node
+            for (Statement s : p.body()) {
+                if (s instanceof Statement.Network || s instanceof Statement.Chart) {
+                    n[0]++;
+                    if (hasInvalid(s)) {
+                        n[1]++;
+                    }
+                }
+            }
+        } else if (p.body() != null && "RLL".equalsIgnoreCase(p.bodyLanguage())) {
             for (Statement s : p.body()) {
                 if (s instanceof Statement.Rung r) {
                     n[0]++;
@@ -511,6 +542,23 @@ public final class CorpusCheck {
         for (Declaration.Pou m : p.members()) {
             countParts(m, failedTexts, n);
         }
+    }
+
+    private static boolean hasInvalid(Statement s) {
+        boolean[] found = {false};
+        dev.plca.semantic.Statements.forEachDeep(s, st -> {
+            if (st instanceof Statement.Invalid) {
+                found[0] = true;
+            }
+            dev.plca.rules.Walk.ownExpressions(
+                    st,
+                    e -> dev.plca.rules.Walk.deep(e, x -> {
+                        if (x instanceof Expression.Invalid) {
+                            found[0] = true;
+                        }
+                    }));
+        });
+        return found[0];
     }
 
     private static Map<String, Double> report(
@@ -609,9 +657,16 @@ public final class CorpusCheck {
 
     /** Rockwell rungs and ST routines: error-free share overall and repo-weighted. */
     private static void partsReport(List<FileResult> results, Map<String, Double> rates, StringBuilder md) {
-        Map<String, long[]> perRepo = new HashMap<>(); // rungs, failed, st, failed
+        for (String family : List.of("L5X", "PlcOpen")) {
+            partsReport(family, results, rates, md);
+        }
+    }
+
+    private static void partsReport(
+            String family, List<FileResult> results, Map<String, Double> rates, StringBuilder md) {
+        Map<String, long[]> perRepo = new HashMap<>(); // parts, failed, st, failed
         for (FileResult r : results) {
-            if (r.parts() != Parts.NONE) {
+            if (r.parts() != Parts.NONE && r.parts().family().equals(family)) {
                 long[] a = perRepo.computeIfAbsent(r.repo(), k -> new long[4]);
                 a[0] += r.parts().rungs();
                 a[1] += r.parts().failedRungs();
@@ -622,7 +677,9 @@ public final class CorpusCheck {
         if (perRepo.isEmpty()) {
             return;
         }
-        String[] names = {"L5X-rungs", "L5X-st"};
+        String[] names = family.equals("L5X")
+                ? new String[] {"L5X-rungs", "L5X-st"}
+                : new String[] {"PlcOpen-graphical", "PlcOpen-st"};
         for (int k = 0; k < 2; k++) {
             int i = 2 * k;
             long total = perRepo.values().stream().mapToLong(a -> a[i]).sum();

@@ -234,7 +234,11 @@ public final class PlcOpenFrontend implements Frontend {
                 Identifier name = name(v, "name");
                 String address = v.attr("address");
                 TypeRef type = typeOf(v.child("type"), elementSpan(v));
-                Initializer init = initializer(v.child("initialValue"), name.name());
+                Initializer init =
+                        type instanceof TypeRef.StringType ? stringInitializer(v.child("initialValue")) : null;
+                if (init == null) {
+                    init = initializer(v.child("initialValue"), name.name());
+                }
                 out.add(new VarDecl(
                         name,
                         null,
@@ -283,6 +287,20 @@ public final class PlcOpenFrontend implements Frontend {
                 }
                 default -> null;
             };
+        }
+
+        /** Beremiz writes string initial values without quotes ({@code value="Initial String"}). */
+        Initializer stringInitializer(XNode holder) {
+            XNode v = holder == null ? null : holder.first();
+            XNode.Attr a = v != null && v.tag.equals("simpleValue") ? v.attribute("value") : null;
+            if (a == null
+                    || a.value().strip().startsWith("'")
+                    || a.value().strip().startsWith("\"")) {
+                return null;
+            }
+            Span s = a.start() >= 0 ? whole.span(a.start(), a.end()) : elementSpan(v);
+            String quoted = "'" + a.value().replace("$", "$$").replace("'", "$'") + "'";
+            return new Expression.Literal(Expression.LiteralKind.STRING, quoted, null, s);
         }
 
         /** The sections of a structured {@code interface}. */
@@ -560,7 +578,13 @@ public final class PlcOpenFrontend implements Frontend {
                 interval = ts == null ? null : ts.attribute("Interval");
             }
             if (interval != null && !interval.value().isBlank()) {
-                settings.add(setting("INTERVAL", expressions.attribute(interval, elementSpan(t))));
+                String iso = isoDuration(interval.value());
+                Span s = interval.start() >= 0 ? whole.span(interval.start(), interval.end()) : elementSpan(t);
+                settings.add(setting(
+                        "INTERVAL",
+                        iso != null
+                                ? new Expression.Literal(Expression.LiteralKind.TIME, iso, "T", s)
+                                : expressions.attribute(interval, elementSpan(t))));
             }
             return new Declaration.Task(name(t, "name"), settings, elementSpan(t));
         }
@@ -658,6 +682,24 @@ public final class PlcOpenFrontend implements Frontend {
         String nextTemp(String prefix) {
             return prefix + (++temps);
         }
+    }
+
+    /** TC6 2.01 writes task intervals as {@code xsd:duration}: {@code PT0.02S} → {@code 20ms}; null otherwise. */
+    static String isoDuration(String v) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                        "(?i)P(?:(\\d+)D)?T(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+(?:\\.\\d+)?)S)?")
+                .matcher(v.strip());
+        if (!m.matches()) {
+            return null;
+        }
+        double ms = 0;
+        double[] scale = {86_400_000, 3_600_000, 60_000, 1000};
+        for (int g = 1; g <= 4; g++) {
+            if (m.group(g) != null) {
+                ms += Double.parseDouble(m.group(g)) * scale[g - 1];
+            }
+        }
+        return (ms == Math.rint(ms) ? Long.toString((long) ms) : Double.toString(ms)) + "ms";
     }
 
     static String nonNull(String s) {

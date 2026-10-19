@@ -1,0 +1,1 @@
+direct.xml:9:173-9:179 PLCA-P002 info: Direct address %IX0.3 used in code; declare a variable AT %IX0.3 and use its name [Main] {POU:Main/Network:1}

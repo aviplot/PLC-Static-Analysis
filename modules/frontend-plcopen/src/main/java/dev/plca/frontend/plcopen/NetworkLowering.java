@@ -51,6 +51,8 @@ final class NetworkLowering {
     private final Set<Integer> emitted = new HashSet<>();
     private final Set<Integer> onStack = new HashSet<>();
     private final List<Statement> out = new ArrayList<>();
+    /** Functions read in a feedback loop before they are evaluated: their previous value lives in a {@code $fbdN}. */
+    private final Map<Integer, Expression> previous = new HashMap<>();
 
     NetworkLowering(PlcOpenFrontend.Run run, Network network) {
         this.run = run;
@@ -192,7 +194,12 @@ final class NetworkLowering {
         } finally {
             onStack.remove(id);
         }
-        if (v != null && uses.getOrDefault(k, 0) > 1 && !trivial(v)) {
+        Expression prev = previous.remove(id);
+        if (prev != null && v != null) {
+            // the loop read the previous value; store this cycle's for the next one
+            out.add(new Statement.Assignment(prev, Statement.AssignOp.ASSIGN, v, e.span()));
+            v = prev;
+        } else if (v != null && uses.getOrDefault(k, 0) > 1 && !trivial(v)) {
             v = materialize(v, e.span());
         }
         memo.put(k, v);
@@ -240,11 +247,11 @@ final class NetworkLowering {
                 if (e.instance() != null && e.value() != null) {
                     yield member(e, pin);
                 }
-                run.sink.report(Diagnostic.warning(
-                        PlcOpenCodes.FEEDBACK,
-                        "feedback through function '" + e.name() + "', which has no value from the previous cycle",
-                        e.span()));
-                yield new Expression.Invalid(e.span());
+                // a function has no variable of its own: its previous value is kept in a synthetic one
+                yield previous.computeIfAbsent(e.localId(), id -> {
+                    Identifier name = new Identifier(run.nextTemp("fbd"), Identifier.Form.SYNTHETIC, e.span());
+                    return new Expression.NameRef(name, false, e.span());
+                });
             }
             default -> new Expression.Invalid(e.span());
         };

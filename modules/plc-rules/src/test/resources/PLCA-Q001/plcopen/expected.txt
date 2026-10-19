@@ -1,0 +1,1 @@
+unused.xml:5:222-5:227 PLCA-Q001 warning: Variable 'Spent' is declared but never used [Calc] {POU:Calc}

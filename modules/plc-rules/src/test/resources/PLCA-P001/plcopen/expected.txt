@@ -1,0 +1,2 @@
+coils.xml:14:175-14:180 PLCA-P001 warning: 'Motor' is written unconditionally more than once in Main; only the last write takes effect (double coil) [Main] {POU:Main/Network:2}
+    coils.xml:12:174-12:179 previous write

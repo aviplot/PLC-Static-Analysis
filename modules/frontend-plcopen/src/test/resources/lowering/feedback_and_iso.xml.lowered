@@ -1,0 +1,4 @@
+== PROGRAM Toggle (FBD)
+  // network 1 (FBD 2 elements)
+  $fbd1 := NOT $fbd1;
+  Q := $fbd1;

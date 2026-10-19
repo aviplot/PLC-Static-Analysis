@@ -1,0 +1,67 @@
+pous:
+  FUNCTION Scale : REAL
+    INPUT Raw : INT
+  FUNCTION_BLOCK Counter
+    INPUT Reset : BOOL
+    OUTPUT OUT : INT
+    VAR Cnt : INT
+  PROGRAM Main
+    INPUT Start : BOOL
+    INPUT Stop : BOOL
+    INPUT Level : INT
+    OUTPUT Motor : BOOL
+    OUTPUT Alarm : BOOL
+    VAR Delay : TON
+    VAR Cycles : Counter
+    VAR Mode : E_Mode
+  PROGRAM Sequence
+    INPUT Go : BOOL
+    INPUT Done : BOOL
+    OUTPUT Valve : BOOL
+    OUTPUT Pump : BOOL
+    VAR Init : <anonymous 1>
+    VAR Filling : <anonymous 2>
+    ACTION OpenValve
+    TRANSITION Finished
+types:
+  ENUM E_Mode : INT { Idle=0, Fill=10, Mix=11 }
+  STRUCT ST_Tank { Level : REAL, Name : STRING(20), History : ARRAY[0..9] OF INT }
+  SUBRANGE T_Percent = INT(0..100)
+gvls:
+effects:
+  Scale Mixer.xml:31:37 Assignment: write(Scale) read(Raw)
+  Counter Mixer.xml:63:13 Assignment: write(Cnt) read(Reset) read(Cnt)
+  Counter Mixer.xml:69:13 Assignment: write(OUT) read(Cnt)
+  Main Mixer.xml:100:13 Assignment: write(Motor) read(Start) read(Motor) read(Stop)
+  Main Mixer.xml:101:13 CallStatement: write(Delay.IN) read(Motor) write(Delay.PT)
+  Main Mixer.xml:112:13 If: read(Delay.Q)
+  Main Mixer.xml:112:13 Assignment: write(Alarm)
+  Sequence Mixer.xml:135:15 If: read(Filling.X)
+  Sequence Mixer.xml:135:66 CallStatement: call(ACTION Sequence.OpenValve)
+  Sequence Mixer.xml:136:15 If: read(Filling.X)
+  Sequence Mixer.xml:136:79 Assignment: write(Pump)
+  Sequence Mixer.xml:131:13 If: read(Init.X) read(Go) read(Done)
+  Sequence Mixer.xml:131:13 Assignment: write(Init.X)
+  Sequence Mixer.xml:131:13 Assignment: write(Filling.X)
+  Sequence Mixer.xml:139:13 If: read(Filling.X)
+  Sequence Mixer.xml:139:13 Assignment: write(Filling.X)
+  Sequence Mixer.xml:139:13 Assignment: write(Init.X)
+  Sequence Mixer.xml:140:13 If: read(Filling.X) read(Go)
+  Sequence Mixer.xml:140:13 Assignment: write(Filling.X)
+  Sequence Mixer.xml:140:13 Assignment: write(Init.X)
+  Sequence.OpenValve Mixer.xml:123:64 Assignment: write(Valve)
+  Sequence.Finished Mixer.xml:126:67 Assignment: read(Done)
+call graph:
+  Sequence -> Sequence.OpenValve (ACTION Mixer.xml:135:66)
+instances:
+  Main : Main
+    Main.Delay : TON
+    Main.Cycles : Counter
+  Sequence : Sequence
+tasks:
+  fast priority=1 interval=10.0ms programs=[Main]
+  slow priority=5 interval=100.0ms programs=[Sequence]
+  Main runs in [fast]
+  Sequence runs in [slow]
+names: 51 resolved=51 library=0 unresolved=0
+diagnostics:

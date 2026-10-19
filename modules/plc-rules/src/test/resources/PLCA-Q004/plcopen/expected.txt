@@ -1,0 +1,1 @@
+divide.xml:9:82-9:83 PLCA-Q004 error: Division by zero: the divisor is always 0 [Calc] {POU:Calc/Network:1}

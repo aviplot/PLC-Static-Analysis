@@ -1,0 +1,1 @@
+compare.xml:10:1-10:34 PLCA-Q003 warning: Exact floating-point comparison with '='; compare the difference against a tolerance, e.g. ABS(a - b) < eps [Check] {POU:Check/Network:1}

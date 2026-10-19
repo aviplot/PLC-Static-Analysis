@@ -1,0 +1,1 @@
+inputs.xml:10:174-10:177 PLCA-Q006 warning: Input 'Cmd' of FB_Cmd is written inside the POU; inputs should only be read (copy it to a local) [FB_Cmd] {POU:FB_Cmd/Network:1}

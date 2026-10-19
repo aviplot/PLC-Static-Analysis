@@ -194,6 +194,22 @@ public final class DoubleCoil implements ProjectRule {
                     }
                     out.addAll(r.body());
                 }
+                case Statement.Network n -> {
+                    // a PLCopen LD coil is a coil like a ladder OTE (set/reset coils are latches)
+                    Set<dev.plca.core.source.Span> coilSpans = new HashSet<>();
+                    for (dev.plca.ast.Network.Element e : n.network().elements()) {
+                        if (e.kind() == dev.plca.ast.Network.Kind.COIL
+                                && e.storage() == dev.plca.ast.Network.Modifier.NONE) {
+                            coilSpans.add(e.span());
+                        }
+                    }
+                    for (Statement x : n.body()) {
+                        if (x instanceof Statement.Assignment a && coilSpans.contains(a.span())) {
+                            coils.add(x);
+                        }
+                    }
+                    out.addAll(n.body());
+                }
                 default -> out.add(s);
             }
         }

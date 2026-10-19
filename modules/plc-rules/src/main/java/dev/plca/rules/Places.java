@@ -18,6 +18,9 @@ final class Places {
     private Places() {}
 
     static String of(PouSymbol pou, Span span, SourceRegistry sources) {
+        if (pou.dialect() == Dialect.PLCOPEN) {
+            return plcopen(pou, span, sources);
+        }
         if (pou.dialect() != Dialect.ROCKWELL) {
             return null;
         }
@@ -60,6 +63,77 @@ final class Places {
     private static boolean inBody(PouSymbol pou, Span span) {
         var body = pou.declaration() == null ? null : pou.declaration().body();
         return body != null && !body.isEmpty() && body.getFirst().span().textId() == span.textId();
+    }
+
+    /**
+     * PLCopen editors show POUs with their networks: {@code POU:Main/Network:3}, {@code POU:Main/Chart},
+     * {@code POU:Main/Line:4} for ST, members as {@code POU:FB/Method:M/…}.
+     */
+    private static String plcopen(PouSymbol pou, Span span, SourceRegistry sources) {
+        StringBuilder sb = new StringBuilder();
+        PouSymbol top = pou;
+        while (top.owner() != null) {
+            top = top.owner();
+        }
+        sb.append("POU:").append(top.name());
+        if (pou != top) {
+            String kind = switch (pou.kind()) {
+                case METHOD -> "Method";
+                case ACTION -> "Action";
+                case TRANSITION -> "Transition";
+                case PROPERTY, PROPERTY_GET, PROPERTY_SET -> "Property";
+                default -> "Member";
+            };
+            sb.append('/')
+                    .append(kind)
+                    .append(':')
+                    .append(
+                            pou.kind() == PouKind.PROPERTY_GET || pou.kind() == PouKind.PROPERTY_SET
+                                    ? pou.owner().name() + "." + pou.name()
+                                    : pou.name());
+        }
+        var body = pou.declaration() == null ? null : pou.declaration().body();
+        if (body == null) {
+            return sb.toString();
+        }
+        for (Statement s : body) {
+            switch (s) {
+                case Statement.Network n -> {
+                    if (contains(n.span(), span) || holds(n.body(), span)) {
+                        return sb.append("/Network:").append(n.number()).toString();
+                    }
+                }
+                case Statement.Chart c -> {
+                    if (contains(c.span(), span) || holds(c.body(), span)) {
+                        return sb.append("/Chart").toString();
+                    }
+                }
+                default -> {}
+            }
+        }
+        if ("ST".equalsIgnoreCase(pou.declaration().bodyLanguage()) && inBody(pou, span)) {
+            String text = sources.text(span.textId()).text();
+            int line = 1;
+            for (int i = 0; i < span.start() && i < text.length(); i++) {
+                if (text.charAt(i) == '\n') {
+                    line++;
+                }
+            }
+            sb.append("/Line:").append(line);
+        }
+        return sb.toString();
+    }
+
+    /** A statement or expression of {@code body} has exactly this span (lowered nodes keep their element's span). */
+    private static boolean holds(List<Statement> body, Span span) {
+        boolean[] found = {false};
+        dev.plca.semantic.Statements.forEachDeep(body, st -> {
+            if (st.span().equals(span)) {
+                found[0] = true;
+            }
+            Walk.ownExpressions(st, e -> Walk.deep(e, x -> found[0] |= x.span().equals(span)));
+        });
+        return found[0];
     }
 
     /**

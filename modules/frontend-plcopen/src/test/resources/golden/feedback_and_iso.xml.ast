@@ -1,0 +1,45 @@
+SourceUnit dialect=PLCOPEN
+  Pou kind=PROGRAM name=Toggle bodyLanguage="FBD" @7:7-7:44
+    varBlocks:
+      VarBlock section=VAR @9:11-9:22
+        variables:
+          VarDecl name=Q referenceInit=false @10:13-10:32
+            type:
+              Named name=BOOL @10:38-10:45
+          VarDecl name=Label referenceInit=false @11:13-11:36
+            type:
+              StringType wide=false @11:42-11:51
+            init:
+              Literal kind=STRING text="'Initial String'" @11:92-11:106
+    body:
+      Network number=1 network="FBD 2 elements" @16:13-21:38
+        body:
+          Assignment op=ASSIGN @16:13-16:47
+            target:
+              NameRef name=$fbd1 globalScope=false @16:13-16:47
+            value:
+              Unary op=NOT @16:13-16:47
+                operand:
+                  NameRef name=$fbd1 globalScope=false @16:13-16:47
+          Assignment op=ASSIGN @21:13-21:38
+            target:
+              NameRef name=Q globalScope=false @21:165-21:166
+            value:
+              NameRef name=$fbd1 globalScope=false @16:13-16:47
+  Configuration name=c @29:7-29:31
+    elements:
+      Resource name=r @29:31-29:50
+        elements:
+          Task name=t @29:50-29:97
+            settings:
+              Argument kind=INPUT name=PRIORITY negated=false @29:94-29:95
+                value:
+                  Literal kind=INTEGER text="1" @29:94-29:95
+              Argument kind=INPUT name=INTERVAL negated=false @29:75-29:82
+                value:
+                  Literal kind=TIME text="20ms" typePrefix="T" @29:75-29:82
+          ProgramInstance name=i task=t type=Toggle @29:97-29:138
+  pragmas:
+    Pragma kind=ATTRIBUTE name="Producer" value="Example / Feedback" @3:3-3:61
+  comments: 0
+diagnostics:
