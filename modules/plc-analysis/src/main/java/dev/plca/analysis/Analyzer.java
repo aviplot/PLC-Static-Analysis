@@ -1,4 +1,4 @@
-package dev.plca.cli;
+package dev.plca.analysis;
 
 import dev.plca.ast.SourceUnit;
 import dev.plca.core.Dialect;
@@ -172,7 +172,7 @@ public final class Analyzer {
      * merge into duplicate symbols and cross-file double coils. Partial Rockwell exports (routines, programs, AOIs)
      * join the controller when there is exactly one, else the shared model, which holds everything else.
      */
-    static List<List<SourceUnit>> modelGroups(ProjectLoader.Project project) {
+    public static List<List<SourceUnit>> modelGroups(ProjectLoader.Project project) {
         Map<String, SourceFile> files = new HashMap<>();
         project.registry().files().forEach(f -> files.put(f.path(), f));
         List<List<SourceUnit>> controllers = new ArrayList<>();
@@ -213,7 +213,7 @@ public final class Analyzer {
             Pattern.compile("<RSLogix5000Content\\b[^>]*\\bTargetType\\s*=\\s*\"Controller\"");
 
     /** Files we cannot analyse yet: L5K (Rockwell's text export). */
-    static List<String> skipped(Path root) {
+    public static List<String> skipped(Path root) {
         List<String> out = new ArrayList<>();
         try {
             Files.walkFileTree(root, new SimpleFileVisitor<>() {

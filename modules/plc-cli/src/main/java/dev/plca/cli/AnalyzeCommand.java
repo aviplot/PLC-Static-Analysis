@@ -1,5 +1,7 @@
 package dev.plca.cli;
 
+import dev.plca.analysis.Analyzer;
+import dev.plca.analysis.ConfigFile;
 import dev.plca.core.diag.Severity;
 import dev.plca.report.AnalysisResult;
 import dev.plca.report.Baseline;
@@ -216,30 +218,8 @@ final class AnalyzeCommand implements Callable<Integer> {
         return found != null && Files.isRegularFile(found) ? ConfigFile.read(found) : null;
     }
 
-    /**
-     * The file's settings with the command line on top: --rules replaces the selection (and the file's disable list),
-     * --disable adds, --param overrides.
-     */
     private RuleConfig ruleConfig(ConfigFile file) {
-        ConfigFile.Rules r = file == null ? null : file.rules();
-        List<String> select = rules != null ? rules : r != null && r.select() != null ? r.select() : List.of("default");
-        // an explicit --rules is the whole selection: the file's disable list does not apply to it
-        List<String> off = new ArrayList<>(rules == null && r != null && r.disable() != null ? r.disable() : List.of());
-        off.addAll(disable);
-        Map<String, Map<String, String>> params = new LinkedHashMap<>();
-        if (r != null) {
-            r.parameters().forEach((k, v) -> params.put(k, new LinkedHashMap<>(v)));
-        }
-        parameters()
-                .forEach((k, v) ->
-                        params.computeIfAbsent(k, x -> new LinkedHashMap<>()).putAll(v));
-        return new RuleConfig(
-                select,
-                off,
-                params,
-                r == null ? Map.of() : r.severity(),
-                r == null ? Map.of() : r.dialects(),
-                file == null ? List.of() : file.suppressions());
+        return ConfigFile.ruleConfig(file, rules, disable, parameters());
     }
 
     private void write(AnalysisResult result, Writer w, boolean colored) throws IOException {

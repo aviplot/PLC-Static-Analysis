@@ -3,6 +3,7 @@ package dev.plca.cli;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.plca.analysis.ConfigFile;
 import dev.plca.core.Dialect;
 import dev.plca.core.diag.Severity;
 import java.io.IOException;

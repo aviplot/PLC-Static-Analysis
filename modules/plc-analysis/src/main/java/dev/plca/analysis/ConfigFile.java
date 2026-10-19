@@ -1,4 +1,4 @@
-package dev.plca.cli;
+package dev.plca.analysis;
 
 import dev.plca.core.Dialect;
 import dev.plca.core.diag.Severity;
@@ -37,12 +37,13 @@ import tools.jackson.dataformat.yaml.YAMLMapper;
  * fail-on: error
  * </pre>
  */
-record ConfigFile(Path path, Rules rules, List<RuleConfig.Suppression> suppressions, Path baseline, String failOn) {
+public record ConfigFile(
+        Path path, Rules rules, List<RuleConfig.Suppression> suppressions, Path baseline, String failOn) {
 
-    static final String NAME = "plca.yaml";
+    public static final String NAME = "plca.yaml";
 
     /** The {@code rules:} section; null fields were not given. */
-    record Rules(
+    public record Rules(
             List<String> select,
             List<String> disable,
             Map<String, Map<String, String>> parameters,
@@ -50,10 +51,10 @@ record ConfigFile(Path path, Rules rules, List<RuleConfig.Suppression> suppressi
             Map<Dialect, RuleConfig.DialectConfig> dialects) {}
 
     /** A configuration error, with the file and line. */
-    static final class ConfigException extends Exception {
+    public static final class ConfigException extends Exception {
         private static final long serialVersionUID = 1L;
 
-        ConfigException(String message) {
+        public ConfigException(String message) {
             super(message);
         }
     }
@@ -71,12 +72,12 @@ record ConfigFile(Path path, Rules rules, List<RuleConfig.Suppression> suppressi
 
     private record Scalar(String value, int line) implements Node {}
 
-    static ConfigFile read(Path file) throws ConfigException, IOException {
+    public static ConfigFile read(Path file) throws ConfigException, IOException {
         String text = Files.readString(file, StandardCharsets.UTF_8);
         return parse(file, text);
     }
 
-    static ConfigFile parse(Path file, String text) throws ConfigException {
+    public static ConfigFile parse(Path file, String text) throws ConfigException {
         Node root;
         try (JsonParser p = YAML.createParser(text)) {
             JsonToken t = p.nextToken();
@@ -86,6 +87,34 @@ record ConfigFile(Path path, Rules rules, List<RuleConfig.Suppression> suppressi
             throw new ConfigException(file + ":" + line + ": invalid YAML: " + e.getOriginalMessage());
         }
         return new Reader(file).config(root);
+    }
+
+    /**
+     * The rule configuration of {@code file} (null: none) with command-line options on top: {@code rules} replaces the
+     * selection and the file's disable list, {@code disable} adds, {@code parameters} override.
+     *
+     * @param rules null: the file's selection, else {@code default}
+     */
+    public static RuleConfig ruleConfig(
+            ConfigFile file, List<String> rules, List<String> disable, Map<String, Map<String, String>> parameters) {
+        Rules r = file == null ? null : file.rules();
+        List<String> select = rules != null ? rules : r != null && r.select() != null ? r.select() : List.of("default");
+        // an explicit --rules is the whole selection: the file's disable list does not apply to it
+        List<String> off = new ArrayList<>(rules == null && r != null && r.disable() != null ? r.disable() : List.of());
+        off.addAll(disable);
+        Map<String, Map<String, String>> params = new LinkedHashMap<>();
+        if (r != null) {
+            r.parameters().forEach((k, v) -> params.put(k, new LinkedHashMap<>(v)));
+        }
+        parameters.forEach(
+                (k, v) -> params.computeIfAbsent(k, x -> new LinkedHashMap<>()).putAll(v));
+        return new RuleConfig(
+                select,
+                off,
+                params,
+                r == null ? Map.of() : r.severity(),
+                r == null ? Map.of() : r.dialects(),
+                file == null ? List.of() : file.suppressions());
     }
 
     private static Node node(JsonParser p) {

@@ -3,12 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":plc-report"))
-    implementation(project(":frontend-st"))
-    implementation(project(":frontend-scl"))
-    implementation(project(":frontend-l5x"))
-    implementation(project(":frontend-plcopen"))
-    implementation(libs.jackson.yaml)
+    implementation(project(":plc-analysis"))
     testImplementation(libs.jackson.databind)
 }
 

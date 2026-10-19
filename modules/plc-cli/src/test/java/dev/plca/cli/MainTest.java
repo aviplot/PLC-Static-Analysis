@@ -154,7 +154,7 @@ class MainTest {
         Files.writeString(p.resolve("Line.L5X"), "<RSLogix5000Content/>");
         Files.writeString(p.resolve("Line.L5K"), "CONTROLLER Line\nEND_CONTROLLER\n");
         Files.writeString(p.resolve("other.xml"), "<root/>");
-        assertThat(Analyzer.skipped(p)).containsExactly("Line.L5K");
+        assertThat(dev.plca.analysis.Analyzer.skipped(p)).containsExactly("Line.L5K");
     }
 
     @Test
