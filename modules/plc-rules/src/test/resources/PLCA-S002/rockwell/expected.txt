@@ -1,0 +1,3 @@
+cell.L5X:18:55-18:76 PLCA-S002 warning: Output Local:2:O.Data.1 is driven directly by 'HmiStart', which can be written from outside the PLC (HMI, SCADA), with no range or validity check [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+    cell.L5X:18:46-18:54 externally writable value
+cell.L5X:21:52-21:60 PLCA-S002 warning: 'HmiIndex' can be written from outside the PLC (HMI, SCADA) and indexes an array without a bounds check; an out-of-range value faults the controller or overwrites other data [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:3}

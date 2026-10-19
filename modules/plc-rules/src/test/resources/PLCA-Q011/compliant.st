@@ -11,6 +11,10 @@ VAR
     lrOut : LREAL;
     nUns : UINT;
     nSmall : SINT;
+    bSel : BOOL;
+END_VAR
+VAR CONSTANT
+    cLimit : DINT := 100;
 END_VAR
 nPulses := DINT_TO_INT(diPulses);
 nPulses := nIn + 1;
@@ -22,4 +26,8 @@ lrOut := rSpeed;
 nUns := nIn;
 nSmall := 100;
 rOut := nIn;
+rOut := MAX(0.0, rSpeed);
+nPulses := SEL(bSel, 102, 11);
+nPulses := cLimit;
+nUns := SIZEOF(rOut);
 END_FUNCTION_BLOCK

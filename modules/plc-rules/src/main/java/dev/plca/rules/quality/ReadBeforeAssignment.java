@@ -1,11 +1,13 @@
 package dev.plca.rules.quality;
 
 import dev.plca.ast.Declaration.PouKind;
+import dev.plca.ast.Expression;
 import dev.plca.ast.Statement;
 import dev.plca.ast.VarBlock;
 import dev.plca.core.Dialect;
 import dev.plca.rules.PouContext;
 import dev.plca.rules.PouRule;
+import dev.plca.rules.Walk;
 import dev.plca.semantic.Access;
 import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
@@ -27,8 +29,10 @@ import java.util.Set;
  * pointer type are tracked; structures and arrays are filled member by member and are left out.
  *
  * <p>Definite assignment over the structured body: IF and CASE merge their branches, loop bodies may not run (REPEAT
- * runs once), RETURN/EXIT/CONTINUE end a path. Passing a variable as VAR_IN_OUT, taking its address or writing part of
- * it counts as an assignment. Bodies with JMP or __TRY are skipped. One finding per variable, at its first unsafe read.
+ * runs once), RETURN/EXIT/CONTINUE end a path. Passing a variable as VAR_IN_OUT or to a call whose parameters are not
+ * known, taking its address or writing part of it counts as an assignment. A self-update ({@code nSum := nSum + x})
+ * builds on the zero default on purpose and is reported only for Siemens, whose classic blocks do not initialise
+ * temporaries. Bodies with JMP or __TRY are skipped. One finding per variable, at its first unsafe read.
  */
 public final class ReadBeforeAssignment implements PouRule {
 
@@ -43,10 +47,13 @@ public final class ReadBeforeAssignment implements PouRule {
         final Map<VariableSymbol, Integer> index;
         final Set<VariableSymbol> reported = new HashSet<>();
         final List<Access> unsafe = new ArrayList<>();
+        /** Report {@code x := x + …} too: on Siemens S7 classic blocks temporaries are not initialised at all. */
+        final boolean selfUpdates;
 
-        Flow(SemanticModel model, Map<VariableSymbol, Integer> index) {
+        Flow(SemanticModel model, Map<VariableSymbol, Integer> index, boolean selfUpdates) {
             this.model = model;
             this.index = index;
+            this.selfUpdates = selfUpdates;
         }
     }
 
@@ -77,7 +84,7 @@ public final class ReadBeforeAssignment implements PouRule {
         if (index.isEmpty() || hasJumpsOrTry(ctx.body())) {
             return;
         }
-        Flow f = new Flow(ctx.model(), index);
+        Flow f = new Flow(ctx.model(), index, pou.dialect() == Dialect.SIEMENS);
         list(f, ctx.body(), new BitSet());
         for (Access a : f.unsafe) {
             VariableSymbol v = a.variable();
@@ -170,12 +177,37 @@ public final class ReadBeforeAssignment implements PouRule {
         }
     }
 
-    /** The statement's own accesses: reads first, then writes (inputs are evaluated before outputs are stored). */
+    /**
+     * The statement's own accesses: reads first, then writes (inputs are evaluated before outputs are stored).
+     * Variables passed to a parameter the model cannot see (a library call) may be outputs and count as assigned first.
+     * A self-update ({@code nSum := nSum + x}) deliberately builds on the zero default and is not reported, except on
+     * Siemens.
+     */
     private static void own(Flow f, Statement s, BitSet state) {
         List<Access> accesses = f.model.effects(s).accesses();
+        Walk.ownExpressions(
+                s,
+                root -> Walk.deep(root, e -> {
+                    if (e instanceof Expression.Call c) {
+                        for (Expression.Argument a : c.arguments()) {
+                            if (a.value() instanceof Expression.NameRef n
+                                    && f.model.parameter(a).isEmpty()
+                                    && f.model.symbol(n).orElse(null) instanceof VariableSymbol v
+                                    && f.index.containsKey(v)) {
+                                state.set(f.index.get(v));
+                            }
+                        }
+                    }
+                }));
+        VariableSymbol updated = !f.selfUpdates
+                        && s instanceof Statement.Assignment as
+                        && as.target() instanceof Expression.NameRef t
+                        && f.model.symbol(t).orElse(null) instanceof VariableSymbol tv
+                ? tv
+                : null;
         for (Access a : accesses) {
             Integer i = f.index.get(a.variable());
-            if (i == null || a.kind() != Access.Kind.READ) {
+            if (i == null || a.kind() != Access.Kind.READ || a.variable() == updated) {
                 continue;
             }
             if (!state.get(i) && f.reported.add(a.variable())) {

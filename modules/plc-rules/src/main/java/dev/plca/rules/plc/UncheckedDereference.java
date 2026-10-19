@@ -6,6 +6,8 @@ import dev.plca.ast.Statement;
 import dev.plca.rules.PouContext;
 import dev.plca.rules.PouRule;
 import dev.plca.rules.Walk;
+import dev.plca.semantic.Access;
+import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
 import dev.plca.semantic.Statements;
 import dev.plca.semantic.Type;
@@ -19,8 +21,9 @@ import java.util.Set;
  * PLCA-P005: a pointer dereferenced ({@code p^}) without any check that it is not zero. A dereference counts as checked
  * when the body compares the pointer with 0 ({@code p <> 0}, {@code p = 0}, {@code 0 < p}, …) or tests it with
  * {@code __ISVALIDREF} before the dereference or in a condition around it, or assigns it from {@code ADR(…)} before.
- * The check is per POU body and in text order, a deliberately simple approximation of "on the path". One finding per
- * pointer and body.
+ * The check is per POU body and in text order, a deliberately simple approximation of "on the path". A pointer member
+ * of a function block that the block's own code assigns (in FB_init or a setter method) is the object's contract and
+ * counts as checked. One finding per pointer and body.
  */
 public final class UncheckedDereference implements PouRule {
 
@@ -34,7 +37,30 @@ public final class UncheckedDereference implements PouRule {
         SemanticModel m = ctx.model();
         Set<VariableSymbol> safe = new HashSet<>();
         Set<VariableSymbol> reported = new HashSet<>();
+        // pointers of the function block that its own code sets (FB_init, a setter method): the object's contract
+        PouSymbol owner = ctx.pou().instanceOwner();
+        if (owner != null && owner.isInstantiable()) {
+            assignedIn(m, owner, safe);
+            owner.members().values().forEach(member -> assignedIn(m, member, safe));
+        }
         statements(ctx, m, ctx.body(), safe, reported);
+    }
+
+    private static void assignedIn(SemanticModel m, PouSymbol p, Set<VariableSymbol> safe) {
+        if (p.declaration() == null || p.declaration().body() == null) {
+            return;
+        }
+        Statements.forEachDeep(p.declaration().body(), s -> {
+            for (Access a : m.effects(s).accesses()) {
+                if (a.isWrite()
+                        && a.path().isEmpty()
+                        && a.variable().owner() instanceof PouSymbol o
+                        && o.isInstantiable()
+                        && m.type(a.expression()).resolved() instanceof Type.Pointer) {
+                    safe.add(a.variable());
+                }
+            }
+        });
     }
 
     private void statements(

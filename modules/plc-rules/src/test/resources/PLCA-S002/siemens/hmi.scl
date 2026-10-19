@@ -1,0 +1,23 @@
+DATA_BLOCK "DB_Hmi"
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Setpoint : Real;
+      Status : Int;
+      Locked { ExternalWritable := 'False'} : Real;
+   END_VAR
+BEGIN
+END_DATA_BLOCK
+
+FUNCTION_BLOCK "FB_Drive"
+VERSION : 0.1
+   VAR 
+      Index : Int;
+      Table : Array[0..9] of Int;
+   END_VAR
+BEGIN
+	%QD4 := "DB_Hmi".Setpoint; // PLCA-S002
+	%QD8 := "DB_Hmi".Locked;
+	"DB_Hmi".Status := 1;
+	%QW12 := "DB_Hmi".Status;
+END_FUNCTION_BLOCK

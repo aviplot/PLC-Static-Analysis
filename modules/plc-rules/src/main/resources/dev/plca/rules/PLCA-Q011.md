@@ -3,7 +3,7 @@ id: PLCA-Q011
 title: Implicit narrowing conversion
 severity: warning
 category: quality
-dialects: all
+dialects: [codesys, twincat, siemens, plcopen]
 tags: [reliability, numerics, types]
 plcopen: CP25
 cwe: CWE-197
@@ -21,9 +21,10 @@ fraction (and overflows above 32767), an LREAL position loses precision. Making 
 conversion function shows the reader that the range was considered, and is where a LIMIT belongs. PLCopen Coding
 Guidelines rule CP25 *Data types conversion should be explicit*.
 
-Untyped literals take the type of the other operand (`nInt + 1` stays INT), so they never cause a finding by
-themselves. Conversions between signed and unsigned types of the same size, and from integers to reals, are not
-reported. Rockwell ladder instructions are not checked: they convert their operands by documented rules.
+Untyped literals take the type of the other operand (`nInt + 1` stays INT, `MAX(0.0, rSpeed)` stays REAL), so they
+never cause a finding by themselves; named constants count by value, and one that fits is fine. Conversions between
+signed and unsigned types of the same size, and from integers to reals, are not reported. Rockwell code is not
+checked: Logix converts on assignment by design and has no conversion functions to make it explicit.
 
 ## Noncompliant
 

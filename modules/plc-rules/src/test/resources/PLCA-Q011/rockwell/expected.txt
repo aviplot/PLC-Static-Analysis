@@ -1,1 +1,0 @@
-st.L5X:13:37-13:41 PLCA-Q011 warning: Implicit conversion from DINT to INT may lose data; convert explicitly (DINT_TO_INT or TO_INT) [MainProgram.Main] {Program:MainProgram/Routine:Main/Line:1}

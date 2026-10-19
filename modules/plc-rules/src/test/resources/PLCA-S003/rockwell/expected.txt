@@ -1,0 +1,1 @@
+clock.L5X:14:42-14:60 PLCA-S003 warning: Real-time clock value compared with the year 2027: logic that changes in a given year can be a time bomb; review what it enables [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:1}

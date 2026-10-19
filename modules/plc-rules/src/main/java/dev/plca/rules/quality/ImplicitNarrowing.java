@@ -7,6 +7,7 @@ import dev.plca.core.source.Span;
 import dev.plca.rules.PouContext;
 import dev.plca.rules.PouRule;
 import dev.plca.rules.Walk;
+import dev.plca.semantic.BuiltinFunction;
 import dev.plca.semantic.Constant;
 import dev.plca.semantic.ElementaryKind;
 import dev.plca.semantic.SemanticModel;
@@ -14,6 +15,7 @@ import dev.plca.semantic.Statements;
 import dev.plca.semantic.Type;
 import dev.plca.semantic.VariableSymbol;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 /**
@@ -23,8 +25,8 @@ import java.util.function.Consumer;
  *
  * <p>The width of an expression is that of its widest typed operand; untyped literals adapt to the other operand (as
  * IEC 61131-3 says) and so never widen it. Conversions between signed and unsigned of the same size, and between
- * integers and reals of any size, are not reported. Ladder instructions are not checked: Rockwell converts their
- * operands by rule.
+ * integers and reals of any size, are not reported. Named constants count by value: one that fits is fine. Rockwell
+ * code is not checked: Logix converts on assignment by design and has no conversion functions to make it explicit.
  */
 public final class ImplicitNarrowing implements PouRule {
 
@@ -85,10 +87,12 @@ public final class ImplicitNarrowing implements PouRule {
         if (to == null || !(to.isNumeric() || to.isBitString())) {
             return;
         }
-        if (!hasName(value)) {
-            // a constant expression: it must fit
+        Constant constant = ctx.model().constant(value).orElse(null);
+        if (!hasName(value) || constant != null) {
+            // a constant (literal or named): it only has to fit; 64-bit hex literals do not fit a Java long
             if ((to.isInteger() || to.isBitString())
-                    && ctx.model().constant(value).orElse(null) instanceof Constant.Int i
+                    && to.bits() < 64
+                    && constant instanceof Constant.Int i
                     && (i.value() < to.minValue() || i.value() > to.maxValue())) {
                 ctx.report(
                         span,
@@ -121,8 +125,42 @@ public final class ImplicitNarrowing implements PouRule {
                         wider(width(m, b.left()), width(m, b.right()), kind(m, e));
                     default -> kind(m, e);
                 };
+            case Expression.Call c
+            when m.symbol(c.callee()).orElse(null) instanceof BuiltinFunction f -> builtin(m, c, f);
             default -> kind(m, e);
         };
+    }
+
+    /**
+     * Generic standard functions ({@code MAX}, {@code SEL}, {@code ADD}, …) take the type of their typed arguments; the
+     * model types them from literal arguments too ({@code MAX(0.0, r)} as LREAL), which is not what the compiler does.
+     * Conversions keep their declared result; SIZEOF fits whatever holds it.
+     */
+    private static ElementaryKind builtin(SemanticModel m, Expression.Call c, BuiltinFunction f) {
+        String name = f.name().toUpperCase(Locale.ROOT);
+        if (name.equals("SIZEOF") || name.equals("XSIZEOF")) {
+            return null;
+        }
+        if (name.contains("_TO_") || name.startsWith("TO_") || name.startsWith("TRUNC")) {
+            return kind(m, c);
+        }
+        boolean literalArgument = false;
+        ElementaryKind widest = null;
+        for (int i = 0; i < c.arguments().size(); i++) {
+            Expression.Argument a = c.arguments().get(i);
+            if (a.value() == null || a.kind() == Expression.ArgumentKind.OUTPUT) {
+                continue;
+            }
+            if (i == 0 && (name.equals("SEL") || name.equals("MUX"))) {
+                continue; // the selector is not part of the result
+            }
+            if (a.value() instanceof Expression.Literal || m.constant(a.value()).isPresent() && !hasName(a.value())) {
+                literalArgument = true;
+                continue;
+            }
+            widest = wider(widest, width(m, a.value()), widest);
+        }
+        return literalArgument ? widest : kind(m, c);
     }
 
     private static ElementaryKind kind(SemanticModel m, Expression e) {

@@ -3,8 +3,10 @@
 <fileHeader companyName="Example" productName="Fixture"/>
 <types><dataTypes/><pous>
 <pou name="F_Acc" pouType="function"><interface><returnType><INT/></returnType><inputVars><variable name="n"><type><INT/></type></variable></inputVars><localVars><variable name="acc"><type><INT/></type></variable></localVars></interface>
-<body><ST><xhtml:p><![CDATA[acc := acc + n; (* PLCA-Q010 *)
-F_Acc := acc;]]></xhtml:p></ST></body></pou>
+<body><ST><xhtml:p><![CDATA[IF acc > n THEN (* PLCA-Q010 *)
+    F_Acc := 1;
+END_IF
+acc := n;]]></xhtml:p></ST></body></pou>
 </pous></types>
 <instances><configurations/></instances>
 </project>

@@ -352,6 +352,11 @@ final class EffectsBuilder {
                 readSubexpressions(a.value(), c);
                 continue;
             }
+            if (param != null && param.section() == VarBlock.Section.OUTPUT && kind != CallSite.Kind.FB_INSTANCE) {
+                // classic S7 SCL passes outputs of functions with ':=' (READ_CLK(CDT := t)): the callee writes them
+                write(a.value(), c);
+                continue;
+            }
             if (instance != null && param != null && kind == CallSite.Kind.FB_INSTANCE) {
                 c.accesses.add(new Access(
                         instance.variable(),

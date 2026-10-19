@@ -153,6 +153,20 @@
     "category" : "plc",
     "cwe" : "CWE-476",
     "tags" : [ "reliability", "pointers" ]
+  }, {
+    "id" : "PLCA-S002",
+    "title" : "Externally writable value used without a check",
+    "severity" : "warning",
+    "category" : "security",
+    "cwe" : "CWE-20",
+    "tags" : [ "security", "input-validation" ]
+  }, {
+    "id" : "PLCA-S003",
+    "title" : "Suspicious hidden trigger",
+    "severity" : "warning",
+    "category" : "security",
+    "cwe" : "CWE-511",
+    "tags" : [ "security", "logic-bomb", "review" ]
   } ],
   "findings" : [ {
     "ruleId" : "PLCA-P001",

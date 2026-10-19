@@ -1,0 +1,4 @@
+noncompliant.st:12:4-12:41 PLCA-S003 warning: Condition on the absolute date DT#2027-01-01-00:00:00: logic that changes on a calendar date can be a time bomb; review what it enables [P_Bomb]
+noncompliant.st:15:4-15:23 PLCA-S003 warning: Comparison with the magic value 16#DEADBEEF: a value nobody sets by accident can unlock hidden behaviour; review what it enables [P_Bomb]
+noncompliant.st:18:4-18:17 PLCA-S003 warning: Comparison with the magic value 31337: a value nobody sets by accident can unlock hidden behaviour; review what it enables [P_Bomb]
+noncompliant.st:22:1-22:32 PLCA-S003 warning: Timer runs from start-up (IN := TRUE) and fires after T#30D: logic that wakes up long after commissioning can be a time bomb; review what it enables [P_Bomb]

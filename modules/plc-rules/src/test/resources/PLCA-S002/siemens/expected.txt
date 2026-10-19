@@ -1,0 +1,2 @@
+hmi.scl:19:2-19:28 PLCA-S002 warning: Output %QD4 is driven directly by 'DB_Hmi.Setpoint', which can be written from outside the PLC (HMI, SCADA), with no range or validity check [FB_Drive]
+    hmi.scl:19:10-19:27 externally writable value

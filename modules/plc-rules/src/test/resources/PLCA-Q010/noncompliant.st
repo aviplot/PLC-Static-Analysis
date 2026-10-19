@@ -11,7 +11,7 @@ VAR
     nOnce : INT;
 END_VAR
 FOR i := 0 TO 3 DO
-    nSum := nSum + a[i]; // PLCA-Q010
+    nSum := nSum + a[i]; // accumulator on the zero default: not reported
 END_FOR
 IF bMode THEN
     nPick := 1;
@@ -36,5 +36,5 @@ nStatic := nStatic + nTmp; // PLCA-Q010
 END_FUNCTION_BLOCK
 
 FUNCTION F_Result : INT
-F_Result := F_Result + 1; // PLCA-Q010
+F_Result := F_Result + 1; // self-update: not reported
 END_FUNCTION

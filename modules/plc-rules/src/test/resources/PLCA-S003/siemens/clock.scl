@@ -1,0 +1,13 @@
+FUNCTION_BLOCK "FB_Service"
+VERSION : 0.1
+   VAR 
+      Now : DTL;
+      Ret : Int;
+      Enabled : Bool;
+   END_VAR
+BEGIN
+	#Ret := RD_LOC_T(#Now);
+	IF #Now.YEAR >= 2027 THEN // PLCA-S003
+	    #Enabled := FALSE;
+	END_IF;
+END_FUNCTION_BLOCK

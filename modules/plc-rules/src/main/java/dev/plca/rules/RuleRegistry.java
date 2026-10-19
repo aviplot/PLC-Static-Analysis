@@ -20,6 +20,8 @@ import dev.plca.rules.quality.UnreachableCode;
 import dev.plca.rules.quality.UnusedPou;
 import dev.plca.rules.quality.UnusedVariable;
 import dev.plca.rules.security.HardCodedSecret;
+import dev.plca.rules.security.HiddenTrigger;
+import dev.plca.rules.security.UncheckedExternalInput;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,7 +70,9 @@ public final class RuleRegistry {
                 new CrossTaskWrite(),
                 new ReadBeforeAssignment(),
                 new ImplicitNarrowing(),
-                new UncheckedDereference()));
+                new UncheckedDereference(),
+                new UncheckedExternalInput(),
+                new HiddenTrigger()));
     }
 
     public List<RuleDescriptor> descriptors() {

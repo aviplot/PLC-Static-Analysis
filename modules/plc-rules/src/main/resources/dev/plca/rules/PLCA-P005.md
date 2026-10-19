@@ -3,7 +3,7 @@ id: PLCA-P005
 title: Pointer dereference without a check
 severity: warning
 category: plc
-dialects: all
+dialects: [codesys, twincat, plcopen]
 tags: [reliability, pointers]
 plcopen: -
 cwe: CWE-476
@@ -18,7 +18,9 @@ from `ADR(…)` before the dereference.
 Dereferencing a null pointer raises an access violation and stops the PLC (CODESYS, TwinCAT); a stale or zero pointer
 passed in by a caller is a classic cause of a controller crash after an online change. Check the pointer before using
 it, or use a REFERENCE with `__ISVALIDREF`. The check is approximate: any comparison of the pointer with 0 earlier in
-the body, or in a condition around the dereference, counts. One finding per pointer and body.
+the body, or in a condition around the dereference, counts. A pointer member of a function block that the block's own
+code assigns (in `FB_init` or a setter method) is treated as part of the object's contract and not reported. One
+finding per pointer and body.
 
 ## Noncompliant
 

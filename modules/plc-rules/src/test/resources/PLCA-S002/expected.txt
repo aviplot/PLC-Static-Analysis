@@ -1,0 +1,9 @@
+noncompliant.st:18:1-18:34 PLCA-S002 warning: Output qrSpeed (%QD4) is driven directly by 'GVL_HMI_rSpeed', which can be written from outside the PLC (HMI, SCADA), with no range or validity check [P_Out]
+    noncompliant.st:18:12-18:33 externally writable value
+noncompliant.st:19:1-19:26 PLCA-S002 warning: Output qxPump (%QX0.0) is driven directly by 'GVL_HMI_bStart', which can be written from outside the PLC (HMI, SCADA), with no range or validity check [P_Out]
+    noncompliant.st:19:11-19:25 externally writable value
+noncompliant.st:21:5-21:21 PLCA-S002 warning: Output qxValve (%QX0.1) is driven directly by 'GVL_HMI_bStart', which can be written from outside the PLC (HMI, SCADA), with no range or validity check [P_Out]
+    noncompliant.st:20:4-20:18 externally writable value
+noncompliant.st:23:1-23:26 PLCA-S002 warning: Output qnValue (%QW8) is driven directly by 'gnRemoteValue', which can be written from outside the PLC (HMI, SCADA), with no range or validity check [P_Out]
+    noncompliant.st:23:12-23:25 externally writable value
+noncompliant.st:24:14-24:28 PLCA-S002 warning: 'GVL_HMI_nIndex' can be written from outside the PLC (HMI, SCADA) and indexes an array without a bounds check; an out-of-range value faults the controller or overwrites other data [P_Out]
