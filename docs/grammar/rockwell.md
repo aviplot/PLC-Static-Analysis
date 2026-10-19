@@ -188,6 +188,9 @@ would put millions of entries into the source registry. One parse per routine, t
 7. AOI call operands: **verified from the corpus**: backing tag, then the `Required` parameters in definition order
    (EnableIn/EnableOut excluded): 11,437 of 11,452 rung calls of AOIs defined in the same file match; the 15 others
    are hand-written test files.
+10. Ladder `FOR` with four operands, `FOR(index,initial,terminal,step) … NXT` (seen in corpus exports, e.g. a tutorial
+    project explaining it): modelled as a loop that writes its index, unlike the routine form
+    `FOR(routine,index,initial,terminal,step)`. Not yet checked against 1756-RM003 (M7).
 
 ## 10. Corpus results (M5)
 `./gradlew :plc-devtools:corpusCheck -Ponly=Rockwell` (one project per L5X file: an export is a complete project), 2,052

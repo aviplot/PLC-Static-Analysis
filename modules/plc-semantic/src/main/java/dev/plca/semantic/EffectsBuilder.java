@@ -387,7 +387,10 @@ final class EffectsBuilder {
                 read(a.value(), c);
                 continue;
             }
-            InstructionSet.Role role = instr.isKnown() ? instr.definition().role(index) : null;
+            // ladder loop FOR(index, initial, terminal, step) … NXT has no routine operand: shift past it
+            // TODO(verify-format): seen in corpus exports, not yet checked against 1756-RM003
+            int roleIndex = loopFor(instr, call) ? index + 1 : index;
+            InstructionSet.Role role = instr.isKnown() ? instr.definition().role(roleIndex) : null;
             index++;
             Expression v = a.value();
             if (v == null) {
@@ -426,6 +429,15 @@ final class EffectsBuilder {
                 case NAME, LABEL, DISPLAY -> {}
             }
         }
+    }
+
+    /** {@code FOR} with four operands is the ladder loop, not the routine call {@code FOR(routine, index, …)}. */
+    private static boolean loopFor(InstructionSymbol instr, Expression.Call call) {
+        return instr.name().equalsIgnoreCase("FOR")
+                && call.arguments().stream()
+                                .filter(a -> a.kind() == ArgumentKind.POSITIONAL)
+                                .count()
+                        == 4;
     }
 
     private void accessOrRead(Expression e, Access.Kind kind, Collector c) {
