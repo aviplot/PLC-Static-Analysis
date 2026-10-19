@@ -8,7 +8,7 @@ tags: [plc, outputs, determinism]
 plcopen: CP12
 parameters:
   includeLocals: bool = false | Also check VAR/VAR_STAT variables of function blocks and programs (within one body)
-  sparePattern: regex = (?i)^[a-z]{0,4}_?(spare|reserve|dummy|unused)|placeholder|scratch | Names of deliberate dump variables (spare I/O points, scratch tags); never reported
+  sparePattern: regex = (?i)^[a-z]{0,4}_?(spare|reserve|dummy|unused)|placeholder|scratch|trash | Names of deliberate dump variables (spare I/O points, scratch tags); never reported
 ---
 ## Description
 

@@ -128,8 +128,6 @@ text: XIC(Req)MSG(Msg1);
 
 rung: XIC(R)MYSTERY(A,B,C)OTE(D);
 text: XIC(R)MYSTERY(A,B,C)OTE(D);
-  IF R THEN
-    MYSTERY(A, B, C);
-  END_IF
-  D := R;
+  $rc1 := R AND MYSTERY(A, B, C);
+  D := $rc1;
 

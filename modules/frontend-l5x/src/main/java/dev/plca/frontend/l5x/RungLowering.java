@@ -167,7 +167,12 @@ final class RungLowering {
             return new And(rc, new Expression.MemberAccess(instance, enableOut, i.span()), false);
         }
         Instruction def = InstructionSet.lookup(mnemonic).orElse(null);
-        if (def == null || def.kind() != Kind.INPUT) {
+        if (def == null) {
+            // unknown: it may condition the rung or not; keeping what follows conditional never invents an
+            // unconditional write, and the call is still evaluated (with possibly-written operands)
+            return new And(rc, call(i, null, null), true);
+        }
+        if (def.kind() != Kind.INPUT) {
             outputs.add(new Output(i, rc));
             return rc;
         }

@@ -82,6 +82,8 @@ public final class DoubleCoil implements ProjectRule {
             Set<Statement> coils = Collections.newSetFromMap(new IdentityHashMap<>());
             List<Statement> body = sequence(declared, coils);
             boolean rockwell = pou.dialect() == dev.plca.core.Dialect.ROCKWELL;
+            // ladder JMP/LBL loops: statements do not run in order, so only coils are compared
+            boolean jumps = rockwell && hasJumps(declared);
             Map<Key, Write> previous = new HashMap<>();
             for (int i = 0; i < body.size(); i++) {
                 boolean coil = coils.contains(body.get(i));
@@ -94,7 +96,7 @@ public final class DoubleCoil implements ProjectRule {
                     Write w = new Write(pou, i, a, coil);
                     Write prev = previous.put(key, w);
                     boolean bothCoils = coil && prev != null && prev.coil();
-                    if (prev != null && (bothCoils || !readBetween(m, readers, body, prev, w))) {
+                    if (prev != null && (bothCoils || !jumps && !readBetween(m, readers, body, prev, w))) {
                         ctx.report(
                                 pou,
                                 a.span(),
@@ -196,6 +198,31 @@ public final class DoubleCoil implements ProjectRule {
             }
         }
         return out;
+    }
+
+    private static boolean hasJumps(List<Statement> body) {
+        for (Statement s : body) {
+            if (s instanceof Statement.Rung r
+                    && r.ladder() != null
+                    && jumpsIn(r.ladder().elements())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean jumpsIn(List<dev.plca.ast.Ladder.Element> elements) {
+        for (dev.plca.ast.Ladder.Element e : elements) {
+            boolean found = switch (e) {
+                case dev.plca.ast.Ladder.Instruction i ->
+                    i.mnemonic().is("JMP") || i.mnemonic().is("LBL");
+                case dev.plca.ast.Ladder.Branch b -> b.legs().stream().anyMatch(l -> jumpsIn(l.elements()));
+            };
+            if (found) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void oteSpans(List<dev.plca.ast.Ladder.Element> elements, Set<dev.plca.core.source.Span> out) {
