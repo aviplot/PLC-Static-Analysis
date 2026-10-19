@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0201" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <fileHeader companyName="Example" productName="Feedback"/>
+  <types>
+    <dataTypes/>
+    <pous>
+      <pou name="Toggle" pouType="program">
+        <interface>
+          <localVars>
+            <variable name="Q"><type><BOOL/></type></variable>
+            <variable name="Label"><type><string/></type><initialValue><simpleValue value="Initial String"/></initialValue></variable>
+          </localVars>
+        </interface>
+        <body>
+          <FBD>
+            <block localId="1" typeName="NOT"><position x="100" y="10"/>
+              <inputVariables><variable formalParameter="IN"><connectionPointIn><connection refLocalId="1" formalParameter="OUT"/></connectionPointIn></variable></inputVariables>
+              <inOutVariables/>
+              <outputVariables><variable formalParameter="OUT"><connectionPointOut/></variable></outputVariables>
+            </block>
+            <outVariable localId="2"><position x="200" y="10"/><connectionPointIn><connection refLocalId="1" formalParameter="OUT"/></connectionPointIn><expression>Q</expression></outVariable>
+          </FBD>
+        </body>
+      </pou>
+    </pous>
+  </types>
+  <instances>
+    <configurations>
+      <configuration name="c"><resource name="r"><task name="t" interval="PT0.02S" priority="1"><pouInstance name="i" typeName="Toggle"/></task></resource></configuration>
+    </configurations>
+  </instances>
+</project>

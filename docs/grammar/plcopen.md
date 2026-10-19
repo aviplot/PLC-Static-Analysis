@@ -164,4 +164,18 @@ body text). Members add `/Method:M`, `/Action:A`.
 5. Edge on coils (`edge="rising"` on a coil): lowered as `x := $R_TRIG(flow)`.
 
 ## 10. Corpus results (M6)
-*(filled in at the end of M6)*
+`./gradlew :plc-devtools:corpusCheck -Ponly=PlcOpen` (one project per file), 2,827 files from 438 repos:
+
+| measure | overall | repo-weighted | repos |
+|---|---|---|---|
+| files without any error, `tc6_0200` / `tc6_0201` | 94.13% / 91.89% | 90.22% / 90.63% | 177 / 274 |
+| LD/FBD networks and SFC charts (23,461) lowered without an invalid node | 99.54% | 99.13% | 218 |
+| ST bodies (25,105) without syntax error | 99.04% | 95.39% | 244 |
+| names resolved / library / unresolved | 82.99% / 15.28% / 1.73% | 95.59% resolved+library | |
+
+No clean SLL fallback (582 of 356,760 texts fell back, all with real errors). Found and handled on the way: ISO
+`xsd:duration` task intervals (`PT0.02S`, TC6 2.01), unquoted string initial values (Beremiz), feedback through
+functions (kept in a synthetic `$fbdN`). Remaining failures are tool output, not TC6: a whole POU pasted into an ST
+body, instance names with `-`, `:=` structure literals in `simpleValue`, `name=value;` expressions, broken XML in test
+fixtures and LLM-generated examples.
+

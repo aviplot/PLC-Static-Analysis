@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0201" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<fileHeader companyName="Example" productName="Fixture"/>
+<types><dataTypes/><pous>
+<pou name="Main" pouType="program"><interface><inputVars><variable name="Start"><type><BOOL/></type></variable><variable name="Stop"><type><BOOL/></type></variable><variable name="Fault"><type><BOOL/></type></variable></inputVars><outputVars><variable name="Motor"><type><BOOL/></type></variable><variable name="Lamp"><type><BOOL/></type></variable></outputVars></interface>
+<body>
+<LD>
+<leftPowerRail localId="1"><position x="0" y="0"/><connectionPointOut/></leftPowerRail>
+<contact localId="2" negated="false" edge="none"><position x="50" y="10"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Start</variable></contact>
+<contact localId="3" negated="false" edge="none"><position x="50" y="20"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Motor</variable></contact>
+<contact localId="4" negated="true" edge="none"><position x="50" y="10"/><connectionPointIn><connection refLocalId="2"/><connection refLocalId="3"/></connectionPointIn><connectionPointOut/><variable>Stop</variable></contact>
+<coil localId="5" negated="false" storage="none"><position x="150" y="10"/><connectionPointIn><connection refLocalId="4"/></connectionPointIn><connectionPointOut/><variable>Motor</variable></coil>
+<contact localId="6" negated="false" edge="none"><position x="50" y="100"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Fault</variable></contact>
+<coil localId="7" negated="false" storage="none"><position x="150" y="100"/><connectionPointIn><connection refLocalId="6"/></connectionPointIn><connectionPointOut/><variable>Motor</variable></coil> <!-- PLCA-P001 second coil of Motor -->
+<contact localId="8" negated="false" edge="none"><position x="50" y="200"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Fault</variable></contact>
+<coil localId="9" negated="false" storage="set"><position x="150" y="200"/><connectionPointIn><connection refLocalId="8"/></connectionPointIn><connectionPointOut/><variable>Lamp</variable></coil>
+<contact localId="10" negated="false" edge="none"><position x="50" y="300"/><connectionPointIn><connection refLocalId="1"/></connectionPointIn><connectionPointOut/><variable>Start</variable></contact>
+<coil localId="11" negated="false" storage="reset"><position x="150" y="300"/><connectionPointIn><connection refLocalId="10"/></connectionPointIn><connectionPointOut/><variable>Lamp</variable></coil>
+</LD>
+</body></pou>
+</pous></types>
+<instances><configurations><configuration name="c"><resource name="r"><task name="t" priority="1" interval="T#10ms"><pouInstance name="t_i" typeName="Main"/></task></resource></configuration></configurations></instances>
+</project>

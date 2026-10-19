@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0201" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<fileHeader companyName="Example" productName="Fixture"/>
+<types><dataTypes/><pous>
+<pou name="Calc" pouType="program"><interface><inputVars><variable name="A"><type><DINT/></type></variable></inputVars><outputVars><variable name="R"><type><DINT/></type></variable></outputVars></interface>
+<body>
+<FBD>
+<inVariable localId="1"><position x="0" y="0"/><connectionPointOut/><expression>A</expression></inVariable>
+<inVariable localId="2"><position x="0" y="20"/><connectionPointOut/><expression>0</expression></inVariable> <!-- PLCA-Q004 the zero divisor -->
+<block localId="3" typeName="DIV"><position x="50" y="0"/><inputVariables><variable formalParameter="IN1"><connectionPointIn><connection refLocalId="1"/></connectionPointIn></variable><variable formalParameter="IN2"><connectionPointIn><connection refLocalId="2"/></connectionPointIn></variable></inputVariables><inOutVariables/><outputVariables><variable formalParameter="OUT"><connectionPointOut/></variable></outputVariables></block>
+<outVariable localId="4"><position x="100" y="0"/><connectionPointIn><connection refLocalId="3" formalParameter="OUT"/></connectionPointIn><expression>R</expression></outVariable>
+</FBD>
+</body></pou>
+</pous></types>
+<instances><configurations><configuration name="c"><resource name="r"></resource></configuration></configurations></instances>
+</project>
