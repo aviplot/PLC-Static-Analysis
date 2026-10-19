@@ -20,8 +20,10 @@ value compared with a calendar year, an equality comparison with a "magic" const
 This is the shape of a logic bomb or a backdoor: code that behaves normally during commissioning and tests, and does
 something else on a given date, after weeks of operation, or when a value only an insider knows is written. Such code
 has been found in sabotage and research cases, and a code review is the best place to catch it. Each finding asks a
-reviewer to confirm what the condition enables. Daily schedules (time-of-day comparisons) and short start-up delays are
-normal and not reported.
+reviewer to confirm what the condition enables. Not reported, because they are normal: daily schedules (time-of-day
+comparisons), dates up to the year 2000 (the 1970 epoch and S7's `DT#1990-01-01` mean "not set"), comparisons inside
+test assertions, short start-up delays, timers the POU also resets (`tmr(IN := FALSE)`, a periodic cycle) and the
+largest 32-bit TIME (`T#49D17H2M47S295MS`), the usual "no timeout" value.
 
 Clock sources recognised: the IEC `RTC` block, CODESYS `SysTimeRtcGet`, TwinCAT `NT_GetTime`, `FB_LocalSystemTime`,
 `F_GetSystemTime`, Siemens `RD_LOC_T`/`RD_SYS_T`, and Rockwell `GSV(WallClockTime, …)`.

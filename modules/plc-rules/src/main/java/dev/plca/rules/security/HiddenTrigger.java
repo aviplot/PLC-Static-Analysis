@@ -78,14 +78,29 @@ public final class HiddenTrigger implements ProjectRule {
             if (p.declaration() == null || p.declaration().body() == null) {
                 continue;
             }
+            // comparisons inside test assertions (Assert.Equal, ASSERT) check fixed dates on purpose
+            Set<Expression> asserted = Collections.newSetFromMap(new IdentityHashMap<>());
+            Set<String> resetTimers = new java.util.HashSet<>();
+            Walk.expressions(p.declaration().body(), e -> {
+                if (e instanceof Expression.Call c) {
+                    String name = String.valueOf(Walk.lastName(c.callee())).toLowerCase(Locale.ROOT);
+                    if (name.contains("assert") || name.equals("equal") || name.equals("equals")) {
+                        c.arguments().forEach(a -> Walk.deep(a.value(), asserted::add));
+                    }
+                    if (resetCall(m, c)) {
+                        resetTimers.add(ctx.text(c.callee()).strip().toLowerCase(Locale.ROOT));
+                    }
+                }
+            });
             Statements.forEachDeep(
                     p.declaration().body(),
                     s -> Walk.ownExpressions(
                             s,
                             root -> Walk.deep(root, e -> {
                                 switch (e) {
-                                    case Expression.Binary b when comparison(b.op()) -> compare(ctx, p, b, clock);
-                                    case Expression.Call c -> timer(ctx, p, c, minDelay);
+                                    case Expression.Binary b
+                                    when comparison(b.op()) && !asserted.contains(b) -> compare(ctx, p, b, clock);
+                                    case Expression.Call c -> timer(ctx, p, c, minDelay, resetTimers);
                                     default -> {}
                                 }
                             })));
@@ -160,7 +175,10 @@ public final class HiddenTrigger implements ProjectRule {
                     || kind == ElementaryKind.DATE_AND_TIME
                     || kind == ElementaryKind.LDATE
                     || kind == ElementaryKind.LDATE_AND_TIME;
-            if (date && constant instanceof Expression.Literal && !(value instanceof Expression.Literal)) {
+            if (date
+                    && constant instanceof Expression.Literal l
+                    && !(value instanceof Expression.Literal)
+                    && year(l.text()) > SENTINEL_YEARS) {
                 ctx.report(
                         p,
                         b.span(),
@@ -206,11 +224,12 @@ public final class HiddenTrigger implements ProjectRule {
     }
 
     /** {@code tmr(IN := TRUE, PT := T#30D)}: fires once, a fixed time after start-up. */
-    private void timer(ProjectContext ctx, PouSymbol p, Expression.Call c, long minDelay) {
+    private void timer(ProjectContext ctx, PouSymbol p, Expression.Call c, long minDelay, Set<String> resetTimers) {
         SemanticModel m = ctx.model();
         if (!(m.type(c.callee()).resolved() instanceof Type.Instance inst)
-                || !TIMERS.contains(inst.pou().name().toUpperCase(Locale.ROOT))) {
-            return;
+                || !TIMERS.contains(inst.pou().name().toUpperCase(Locale.ROOT))
+                || resetTimers.contains(ctx.text(c.callee()).strip().toLowerCase(Locale.ROOT))) {
+            return; // a timer the POU also resets runs periodically, not once after start-up
         }
         boolean alwaysOn = false;
         Long delay = null;
@@ -226,7 +245,9 @@ public final class HiddenTrigger implements ProjectRule {
                 delay = d.nanos();
             }
         }
-        if (alwaysOn && delay != null && delay >= minDelay) {
+        // the largest 32-bit TIME (T#49D17H2M47S295MS) is the usual "no timeout" value
+        boolean maxTime = delay != null && Math.abs(delay - MAX_TIME_NANOS) < 1_000_000_000L;
+        if (alwaysOn && delay != null && delay >= minDelay && !maxTime) {
             ctx.report(
                     p,
                     c.span(),
@@ -237,6 +258,22 @@ public final class HiddenTrigger implements ProjectRule {
         }
     }
 
+    private static final long MAX_TIME_NANOS = 4_294_967_295L * 1_000_000L;
+
+    /** {@code tmr(IN := FALSE)}. */
+    private static boolean resetCall(SemanticModel m, Expression.Call c) {
+        for (Expression.Argument a : c.arguments()) {
+            if (a.name() != null
+                    && a.name().is("IN")
+                    && a.value() != null
+                    && m.constant(a.value()).orElse(null) instanceof Constant.Bool b
+                    && !b.value()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static String delayText(ProjectContext ctx, Expression.Call c) {
         for (Expression.Argument a : c.arguments()) {
             if (a.name() != null && a.name().is("PT") && a.value() != null) {
@@ -244,6 +281,15 @@ public final class HiddenTrigger implements ProjectRule {
             }
         }
         return "a long delay";
+    }
+
+    /** Dates up to this year are "not set" sentinels (1970 epoch, S7's DT#1990-01-01), not triggers. */
+    private static final int SENTINEL_YEARS = 2000;
+
+    /** The year of a date literal's text ({@code 2027-01-01-00:00:00}), or 0. */
+    static int year(String text) {
+        java.util.regex.Matcher y = Pattern.compile("(\\d{4})-").matcher(text);
+        return y.find() ? Integer.parseInt(y.group(1)) : 0;
     }
 
     private static boolean comparison(BinaryOp op) {
