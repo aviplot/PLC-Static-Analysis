@@ -4,6 +4,7 @@ import dev.plca.analysis.Snapshot;
 import dev.plca.analysis.nav.Navigator;
 import dev.plca.analysis.nav.Outline;
 import dev.plca.core.source.SourceFile;
+import dev.plca.report.Diagrams;
 import dev.plca.report.ToolInfo;
 import dev.plca.rules.RuleRegistry;
 import java.io.InputStream;
@@ -48,6 +49,7 @@ import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageClientAware;
@@ -68,7 +70,9 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
     /** Arguments {@code [ruleId]}; returns the rule's documentation (Markdown), or null for an unknown id. */
     public static final String RULE_DOC = "plca.ruleDoc";
 
-    private final Session session = new Session();
+    private final Session session;
+    private final Uris uris;
+    private final boolean sandboxed;
     private final Runnable onExit;
     private final Documents documents = new Documents();
     private final Workspace workspace = new Workspace();
@@ -78,7 +82,19 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
 
     /** @param onExit called on {@code exit}; the CLI ends the process there */
     public PlcaLanguageServer(Runnable onExit) {
+        this(onExit, Uris.files(), false);
+    }
+
+    /**
+     * @param uris how document URIs map to files
+     * @param sandboxed the web workbench's mode: {@code plca.yaml} and its baseline only from inside the root, the
+     *     client's {@code config} option ignored, server paths masked in messages
+     */
+    public PlcaLanguageServer(Runnable onExit, Uris uris, boolean sandboxed) {
         this.onExit = onExit;
+        this.uris = uris;
+        this.sandboxed = sandboxed;
+        this.session = new Session(uris, sandboxed);
     }
 
     /**
@@ -112,6 +128,56 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         return server.exitCode;
     }
 
+    /** {@code plca/diagrams} and {@code plca/diagram}: a document and, for one diagram, its name and a page. */
+    public record DiagramParams(String uri, String name, Integer from, Integer count) {}
+
+    public record DiagramInfo(String name, String kind, String language, int parts) {}
+
+    public record DiagramPage(String name, int total, int from, List<Diagrams.Part> parts) {}
+
+    /** The graphical bodies (ladder routines, LD/FBD POUs) of a document, in the current state. */
+    @JsonRequest("plca/diagrams")
+    public CompletableFuture<List<DiagramInfo>> diagrams(DiagramParams params) {
+        return unit(
+                params,
+                (s, unit) -> Diagrams.of(unit).stream()
+                        .map(d -> new DiagramInfo(
+                                d.name(), d.kind(), d.language(), d.parts().size()))
+                        .toList());
+    }
+
+    /** One page of a diagram's rungs or networks as SVG (default: the first 50). */
+    @JsonRequest("plca/diagram")
+    public CompletableFuture<DiagramPage> diagram(DiagramParams params) {
+        return unit(params, (s, unit) -> {
+            for (Diagrams.Diagram d : Diagrams.of(unit)) {
+                if (d.name().equals(params.name())) {
+                    int from = params.from() == null ? 0 : params.from();
+                    int count = params.count() == null ? 50 : Math.min(params.count(), 500);
+                    return new DiagramPage(
+                            d.name(), d.parts().size(), from, Diagrams.render(d, s.registry(), from, count));
+                }
+            }
+            return null;
+        });
+    }
+
+    private <T> CompletableFuture<T> unit(
+            DiagramParams params, java.util.function.BiFunction<Snapshot, dev.plca.ast.SourceUnit, T> f) {
+        Path file = params == null ? null : uris.path(params.uri());
+        if (file == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return session.query(nav -> {
+            Snapshot s = nav.snapshot();
+            return s.file(session.displayPath(file))
+                    .map(dev.plca.analysis.Workspace.FileState::unit)
+                    .filter(java.util.Objects::nonNull)
+                    .map(u -> f.apply(s, u))
+                    .orElse(null);
+        });
+    }
+
     @Override
     public void connect(LanguageClient client) {
         session.connect(client);
@@ -124,6 +190,13 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
         root = root(params);
+        if (root == null) {
+            return CompletableFuture.failedFuture(new org.eclipse.lsp4j.jsonrpc.ResponseErrorException(
+                    new org.eclipse.lsp4j.jsonrpc.messages.ResponseError(
+                            org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.InvalidParams,
+                            "the workspace folder is not served here",
+                            null)));
+        }
         session.configure(Options.read(params.getInitializationOptions(), session.settings()));
 
         ServerCapabilities caps = new ServerCapabilities();
@@ -142,21 +215,24 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
                 new InitializeResult(caps, new ServerInfo(ToolInfo.NAME, ToolInfo.VERSION)));
     }
 
-    /** The first workspace folder, else the root URI, else the working directory. */
-    private static Path root(InitializeParams params) {
+    /**
+     * The first workspace folder, else the root URI, else the working directory (null when the URI given is not one
+     * this server serves, or none is given to a sandboxed server).
+     */
+    private Path root(InitializeParams params) {
         if (params.getWorkspaceFolders() != null
                 && !params.getWorkspaceFolders().isEmpty()) {
-            Path p = Convert.path(params.getWorkspaceFolders().getFirst().getUri());
+            Path p = uris.path(params.getWorkspaceFolders().getFirst().getUri());
             if (p != null) {
                 return p;
             }
         }
         @SuppressWarnings("deprecation")
         String rootUri = params.getRootUri();
-        if (rootUri != null && Convert.path(rootUri) != null) {
-            return Convert.path(rootUri);
+        if (rootUri != null && uris.path(rootUri) != null) {
+            return uris.path(rootUri);
         }
-        return Path.of("").toAbsolutePath();
+        return sandboxed ? null : Path.of("").toAbsolutePath();
     }
 
     @Override
@@ -190,7 +266,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
 
     /** Runs {@code q} at a document position: path and file offset in the current state. */
     private <T> CompletableFuture<T> at(String uri, Position position, PositionQuery<T> q) {
-        Path file = Convert.path(uri);
+        Path file = uris.path(uri);
         if (file == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -214,7 +290,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
 
         @Override
         public void didOpen(DidOpenTextDocumentParams params) {
-            Path file = Convert.path(params.getTextDocument().getUri());
+            Path file = uris.path(params.getTextDocument().getUri());
             if (file != null) {
                 session.edit(
                         file,
@@ -225,7 +301,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
 
         @Override
         public void didChange(DidChangeTextDocumentParams params) {
-            Path file = Convert.path(params.getTextDocument().getUri());
+            Path file = uris.path(params.getTextDocument().getUri());
             if (file != null && !params.getContentChanges().isEmpty()) {
                 // full sync: the last change holds the whole text
                 session.edit(
@@ -237,7 +313,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
 
         @Override
         public void didClose(DidCloseTextDocumentParams params) {
-            Path file = Convert.path(params.getTextDocument().getUri());
+            Path file = uris.path(params.getTextDocument().getUri());
             if (file != null) {
                 session.close(file);
             }
@@ -254,7 +330,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
             return at(params.getTextDocument().getUri(), params.getPosition(), (nav, path, offset) -> {
                 List<Location> out = nav.symbolAt(path, offset)
                         .flatMap(t -> nav.definition(t.symbol()))
-                        .map(span -> List.of(Convert.location(nav.snapshot(), span)))
+                        .map(span -> List.of(Convert.location(uris, nav.snapshot(), span)))
                         .orElse(List.of());
                 return Either.forLeft(out);
             });
@@ -269,7 +345,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
                     params.getPosition(),
                     (nav, path, offset) -> nav.symbolAt(path, offset)
                             .map(t -> nav.references(t, declaration).stream()
-                                    .map(s -> Convert.location(nav.snapshot(), s))
+                                    .map(s -> Convert.location(uris, nav.snapshot(), s))
                                     .toList())
                             .orElse(List.of()));
         }
@@ -289,7 +365,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         @Override
         public CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> documentSymbol(
                 DocumentSymbolParams params) {
-            Path file = Convert.path(params.getTextDocument().getUri());
+            Path file = uris.path(params.getTextDocument().getUri());
             if (file == null) {
                 return CompletableFuture.completedFuture(List.of());
             }
@@ -312,7 +388,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
                 Snapshot s = nav.snapshot();
                 List<WorkspaceSymbol> out = new Outline(s)
                         .workspace(params.getQuery() == null ? "" : params.getQuery(), 500).stream()
-                                .map(sym -> Convert.symbol(s, sym))
+                                .map(sym -> Convert.symbol(uris, s, sym))
                                 .toList();
                 return Either.forRight(out);
             });
@@ -326,7 +402,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         @Override
         public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
             for (FileEvent e : params.getChanges()) {
-                Path file = Convert.path(e.getUri());
+                Path file = uris.path(e.getUri());
                 if (file != null) {
                     session.changedOnDisk(file);
                 }

@@ -68,6 +68,10 @@ final class Session {
     }
 
     private final RuleRegistry rules = RuleRegistry.standard();
+    private final Uris uris;
+    /** Web workbench: configuration and baseline only from inside the root, paths masked in messages. */
+    private final boolean sandboxed;
+
     private final ExecutorService analysis = Executors.newSingleThreadExecutor(r -> thread(r, "plca-analysis"));
     private final ExecutorService project = Executors.newSingleThreadExecutor(r -> thread(r, "plca-project"));
     private final ScheduledExecutorService timers =
@@ -98,6 +102,19 @@ final class Session {
         Thread t = new Thread(r, name);
         t.setDaemon(true);
         return t;
+    }
+
+    Session() {
+        this(Uris.files(), false);
+    }
+
+    Session(Uris uris, boolean sandboxed) {
+        this.uris = uris;
+        this.sandboxed = sandboxed;
+    }
+
+    Uris uris() {
+        return uris;
     }
 
     void connect(LanguageClient client) {
@@ -293,30 +310,30 @@ final class Session {
         Map<String, List<Diagnostic>> byPath = new HashMap<>();
         for (String path : a.paths()) {
             List<Diagnostic> list = new ArrayList<>();
-            s.file(path).ifPresent(f -> f.diagnostics().forEach(d -> list.add(Convert.diagnostic(s, d))));
+            s.file(path).ifPresent(f -> f.diagnostics().forEach(d -> list.add(Convert.diagnostic(uris, s, d))));
             byPath.put(path, list);
         }
         for (dev.plca.core.diag.Diagnostic d : a.diagnostics()) {
             List<Diagnostic> list = byPath.get(s.pathOf(d.span()));
             if (list != null) {
-                list.add(Convert.diagnostic(s, d));
+                list.add(Convert.diagnostic(uris, s, d));
             }
         }
         for (Finding f : a.findings()) {
             List<Diagnostic> list = byPath.get(s.pathOf(f.span()));
             if (list != null) {
-                list.add(Convert.diagnostic(s, f));
+                list.add(Convert.diagnostic(uris, s, f));
             }
         }
-        Set<String> uris = new LinkedHashSet<>();
+        Set<String> sent = new LinkedHashSet<>();
         byPath.forEach((path, list) -> {
-            String uri = Convert.uri(s.root(), path);
-            uris.add(uri);
+            String uri = uris.uri(s.root(), path);
+            sent.add(uri);
             send(uri, list, versions.get(path));
         });
         if (full) {
             for (String uri : List.copyOf(published.keySet())) {
-                if (!uris.contains(uri) && !uri.equals(configUri())) {
+                if (!sent.contains(uri) && !uri.equals(configUri())) {
                     send(uri, List.of(), null);
                     published.remove(uri);
                 }
@@ -370,12 +387,18 @@ final class Session {
     }
 
     private String configUri() {
-        return configFile == null ? null : configFile.toUri().toString();
+        if (configFile == null) {
+            return null;
+        }
+        Path f = configFile.toAbsolutePath().normalize();
+        return f.startsWith(workspace.root())
+                ? uris.uri(workspace.root(), workspace.displayPath(f))
+                : f.toUri().toString();
     }
 
     /** Reads {@code plca.yaml} and its baseline; a broken file is reported on its line and the defaults apply. */
     private void loadConfig() {
-        Path file = settings.config() != null
+        Path file = settings.config() != null && !sandboxed
                 ? workspace.root().resolve(settings.config())
                 : workspace.root().resolve(ConfigFile.NAME);
         String previous = configUri();
@@ -391,13 +414,16 @@ final class Session {
                 rc.resolve(rules);
                 ruleConfig = rc;
                 if (c.baseline() != null) {
+                    if (sandboxed && !c.baseline().toAbsolutePath().normalize().startsWith(workspace.root())) {
+                        throw new ConfigFile.ConfigException("the baseline must be a file of the project");
+                    }
                     baselineFile = c.baseline();
                     baseline = Baseline.read(c.baseline());
                 }
             } catch (ConfigFile.ConfigException | Baseline.BaselineException | IllegalArgumentException e) {
-                problems.add(configProblem(e.getMessage()));
+                problems.add(configProblem(uris.mask(e.getMessage())));
             } catch (IOException e) {
-                problems.add(configProblem("cannot read " + e.getMessage()));
+                problems.add(configProblem(uris.mask("cannot read " + e.getMessage())));
             }
         }
         synchronized (this) {
@@ -422,7 +448,8 @@ final class Session {
         return new Diagnostic(r, message, DiagnosticSeverity.Error, Convert.SOURCE, "PLC-CFG-001");
     }
 
-    private void log(MessageType type, String message) {
+    private void log(MessageType type, String text) {
+        String message = uris.mask(text);
         LanguageClient c = client;
         if (c != null) {
             if (type == MessageType.Log) {

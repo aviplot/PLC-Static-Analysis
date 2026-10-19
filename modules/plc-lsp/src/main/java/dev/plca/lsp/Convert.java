@@ -1,7 +1,6 @@
 package dev.plca.lsp;
 
 import dev.plca.analysis.Snapshot;
-import dev.plca.analysis.Workspace;
 import dev.plca.analysis.nav.Outline;
 import dev.plca.core.diag.Severity;
 import dev.plca.core.source.LineIndex;
@@ -42,22 +41,14 @@ final class Convert {
         }
     }
 
-    static String uri(Workspace workspace, String displayPath) {
-        return uri(workspace.root(), displayPath);
-    }
-
-    static String uri(Path root, String displayPath) {
-        return root.resolve(displayPath).toUri().toString();
-    }
-
     static Range range(Snapshot s, Span span) {
         Location l = s.registry().resolve(span);
         return new Range(
                 new Position(l.startLine() - 1, l.startColumn() - 1), new Position(l.endLine() - 1, l.endColumn() - 1));
     }
 
-    static org.eclipse.lsp4j.Location location(Snapshot s, Span span) {
-        return new org.eclipse.lsp4j.Location(uri(s.root(), s.pathOf(span)), range(s, span));
+    static org.eclipse.lsp4j.Location location(Uris uris, Snapshot s, Span span) {
+        return new org.eclipse.lsp4j.Location(uris.uri(s.root(), s.pathOf(span)), range(s, span));
     }
 
     /** The file offset of an LSP position, clamped to the text (clients may send positions past a line's end). */
@@ -79,26 +70,28 @@ final class Convert {
         };
     }
 
-    static Diagnostic diagnostic(Snapshot s, dev.plca.core.diag.Diagnostic d) {
-        Diagnostic out = new Diagnostic(range(s, d.span()), d.message(), severity(d.severity()), SOURCE, d.code());
-        related(s, d.related(), out);
+    static Diagnostic diagnostic(Uris uris, Snapshot s, dev.plca.core.diag.Diagnostic d) {
+        Diagnostic out =
+                new Diagnostic(range(s, d.span()), uris.mask(d.message()), severity(d.severity()), SOURCE, d.code());
+        related(uris, s, d.related(), out);
         return out;
     }
 
-    static Diagnostic diagnostic(Snapshot s, Finding f) {
+    static Diagnostic diagnostic(Uris uris, Snapshot s, Finding f) {
         String message = f.place() == null ? f.message() : f.message() + " (" + f.place() + ")";
         Diagnostic out = new Diagnostic(range(s, f.span()), message, severity(f.severity()), SOURCE, f.ruleId());
-        related(s, f.related(), out);
+        related(uris, s, f.related(), out);
         return out;
     }
 
-    private static void related(Snapshot s, List<dev.plca.core.diag.Diagnostic.Related> related, Diagnostic out) {
+    private static void related(
+            Uris uris, Snapshot s, List<dev.plca.core.diag.Diagnostic.Related> related, Diagnostic out) {
         if (related.isEmpty()) {
             return;
         }
         List<DiagnosticRelatedInformation> info = new ArrayList<>();
         for (dev.plca.core.diag.Diagnostic.Related r : related) {
-            info.add(new DiagnosticRelatedInformation(location(s, r.span()), r.message()));
+            info.add(new DiagnosticRelatedInformation(location(uris, s, r.span()), r.message()));
         }
         out.setRelatedInformation(info);
     }
@@ -118,9 +111,9 @@ final class Convert {
         return d;
     }
 
-    static WorkspaceSymbol symbol(Snapshot s, Outline.Symbol symbol) {
+    static WorkspaceSymbol symbol(Uris uris, Snapshot s, Outline.Symbol symbol) {
         WorkspaceSymbol w = new WorkspaceSymbol(
-                symbol.name(), kind(symbol.kind()), Either.forLeft(location(s, symbol.selection())));
+                symbol.name(), kind(symbol.kind()), Either.forLeft(location(uris, s, symbol.selection())));
         w.setContainerName(symbol.container());
         return w;
     }

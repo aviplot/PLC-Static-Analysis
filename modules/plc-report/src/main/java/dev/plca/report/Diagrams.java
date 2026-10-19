@@ -73,14 +73,21 @@ public final class Diagrams {
 
     /** All parts of a diagram drawn; rungs share one width so their rails line up. */
     public static List<Part> render(Diagram d, SourceRegistry registry) {
+        return render(d, registry, 0, d.parts().size());
+    }
+
+    /** Parts {@code from} to {@code from + count} (clamped) of a diagram, as wide as the widest rung of all. */
+    public static List<Part> render(Diagram d, SourceRegistry registry, int from, int count) {
+        int start = Math.max(0, Math.min(from, d.parts().size()));
+        int end = (int) Math.min(d.parts().size(), (long) start + Math.max(0, count));
         int width = 0;
         for (Statement s : d.parts()) {
             if (s instanceof Statement.Rung r) {
                 width = Math.max(width, LadderSvg.naturalWidth(r));
             }
         }
-        List<Part> out = new ArrayList<>(d.parts().size());
-        for (Statement s : d.parts()) {
+        List<Part> out = new ArrayList<>(end - start);
+        for (Statement s : d.parts().subList(start, end)) {
             switch (s) {
                 case Statement.Rung r -> out.add(new Part(r.number(), LadderSvg.rung(r, registry, width)));
                 case Statement.Network n -> out.add(new Part(n.number(), NetworkSvg.network(n, registry)));
