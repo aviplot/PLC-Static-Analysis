@@ -1,53 +1,28 @@
-package dev.plca.frontend.st;
+package dev.plca.frontend.st.kit;
 
-import dev.plca.grammar.CodesysStLexer;
 import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.NoViableAltException;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.misc.IntervalSet;
 
 /**
  * Error recovery for real-world exports. ANTLR's single-token insertion/deletion runs first; when a rule has to give
- * up, input is consumed up to the rule's follow set <em>or</em> a statement/block terminator ({@code ;},
+ * up, input is consumed up to the rule's follow set <em>or</em> a statement/block terminator of the dialect ({@code ;},
  * {@code END_IF}, {@code END_VAR}, …), so one bad statement costs one diagnostic instead of the rest of the POU.
  * Messages use token spellings ({@code 'END_IF'}, {@code identifier}) instead of ANTLR's internal names.
  */
-final class StErrorStrategy extends DefaultErrorStrategy {
+public final class RecoveryStrategy extends DefaultErrorStrategy {
 
-    private static final IntervalSet SYNC = IntervalSet.of(CodesysStLexer.SEMI);
+    private final IntervalSet sync;
+    private final CoreTokens tokens;
 
-    static {
-        int[] terminators = {
-            CodesysStLexer.END_IF,
-            CodesysStLexer.END_CASE,
-            CodesysStLexer.END_FOR,
-            CodesysStLexer.END_WHILE,
-            CodesysStLexer.END_REPEAT,
-            CodesysStLexer.END_VAR,
-            CodesysStLexer.END_STRUCT,
-            CodesysStLexer.END_UNION,
-            CodesysStLexer.END_TYPE,
-            CodesysStLexer.END_FUNCTION_BLOCK,
-            CodesysStLexer.END_FUNCTION,
-            CodesysStLexer.END_PROGRAM,
-            CodesysStLexer.END_METHOD,
-            CodesysStLexer.END_PROPERTY,
-            CodesysStLexer.END_GET,
-            CodesysStLexer.END_SET,
-            CodesysStLexer.END_ACTION,
-            CodesysStLexer.END_INTERFACE,
-            CodesysStLexer.END_CLASS,
-            CodesysStLexer.END_NAMESPACE,
-            CodesysStLexer.ENDTRY,
-        };
-        for (int t : terminators) {
-            SYNC.add(t);
-        }
-        SYNC.setReadonly(true);
+    /** @param sync the dialect's terminators: recovery never deletes them and stops at them */
+    public RecoveryStrategy(IntervalSet sync, CoreTokens tokens) {
+        this.sync = sync;
+        this.tokens = tokens;
     }
 
     /**
@@ -56,7 +31,7 @@ final class StErrorStrategy extends DefaultErrorStrategy {
      */
     @Override
     protected Token singleTokenDeletion(Parser recognizer) {
-        if (SYNC.contains(recognizer.getInputStream().LA(1))) {
+        if (sync.contains(recognizer.getInputStream().LA(1))) {
             return null;
         }
         return super.singleTokenDeletion(recognizer);
@@ -76,7 +51,7 @@ final class StErrorStrategy extends DefaultErrorStrategy {
         }
         lastErrorStates.add(recognizer.getState());
         IntervalSet stop = new IntervalSet(getErrorRecoverySet(recognizer));
-        stop.addAll(SYNC);
+        stop.addAll(sync);
         consumeUntil(recognizer, stop);
     }
 
@@ -90,7 +65,7 @@ final class StErrorStrategy extends DefaultErrorStrategy {
     protected void reportInputMismatch(Parser recognizer, InputMismatchException e) {
         recognizer.notifyErrorListeners(
                 e.getOffendingToken(),
-                "unexpected " + describe(e.getOffendingToken()) + expecting(recognizer, e.getExpectedTokens()),
+                "unexpected " + describe(e.getOffendingToken()) + expecting(e.getExpectedTokens()),
                 e);
     }
 
@@ -102,7 +77,7 @@ final class StErrorStrategy extends DefaultErrorStrategy {
         beginErrorCondition(recognizer);
         Token t = recognizer.getCurrentToken();
         recognizer.notifyErrorListeners(
-                t, "unexpected " + describe(t) + expecting(recognizer, getExpectedTokens(recognizer)), null);
+                t, "unexpected " + describe(t) + expecting(getExpectedTokens(recognizer)), null);
     }
 
     @Override
@@ -113,41 +88,25 @@ final class StErrorStrategy extends DefaultErrorStrategy {
         beginErrorCondition(recognizer);
         Token t = recognizer.getCurrentToken();
         IntervalSet expected = getExpectedTokens(recognizer);
-        recognizer.notifyErrorListeners(
-                t, "missing " + names(recognizer.getVocabulary(), expected) + " before " + describe(t), null);
+        recognizer.notifyErrorListeners(t, "missing " + names(expected) + " before " + describe(t), null);
     }
 
-    private static String expecting(Parser recognizer, IntervalSet expected) {
+    private String expecting(IntervalSet expected) {
         if (expected == null || expected.isNil() || expected.size() > 4) {
             return "";
         }
-        return "; expected " + names(recognizer.getVocabulary(), expected);
+        return "; expected " + names(expected);
     }
 
-    static String names(Vocabulary vocabulary, IntervalSet set) {
+    private String names(IntervalSet set) {
         StringBuilder sb = new StringBuilder();
         for (int type : set.toArray()) {
             if (!sb.isEmpty()) {
                 sb.append(" or ");
             }
-            sb.append(displayName(vocabulary, type));
+            sb.append(tokens.displayName(type));
         }
         return sb.toString();
-    }
-
-    static String displayName(Vocabulary vocabulary, int type) {
-        return switch (type) {
-            case Token.EOF -> "end of input";
-            case CodesysStLexer.IDENT -> "identifier";
-            case CodesysStLexer.INTEGER, CodesysStLexer.BASED_INTEGER -> "integer";
-            case CodesysStLexer.REAL -> "real number";
-            case CodesysStLexer.STRING_LITERAL, CodesysStLexer.WSTRING_LITERAL -> "string";
-            case CodesysStLexer.DIRECT_ADDRESS -> "direct address";
-            default -> {
-                String literal = vocabulary.getLiteralName(type);
-                yield literal != null ? literal : vocabulary.getDisplayName(type);
-            }
-        };
     }
 
     private static String describe(Token t) {

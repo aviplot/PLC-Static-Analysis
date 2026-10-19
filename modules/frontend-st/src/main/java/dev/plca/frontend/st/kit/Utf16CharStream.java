@@ -1,4 +1,4 @@
-package dev.plca.frontend.st;
+package dev.plca.frontend.st.kit;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.IntStream;
@@ -10,13 +10,13 @@ import org.antlr.v4.runtime.misc.Interval;
  * grammars only need ASCII for tokens and treat everything else as identifier letters or comment content, so surrogate
  * halves arriving separately is harmless.
  */
-final class Utf16CharStream implements CharStream {
+public final class Utf16CharStream implements CharStream {
 
     private final String text;
     private final String sourceName;
     private int index;
 
-    Utf16CharStream(String text, String sourceName) {
+    public Utf16CharStream(String text, String sourceName) {
         this.text = text;
         this.sourceName = sourceName;
     }

@@ -17,6 +17,7 @@ import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.SourceText;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.grammar.CodesysStParser.CompilationUnitContext;
 import dev.plca.grammar.CodesysStParser.DeclarationPartContext;
 import dev.plca.grammar.CodesysStParser.StatementsOnlyContext;
@@ -119,7 +120,7 @@ public final class StFrontend {
             List<Comment> comments,
             List<Pragma> pragmas) {
         SourceText text = registry.register(file);
-        StParserDriver.Parsed p = parse(text, StParserDriver.Entry.AUTO, sink);
+        Parsed p = parse(text, StParserDriver.Entry.AUTO, sink);
         AstBuilder b = new AstBuilder(text, p.tokens(), sink);
         if (p.tree() instanceof CompilationUnitContext cu) {
             out.addAll(b.compilationUnit(cu));
@@ -144,8 +145,8 @@ public final class StFrontend {
         b.collectHidden(comments, pragmas);
     }
 
-    private StParserDriver.Parsed parse(SourceText text, StParserDriver.Entry entry, DiagnosticSink sink) {
-        StParserDriver.Parsed p = driver.parse(text, entry, sink);
+    private Parsed parse(SourceText text, StParserDriver.Entry entry, DiagnosticSink sink) {
+        Parsed p = driver.parse(text, entry, sink);
         texts++;
         if (p.fallback()) {
             fallbacks++;
@@ -298,7 +299,7 @@ public final class StFrontend {
                 return null;
             }
             SourceText t = registry.registerXmlContent(file, e.declStart, e.declEnd);
-            StParserDriver.Parsed p = parse(t, StParserDriver.Entry.DECLARATION_PART, sink);
+            Parsed p = parse(t, StParserDriver.Entry.DECLARATION_PART, sink);
             AstBuilder b = new AstBuilder(t, p.tokens(), sink);
             AstBuilder.DeclarationPart d = b.declarationPart((DeclarationPartContext) p.tree());
             b.collectHidden(comments, pragmas);
@@ -318,7 +319,7 @@ public final class StFrontend {
                 return null;
             }
             SourceText t = registry.registerXmlContent(file, e.implStart, e.implEnd);
-            StParserDriver.Parsed p = parse(t, StParserDriver.Entry.STATEMENTS, sink);
+            Parsed p = parse(t, StParserDriver.Entry.STATEMENTS, sink);
             AstBuilder b = new AstBuilder(t, p.tokens(), sink);
             List<Statement> body = b.statementsOnly((StatementsOnlyContext) p.tree());
             b.collectHidden(comments, pragmas);

@@ -2,24 +2,21 @@ package dev.plca.frontend.st;
 
 import dev.plca.core.diag.DiagnosticSink;
 import dev.plca.core.source.SourceText;
+import dev.plca.frontend.st.kit.TwoStageParser;
+import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.grammar.CodesysStLexer;
 import dev.plca.grammar.CodesysStParser;
-import org.antlr.v4.runtime.BailErrorStrategy;
+import java.util.function.Function;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.IntervalSet;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 /**
- * Two-stage parse of one text (design rule 1). Stage 1: SLL prediction with {@link BailErrorStrategy} — fast, and exact
- * for any input SLL can decide. On failure, stage 2 rewinds and re-parses with full LL and {@link StErrorStrategy},
- * reporting diagnostics. A failure in stage 1 that parses cleanly in stage 2 is an <em>SLL fallback</em> — a sign of
- * grammar ambiguity, tracked by the corpus check.
+ * The CODESYS lexer/parser pair behind a {@link TwoStageParser}: entry rules and the recovery terminators of the
+ * dialect.
  *
- * <p>Not thread-safe. Keep one instance per thread: lexer and parser objects are reused, while ANTLR's DFA cache is
- * shared (and thread-safe) across all instances.
+ * <p>Not thread-safe. Keep one instance per thread.
  */
 final class StParserDriver {
 
@@ -31,34 +28,58 @@ final class StParserDriver {
         AUTO
     }
 
-    private static final IntervalSet LIBRARY_START = IntervalSet.of(Token.EOF);
+    /** Tokens that start a library element; an empty text (EOF) is a compilation unit too. */
+    private static final IntervalSet LIBRARY_START = withEof(AstBuilder.TOKENS.set(
+            "PROGRAM",
+            "FUNCTION",
+            "FUNCTION_BLOCK",
+            "CLASS",
+            "INTERFACE",
+            "METHOD",
+            "PROPERTY",
+            "ACTION",
+            "TYPE",
+            "NAMESPACE",
+            "USING",
+            "CONFIGURATION",
+            "VAR",
+            "VAR_INPUT",
+            "VAR_OUTPUT",
+            "VAR_IN_OUT",
+            "VAR_GLOBAL",
+            "VAR_EXTERNAL",
+            "VAR_TEMP",
+            "VAR_STAT",
+            "VAR_INST",
+            "VAR_ACCESS",
+            "VAR_CONFIG"));
 
-    static {
-        int[] starts = {
-            CodesysStLexer.PROGRAM, CodesysStLexer.FUNCTION, CodesysStLexer.FUNCTION_BLOCK, CodesysStLexer.CLASS,
-            CodesysStLexer.INTERFACE, CodesysStLexer.METHOD, CodesysStLexer.PROPERTY, CodesysStLexer.ACTION,
-            CodesysStLexer.TYPE, CodesysStLexer.NAMESPACE, CodesysStLexer.USING, CodesysStLexer.CONFIGURATION,
-            CodesysStLexer.VAR, CodesysStLexer.VAR_INPUT, CodesysStLexer.VAR_OUTPUT, CodesysStLexer.VAR_IN_OUT,
-            CodesysStLexer.VAR_GLOBAL, CodesysStLexer.VAR_EXTERNAL, CodesysStLexer.VAR_TEMP, CodesysStLexer.VAR_STAT,
-            CodesysStLexer.VAR_INST, CodesysStLexer.VAR_ACCESS, CodesysStLexer.VAR_CONFIG,
-        };
-        for (int t : starts) {
-            LIBRARY_START.add(t);
-        }
-        LIBRARY_START.setReadonly(true);
-    }
+    /** {@code ;} and every block terminator (see {@link dev.plca.frontend.st.kit.RecoveryStrategy}). */
+    static final IntervalSet SYNC = AstBuilder.TOKENS.set(
+            "SEMI",
+            "END_IF",
+            "END_CASE",
+            "END_FOR",
+            "END_WHILE",
+            "END_REPEAT",
+            "END_VAR",
+            "END_STRUCT",
+            "END_UNION",
+            "END_TYPE",
+            "END_FUNCTION_BLOCK",
+            "END_FUNCTION",
+            "END_PROGRAM",
+            "END_METHOD",
+            "END_PROPERTY",
+            "END_GET",
+            "END_SET",
+            "END_ACTION",
+            "END_INTERFACE",
+            "END_CLASS",
+            "END_NAMESPACE",
+            "ENDTRY");
 
-    /** Parse tree plus the tokens (incl. hidden channels) the AST builder needs. */
-    record Parsed(ParserRuleContext tree, CommonTokenStream tokens, boolean fallback, int syntaxErrors) {}
-
-    private final CodesysStLexer lexer = new CodesysStLexer(null);
-    private final CodesysStParser parser = new CodesysStParser(null);
-    private final BailErrorStrategy bail = new BailErrorStrategy();
-
-    private final boolean sllFirst;
-    private long parses;
-    private long fallbacks;
-    private long cleanFallbacks;
+    private final TwoStageParser<CodesysStParser> parser;
 
     StParserDriver() {
         this(true);
@@ -66,63 +87,27 @@ final class StParserDriver {
 
     /** {@code sllFirst = false} skips stage 1 (always full LL): only for benchmarking the two-stage gain. */
     StParserDriver(boolean sllFirst) {
-        this.sllFirst = sllFirst;
-        lexer.removeErrorListeners();
+        parser = new TwoStageParser<>(
+                new CodesysStLexer(null), new CodesysStParser(null), AstBuilder.TOKENS, SYNC, sllFirst);
     }
 
     Parsed parse(SourceText text, Entry entry, DiagnosticSink sink) {
-        parses++;
-        lexer.setInputStream(new Utf16CharStream(text.text(), text.file().path()));
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        tokens.fill();
+        CommonTokenStream tokens = parser.lex(text);
         if (entry == Entry.AUTO) {
             entry = LIBRARY_START.contains(tokens.LA(1)) ? Entry.COMPILATION_UNIT : Entry.STATEMENTS;
         }
-
-        if (sllFirst) {
-            parser.setTokenStream(tokens);
-            parser.removeErrorListeners();
-            parser.setErrorHandler(bail);
-            parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
-            try {
-                return new Parsed(invoke(entry), tokens, false, 0);
-            } catch (ParseCancellationException sllFailed) {
-                fallbacks++;
-            }
-        }
-
-        tokens.seek(0);
-        parser.setTokenStream(tokens);
-        SyntaxErrorListener listener = new SyntaxErrorListener(text, sink);
-        parser.addErrorListener(listener);
-        parser.setErrorHandler(new StErrorStrategy());
-        parser.getInterpreter().setPredictionMode(PredictionMode.LL);
-        ParserRuleContext tree = invoke(entry);
-        if (listener.count() == 0) {
-            cleanFallbacks++;
-        }
-        return new Parsed(tree, tokens, true, listener.count());
-    }
-
-    private ParserRuleContext invoke(Entry entry) {
-        return switch (entry) {
-            case COMPILATION_UNIT -> parser.compilationUnit();
-            case DECLARATION_PART -> parser.declarationPart();
-            case STATEMENTS, AUTO -> parser.statementsOnly();
+        Function<CodesysStParser, ParserRuleContext> rule = switch (entry) {
+            case COMPILATION_UNIT -> CodesysStParser::compilationUnit;
+            case DECLARATION_PART -> CodesysStParser::declarationPart;
+            case STATEMENTS, AUTO -> CodesysStParser::statementsOnly;
         };
+        return parser.parse(text, tokens, rule, sink);
     }
 
-    long parses() {
-        return parses;
-    }
-
-    /** Texts where SLL failed (syntax errors or SLL weakness). */
-    long fallbacks() {
-        return fallbacks;
-    }
-
-    /** Texts where SLL failed but LL found no error: the grammar-ambiguity signal. */
-    long cleanFallbacks() {
-        return cleanFallbacks;
+    private static IntervalSet withEof(IntervalSet set) {
+        IntervalSet s = new IntervalSet(set);
+        s.add(Token.EOF);
+        s.setReadonly(true);
+        return s;
     }
 }

@@ -1,6 +1,5 @@
 package dev.plca.frontend.st;
 
-import dev.plca.ast.Comment;
 import dev.plca.ast.Declaration;
 import dev.plca.ast.Declaration.Modifier;
 import dev.plca.ast.Declaration.Pou;
@@ -8,8 +7,6 @@ import dev.plca.ast.Declaration.PouKind;
 import dev.plca.ast.Expression;
 import dev.plca.ast.Expression.Argument;
 import dev.plca.ast.Expression.ArgumentKind;
-import dev.plca.ast.Expression.BinaryOp;
-import dev.plca.ast.Expression.LiteralKind;
 import dev.plca.ast.Identifier;
 import dev.plca.ast.Initializer;
 import dev.plca.ast.Pragma;
@@ -23,6 +20,8 @@ import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticSink;
 import dev.plca.core.source.SourceText;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.BuilderSupport;
+import dev.plca.frontend.st.kit.CoreTokens;
 import dev.plca.grammar.CodesysStLexer;
 import dev.plca.grammar.CodesysStParser.*;
 import java.util.ArrayList;
@@ -37,11 +36,14 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
  * Builds the {@code plc-ast} tree from a CODESYS ST parse tree (design rule 3: nothing downstream sees ANTLR types).
+ * The grammar-independent parts live in {@link BuilderSupport}; this class is the glue for the CODESYS contexts.
  *
  * <p>Error recovery leaves partial trees: missing children are null and rule contexts may carry an exception. Every
  * method here tolerates that and substitutes {@code Invalid} nodes, so a syntax error never loses the rest of the file.
  */
-final class AstBuilder {
+final class AstBuilder extends BuilderSupport {
+
+    static final CoreTokens TOKENS = new CoreTokens(CodesysStLexer.VOCABULARY, CodesysStLexer.channelNames);
 
     /** A TwinCAT {@code <Declaration>} fragment: optional header plus VAR blocks, or TYPE declarations. */
     record DeclarationPart(
@@ -67,14 +69,8 @@ final class AstBuilder {
             List<Pragma> pragmas,
             Span span) {}
 
-    private final SourceText text;
-    private final CommonTokenStream tokens;
-    private final DiagnosticSink sink;
-
     AstBuilder(SourceText text, CommonTokenStream tokens, DiagnosticSink sink) {
-        this.text = text;
-        this.tokens = tokens;
-        this.sink = sink;
+        super(text, tokens, sink, TOKENS);
     }
 
     // ============================================================================================
@@ -110,56 +106,6 @@ final class AstBuilder {
             }
         }
         return new DeclarationPart(header, modifiers(loose), varSections(vars), types, span(ctx));
-    }
-
-    /** Comments, pragmas and stray characters from the hidden channels; reports lexical problems. */
-    void collectHidden(List<Comment> comments, List<Pragma> pragmas) {
-        Token pendingError = null;
-        Token lastError = null;
-        for (Token t : tokens.getTokens()) {
-            switch (t.getChannel()) {
-                case CodesysStLexer.COMMENTS -> {
-                    boolean line = t.getType() == CodesysStLexer.LINE_COMMENT;
-                    comments.add(new Comment(line ? Comment.Kind.LINE : Comment.Kind.BLOCK, tokenSpan(t)));
-                    String s = t.getText();
-                    if (!line && !(s.endsWith(t.getType() == CodesysStLexer.BLOCK_COMMENT ? "*)" : "*/"))
-                            || !line && s.length() < 4) {
-                        sink.report(Diagnostic.error(
-                                SyntaxCodes.UNTERMINATED_COMMENT,
-                                "comment is not closed before the end of the text",
-                                text.span(
-                                        t.getStartIndex(),
-                                        Math.min(
-                                                t.getStartIndex() + 2,
-                                                text.text().length()))));
-                    }
-                }
-                case CodesysStLexer.PRAGMAS -> pragmas.add(Pragma.of(t.getText(), tokenSpan(t)));
-                case CodesysStLexer.ERRORS -> {
-                    if (lastError != null && lastError.getStopIndex() + 1 == t.getStartIndex()) {
-                        lastError = t;
-                    } else {
-                        reportStray(pendingError, lastError);
-                        pendingError = t;
-                        lastError = t;
-                    }
-                }
-                default -> {}
-            }
-        }
-        reportStray(pendingError, lastError);
-    }
-
-    private void reportStray(Token first, Token last) {
-        if (first == null) {
-            return;
-        }
-        Span s = text.span(first.getStartIndex(), last.getStopIndex() + 1);
-        String chars = text.text().substring(s.start(), s.end());
-        sink.report(Diagnostic.error(
-                SyntaxCodes.UNEXPECTED_CHARACTER,
-                "unexpected character" + (s.length() > 1 ? "s" : "") + " '" + chars + "'",
-                s));
     }
 
     // ============================================================================================
@@ -964,54 +910,21 @@ final class AstBuilder {
         Span span = span(ctx);
         return switch (ctx) {
             case PrimaryExprContext p -> primary(p.primaryExpression(), span);
-            case PowerExprContext p -> binary(BinaryOp.POWER, p.expression(), span);
-            case UnaryExprContext u ->
-                new Expression.Unary(
-                        switch (u.op.getType()) {
-                            case CodesysStLexer.MINUS -> Expression.UnaryOp.NEGATE;
-                            case CodesysStLexer.PLUS -> Expression.UnaryOp.PLUS;
-                            default -> Expression.UnaryOp.NOT;
-                        },
-                        expression(u.expression(), span),
-                        span);
-            case MulExprContext m ->
-                binary(
-                        switch (m.op.getType()) {
-                            case CodesysStLexer.STAR -> BinaryOp.MUL;
-                            case CodesysStLexer.SLASH -> BinaryOp.DIV;
-                            default -> BinaryOp.MOD;
-                        },
-                        m.expression(),
-                        span);
-            case AddExprContext a ->
-                binary(a.op.getType() == CodesysStLexer.PLUS ? BinaryOp.ADD : BinaryOp.SUB, a.expression(), span);
-            case RelExprContext r ->
-                binary(
-                        switch (r.op.getType()) {
-                            case CodesysStLexer.LT -> BinaryOp.LT;
-                            case CodesysStLexer.GT -> BinaryOp.GT;
-                            case CodesysStLexer.LE -> BinaryOp.LE;
-                            default -> BinaryOp.GE;
-                        },
-                        r.expression(),
-                        span);
-            case EqExprContext e ->
-                binary(e.op.getType() == CodesysStLexer.EQ ? BinaryOp.EQ : BinaryOp.NE, e.expression(), span);
-            case AndExprContext a ->
-                binary(
-                        a.op.getType() == CodesysStLexer.AND_THEN ? BinaryOp.AND_THEN : BinaryOp.AND,
-                        a.expression(),
-                        span);
-            case XorExprContext x -> binary(BinaryOp.XOR, x.expression(), span);
-            case OrExprContext o ->
-                binary(o.op.getType() == CodesysStLexer.OR_ELSE ? BinaryOp.OR_ELSE : BinaryOp.OR, o.expression(), span);
+            case PowerExprContext p -> binary(p.POWER().getSymbol(), p.expression(), span);
+            case UnaryExprContext u -> unary(u.op, expression(u.expression(), span), span);
+            case MulExprContext m -> binary(m.op, m.expression(), span);
+            case AddExprContext a -> binary(a.op, a.expression(), span);
+            case RelExprContext r -> binary(r.op, r.expression(), span);
+            case EqExprContext e -> binary(e.op, e.expression(), span);
+            case AndExprContext a -> binary(a.op, a.expression(), span);
+            case XorExprContext x -> binary(x.op, x.expression(), span);
+            case OrExprContext o -> binary(o.op, o.expression(), span);
             default -> new Expression.Invalid(span);
         };
     }
 
-    private Expression binary(BinaryOp op, List<ExpressionContext> operands, Span span) {
-        return new Expression.Binary(
-                op, expression(exprAt(operands, 0), span), expression(exprAt(operands, 1), span), span);
+    private Expression binary(Token op, List<ExpressionContext> operands, Span span) {
+        return binary(op, expression(exprAt(operands, 0), span), expression(exprAt(operands, 1), span), span);
     }
 
     private Expression primary(PrimaryExpressionContext ctx, Span span) {
@@ -1127,73 +1040,22 @@ final class AstBuilder {
     }
 
     private Expression literal(LiteralContext ctx) {
-        Span span = span(ctx);
         if (ctx.typedLiteral() != null) {
-            return typedLiteral(ctx.typedLiteral());
+            return typedLiteral(ctx.typedLiteral(), ctx.typedLiteral().HASH());
         }
-        Token t = ctx.getStart();
-        String s = t.getText();
-        return switch (t.getType()) {
-            case CodesysStLexer.INTEGER, CodesysStLexer.BASED_INTEGER ->
-                new Expression.Literal(LiteralKind.INTEGER, s, null, span);
-            case CodesysStLexer.REAL -> new Expression.Literal(LiteralKind.REAL, s, null, span);
-            case CodesysStLexer.TRUE, CodesysStLexer.FALSE -> new Expression.Literal(LiteralKind.BOOL, s, null, span);
-            case CodesysStLexer.STRING_LITERAL -> new Expression.Literal(LiteralKind.STRING, s, null, span);
-            case CodesysStLexer.WSTRING_LITERAL -> new Expression.Literal(LiteralKind.WSTRING, s, null, span);
-            case CodesysStLexer.UNTERMINATED_STRING -> {
-                sink.report(Diagnostic.error(
-                        SyntaxCodes.UNTERMINATED_STRING, "string is not closed before the end of the text", span));
-                yield new Expression.Literal(
-                        s.startsWith("\"") ? LiteralKind.WSTRING : LiteralKind.STRING, s, null, span);
-            }
-            case CodesysStLexer.TIME_LITERAL -> prefixed(LiteralKind.TIME, s, span);
-            case CodesysStLexer.DATE_LITERAL -> prefixed(LiteralKind.DATE, s, span);
-            case CodesysStLexer.TOD_LITERAL -> prefixed(LiteralKind.TIME_OF_DAY, s, span);
-            case CodesysStLexer.DT_LITERAL -> prefixed(LiteralKind.DATE_AND_TIME, s, span);
-            default -> new Expression.Invalid(span);
-        };
-    }
-
-    private static Expression prefixed(LiteralKind kind, String s, Span span) {
-        int hash = s.indexOf('#');
-        return new Expression.Literal(kind, s.substring(hash + 1), s.substring(0, hash), span);
-    }
-
-    private Expression typedLiteral(TypedLiteralContext ctx) {
-        Span span = span(ctx);
-        String prefix = ctx.getChild(0).getText();
-        int hash = ctx.HASH() == null ? -1 : ctx.HASH().getSymbol().getTokenIndex();
-        if (hash < 0 || ctx.getStop().getTokenIndex() <= hash) {
-            return new Expression.Invalid(span);
-        }
-        Token valueStart = tokens.get(hash + 1);
-        String value = tokens.getText(valueStart, ctx.getStop());
-        Token last = ctx.getStop();
-        LiteralKind kind = switch (last.getType()) {
-            case CodesysStLexer.INTEGER, CodesysStLexer.BASED_INTEGER -> LiteralKind.INTEGER;
-            case CodesysStLexer.REAL -> LiteralKind.REAL;
-            case CodesysStLexer.TRUE, CodesysStLexer.FALSE -> LiteralKind.BOOL;
-            case CodesysStLexer.STRING_LITERAL -> LiteralKind.STRING;
-            case CodesysStLexer.WSTRING_LITERAL -> LiteralKind.WSTRING;
-            default -> LiteralKind.ENUM;
-        };
-        return new Expression.Literal(kind, value, prefix, span);
+        return coreLiteral(ctx.getStart(), span(ctx));
     }
 
     // ============================================================================================
-    // Names, spans, pragmas
+    // Names
     // ============================================================================================
 
     private Identifier identifier(IdentifierContext ctx) {
-        if (ctx == null || ctx.getStart() == null || ctx.getStart().getType() == Token.EOF) {
-            Span at = ctx == null ? text.span(0, 0) : span(ctx);
-            return new Identifier("<missing>", at);
-        }
-        return new Identifier(ctx.getText(), span(ctx));
+        return identifierOf(ctx);
     }
 
     private Identifier identifierOrInvalid(IdentifierContext ctx, Span fallback) {
-        return ctx == null ? new Identifier("<missing>", Span.at(fallback.textId(), fallback.end())) : identifier(ctx);
+        return ctx == null ? missingIdentifier(fallback) : identifier(ctx);
     }
 
     private QualifiedName qualifiedName(QualifiedNameContext ctx) {
@@ -1221,60 +1083,11 @@ final class AstBuilder {
         return out;
     }
 
-    /** Pragmas directly before {@code t} (between it and the previous significant token). */
-    private List<Pragma> pragmasBefore(Token t) {
-        if (t == null || t.getTokenIndex() < 0) {
-            return List.of();
-        }
-        List<Token> hidden = tokens.getHiddenTokensToLeft(t.getTokenIndex(), CodesysStLexer.PRAGMAS);
-        if (hidden == null) {
-            return List.of();
-        }
-        List<Pragma> out = new ArrayList<>(hidden.size());
-        for (Token h : hidden) {
-            out.add(Pragma.of(h.getText(), tokenSpan(h)));
-        }
-        return out;
-    }
-
-    private Span span(ParserRuleContext ctx) {
-        Token start = ctx.getStart();
-        Token stop = ctx.getStop();
-        int len = text.text().length();
-        int s = start == null || start.getType() == Token.EOF || start.getStartIndex() < 0
-                ? len
-                : Math.min(start.getStartIndex(), len);
-        if (stop == null || start == null || stop.getTokenIndex() < start.getTokenIndex() || stop.getStopIndex() < 0) {
-            return text.span(s, s);
-        }
-        int e = Math.min(Math.max(stop.getStopIndex() + 1, s), len);
-        return text.span(s, e);
-    }
-
-    private Span span(Token from, TerminalNode to) {
-        int s = Math.max(from.getStartIndex(), 0);
-        int e = to == null ? s : Math.max(to.getSymbol().getStopIndex() + 1, s);
-        return text.span(
-                Math.min(s, text.text().length()), Math.min(e, text.text().length()));
-    }
-
-    private Span tokenSpan(Token t) {
-        return SyntaxErrorListener.tokenSpan(text, t);
-    }
-
     private static ExpressionContext exprAt(List<ExpressionContext> list, int i) {
         return i < list.size() ? list.get(i) : null;
     }
 
     private static StatementListContext listAt(List<StatementListContext> list, int i) {
         return i < list.size() ? list.get(i) : null;
-    }
-
-    private static int parseIntOr(String s, int fallback) {
-        try {
-            return Integer.parseInt(s.replace("_", ""));
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
     }
 }
