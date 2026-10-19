@@ -1,0 +1,263 @@
+SourceUnit dialect=SIEMENS
+  Pou kind=FUNCTION name="FC_Scale" bodyLanguage="SCL" @1:1-45:13
+    returnType:
+      Named name=Real @1:23-1:27
+    varBlocks:
+      VarBlock section=INPUT @4:4-8:11
+        variables:
+          VarDecl name=Raw referenceInit=false @5:7-5:17
+            type:
+              Named name=Int @5:13-5:16
+          VarDecl name=Data referenceInit=false @6:7-6:22
+            type:
+              Named name=Variant @6:14-6:21
+          VarDecl name=Items referenceInit=false @7:7-7:32
+            type:
+              ArrayType @7:15-7:31
+                dimensions:
+                  Dimension @7:21-7:22
+                element:
+                  Named name=DInt @7:27-7:31
+      VarBlock section=TEMP @10:4-17:11
+        variables:
+          VarDecl name=Stamp referenceInit=false @11:7-11:19
+            type:
+              Named name=DTL @11:15-11:18
+          VarDecl name=Bytes referenceInit=false @12:7-12:35
+            type:
+              ArrayType @12:15-12:34
+                dimensions:
+                  Dimension @12:21-12:25
+                    low:
+                      Literal kind=INTEGER text="0" @12:21-12:22
+                    high:
+                      Literal kind=INTEGER text="3" @12:24-12:25
+                element:
+                  Named name=Byte @12:30-12:34
+          VarDecl name=Whole referenceInit=false overlay=Bytes @13:7-13:30
+            type:
+              Named name=DWord @13:24-13:29
+          VarDecl name=Ref referenceInit=false @14:7-14:31
+            type:
+              PointerType kind=REF_TO @14:13-14:30
+                target:
+                  Named name="UDT_Item" @14:20-14:30
+          VarDecl name=Text referenceInit=false @15:7-15:25
+            type:
+              StringType wide=false @15:14-15:24
+                length:
+                  Literal kind=INTEGER text="20" @15:21-15:23
+          VarDecl name=WText referenceInit=false @16:7-16:23
+            type:
+              StringType wide=true @16:15-16:22
+    body:
+      Assignment op=ASSIGN @22:2-22:46
+        target:
+          NameRef name=#Stamp globalScope=false @22:2-22:8
+        value:
+          Literal kind=DATE_AND_TIME text="2024-01-31-12:00:00.123456789" typePrefix="DTL" @22:12-22:45
+      Assignment op=ASSIGN @23:2-23:23
+        target:
+          Index @23:2-23:11
+            target:
+              NameRef name=#Bytes globalScope=false @23:2-23:8
+            indices:
+              Literal kind=INTEGER text="0" @23:9-23:10
+        value:
+          Literal kind=INTEGER text="16#81" typePrefix="B" @23:15-23:22
+      Assignment op=ASSIGN @24:2-24:28
+        target:
+          NameRef name=#Whole globalScope=false @24:2-24:8
+        value:
+          Literal kind=INTEGER text="16#A5A5_A5A5" typePrefix="DW" @24:12-24:27
+      Assignment op=ASSIGN @25:2-25:22
+        target:
+          NameRef name=#Text globalScope=false @25:2-25:7
+        value:
+          Literal kind=STRING text="'line$R$N'" @25:11-25:21
+      Assignment op=ASSIGN @26:2-26:32
+        target:
+          NameRef name=#WText globalScope=false @26:2-26:8
+        value:
+          Literal kind=STRING text="'Mötörhead'" typePrefix="WSTRING" @26:12-26:31
+      Assignment op=ASSIGN @27:2-27:38
+        target:
+          Index @27:2-27:11
+            target:
+              NameRef name=#Bytes globalScope=false @27:2-27:8
+            indices:
+              Literal kind=INTEGER text="1" @27:9-27:10
+        value:
+          Call @27:15-27:37
+            callee:
+              NameRef name=CHAR_TO_BYTE globalScope=false @27:15-27:27
+            arguments:
+              Argument kind=POSITIONAL negated=false @27:28-27:36
+                value:
+                  Literal kind=STRING text="'a'" typePrefix="CHAR" @27:28-27:36
+      Assignment op=ATTEMPT @28:2-28:16
+        target:
+          NameRef name=#Ref globalScope=false @28:2-28:6
+        value:
+          NameRef name=#Data globalScope=false @28:10-28:15
+      Assignment op=ASSIGN @29:16-29:79
+        target:
+          NameRef name=#FC_Scale globalScope=false @29:16-29:25
+        value:
+          Binary op=ADD @29:29-29:78
+            left:
+              Binary op=MUL @29:29-29:54
+                left:
+                  Call @29:29-29:46
+                    callee:
+                      NameRef name=INT_TO_REAL globalScope=false @29:29-29:40
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @29:41-29:45
+                        value:
+                          NameRef name=#Raw globalScope=false @29:41-29:45
+                right:
+                  Literal kind=REAL text="0.001" @29:49-29:54
+            right:
+              Call @29:57-29:78
+                callee:
+                  NameRef name=LREAL_TO_REAL globalScope=false @29:57-29:70
+                arguments:
+                  Argument kind=POSITIONAL negated=false @29:71-29:77
+                    value:
+                      Literal kind=REAL text="1.0E-3" @29:71-29:77
+      If @30:2-33:8
+        branches:
+          Branch @30:2-30:38
+            condition:
+              Binary op=OR @30:5-30:33
+                left:
+                  Binary op=EQ @30:5-30:13
+                    left:
+                      NameRef name=#Raw globalScope=false @30:5-30:9
+                    right:
+                      Literal kind=INTEGER text="0" @30:12-30:13
+                right:
+                  Binary op=GT @30:17-30:33
+                    left:
+                      NameRef name=#Raw globalScope=false @30:17-30:21
+                    right:
+                      Literal kind=INTEGER text="27648" typePrefix="INT" @30:24-30:33
+            body:
+              Assignment op=ASSIGN @31:6-31:24
+                target:
+                  NameRef name=#FC_Scale globalScope=false @31:6-31:15
+                value:
+                  Unary op=NEGATE @31:19-31:23
+                    operand:
+                      Literal kind=REAL text="1.0" @31:20-31:23
+              Return @32:6-32:13
+      Empty @33:8-33:9
+      Assignment op=ASSIGN @34:2-34:83
+        target:
+          NameRef name=#FC_Scale globalScope=false @34:2-34:11
+        value:
+          Binary op=SUB @34:15-34:82
+            left:
+              Binary op=ADD @34:15-34:51
+                left:
+                  Binary op=POWER @34:15-34:29
+                    left:
+                      NameRef name=#FC_Scale globalScope=false @34:15-34:24
+                    right:
+                      Literal kind=INTEGER text="2" @34:28-34:29
+                right:
+                  Call @34:32-34:51
+                    callee:
+                      NameRef name=DINT_TO_REAL globalScope=false @34:32-34:44
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @34:45-34:50
+                        value:
+                          Literal kind=INTEGER text="100" typePrefix="L" @34:45-34:50
+            right:
+              Call @34:54-34:82
+                callee:
+                  NameRef name=TIME_TO_DINT globalScope=false @34:54-34:66
+                arguments:
+                  Argument kind=POSITIONAL negated=false @34:67-34:81
+                    value:
+                      Literal kind=TIME text="2H_46M_30S" typePrefix="S5T" @34:67-34:81
+      While @35:2-41:11
+        condition:
+          Binary op=GT @35:8-35:16
+            left:
+              NameRef name=#Raw globalScope=false @35:8-35:12
+            right:
+              Literal kind=INTEGER text="0" @35:15-35:16
+        body:
+          Assignment op=ASSIGN @36:6-36:23
+            target:
+              NameRef name=#Raw globalScope=false @36:6-36:10
+            value:
+              Binary op=SUB @36:14-36:22
+                left:
+                  NameRef name=#Raw globalScope=false @36:14-36:18
+                right:
+                  Literal kind=INTEGER text="1" @36:21-36:22
+          If @37:6-39:12
+            branches:
+              Branch @37:6-37:22
+                condition:
+                  Binary op=EQ @37:9-37:17
+                    left:
+                      NameRef name=#Raw globalScope=false @37:9-37:13
+                    right:
+                      Literal kind=INTEGER text="5" @37:16-37:17
+                body:
+                  Continue @38:10-38:19
+          Empty @39:12-39:13
+          Exit @40:6-40:11
+      Empty @41:11-41:12
+      Repeat @42:2-44:29
+        body:
+          Assignment op=ASSIGN @43:6-43:27
+            target:
+              NameRef name=#Raw globalScope=false @43:6-43:10
+            value:
+              Binary op=ADD @43:14-43:26
+                left:
+                  NameRef name=#Raw globalScope=false @43:14-43:18
+                right:
+                  Literal kind=TIME text="5s" typePrefix="LT" @43:21-43:26
+        condition:
+          Binary op=GE @44:8-44:18
+            left:
+              NameRef name=#Raw globalScope=false @44:8-44:12
+            right:
+              Literal kind=INTEGER text="10" @44:16-44:18
+      Empty @44:29-44:30
+    pragmas:
+      Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @2:1-2:34
+    info:
+      BlockInfo version="0.1" knowHowProtected=false retention=UNSPECIFIED @3:1-3:14
+  Pou kind=FUNCTION name="FC_Void" bodyLanguage="SCL" @47:1-50:13
+    returnType:
+      Named name=Void @47:22-47:26
+    body:
+      CallStatement @49:2-49:68
+        call:
+          Call @49:2-49:67
+            callee:
+              NameRef name="FC_Scale" globalScope=false @49:2-49:12
+            arguments:
+              Argument kind=INPUT name=Raw negated=false @49:13-49:21
+                value:
+                  Literal kind=INTEGER text="1" @49:20-49:21
+              Argument kind=INPUT name=Data negated=false @49:23-49:42
+                value:
+                  MemberAccess member=x @49:31-49:42
+                    target:
+                      NameRef name="DB_Data" globalScope=false @49:31-49:40
+              Argument kind=INPUT name=Items negated=false @49:44-49:66
+                value:
+                  MemberAccess member=arr @49:53-49:66
+                    target:
+                      NameRef name="DB_Data" globalScope=false @49:53-49:62
+  pragmas:
+    Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @2:1-2:34
+  comments: 2
+diagnostics:

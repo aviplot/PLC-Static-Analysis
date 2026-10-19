@@ -23,7 +23,7 @@ supported where it is cheap (§8). SIMATIC AX (`NAMESPACE`/`CLASS` ST, 5 files) 
 | Quoted name | `"…"`, with any characters except `"` and newlines (spaces, `.`, umlauts, CJK). It is a **name**, never a string: `"Controll_vertikale Achse"`, `"PNIO_Diagnostic_Data"."2_AL1103"`. Token `QUOTED_IDENT`. It is defined in the SCL lexer before the core's `WSTRING_LITERAL`, so it wins the tie and SCL never produces `WSTRING_LITERAL`. The name is the text without the quotes; `""` escapes are not supported *(verify)*. | 3,221 files with `"x".y`; 262 with `:= "tag";` |
 | Local prefix | `#name` / `#"name"` marks a block-local operand. `HASH identifier` at **parser** level, not a token: a `#NAME` token would break the typed literals `BOOL#TRUE` and `W#16#FF`. The builder checks that `#` and the name are adjacent. In the corpus, `#` followed by a space only occurs in comments. | 6,559 / 186 |
 | Comments | `//` to end of line. `(* … *)` and `/* … */` are **not nested**: 17 files contain `(*(*text*)` followed by code, which nested lexing would swallow up to EOF. The SCL lexer overrides `BLOCK_COMMENT` and `C_COMMENT`. Whether `/* */` is accepted at all by TIA is *(verify)*, but it is harmless to accept. | `(*` 526, `/*` 381, nested-looking 17 |
-| Attributes | `{ Key := 'Value'; Key2 := 'Value' }`. Uses the core `PRAGMA` token on the `PRAGMAS` channel. It appears after the block name, and **between a variable name and its `:`**: `AxisPos_max { ExternalWritable := 'False'} : LReal`. The builder parses the pairs and attaches them to the block or declaration. | 8,732 block-level; 3,224 in declarations |
+| Attributes | `{ Key := 'Value'; Key2 := 'Value' }`. Uses the core `PRAGMA` token on the `PRAGMAS` channel. It appears after the block name, and **between a variable name and its `:`**: `AxisPos_max { ExternalWritable := 'False'} : LReal`. The builder turns each pair into one ATTRIBUTE pragma (`Pragma.siemensAttributes`) on the block or declaration. TIA writes `ExternalAccessible`/`ExternalVisible`/`ExternalWritable` only when they differ from the default (`'True'`), so a declaration *without* them is HMI-accessible. | 8,732 block-level; 3,224 in declarations |
 | Integers | Core forms plus `B#16#81`, `W#16#0000`, `DW#16#…`, `LW#16#…`, `UDINT#9600`. These all parse as the core `typedLiteral` (`identifier '#' BASED_INTEGER`), so no new token is needed. | B# 126, W# 136, DW# 79 |
 | Strings | `'…'` STRING with `$` escapes (`'$0D'`). `WSTRING#'…'`, `CHAR#'a'` and `WCHAR#'ä'` are typed literals. | WSTRING# 1,374 |
 | Time | Core `T#`, `TIME#`, `LT#`, `LTIME#`, `TOD#`, `D#`, `DT#`, `LDT#`. Also `DTL#2262-04-11-23:47:16.854775807` (fraction with up to 9 digits) and `S5T#2H_46M_30S` / `S5TIME#…`. The SCL lexer adds `DTL` to `DT_LITERAL`'s prefixes and a new `S5TIME_LITERAL`. | DTL# 32, S5T# 9 |
@@ -106,8 +106,9 @@ END_DATA_BLOCK
 ## 4. Declarations
 - **Sections**: `VAR_INPUT`, `VAR_OUTPUT`, `VAR_IN_OUT`, `VAR`, `VAR_TEMP`, `VAR CONSTANT`, `VAR RETAIN`,
   `VAR NON_RETAIN`, `VAR DB_SPECIFIC` (19 files, also `VAR_OUTPUT DB_SPECIFIC`). `VAR_STAT` (3 files) is accepted.
-  Classic `CONST name := value; END_CONST` (47 files) becomes a `VarBlock` of kind CONSTANT. Classic
-  `LABEL a, b; END_LABEL` (3 files) is kept as a declaration that the semantic model ignores.
+  Classic `CONST name := value; END_CONST` (47 files) becomes a `VAR CONSTANT` `VarBlock` whose types the semantic
+  model infers from the values. Classic `LABEL a, b; END_LABEL` (3 files) is parsed and dropped: labels are defined
+  by their use in the body.
 - **Declaration**: `name [{attrs}] [AT other] : type [:= init];`.
   - `AT other` (112 files) is an **overlay view** of another local variable (`DateAndTimeNowCoporate AT DateAndTimeNow
     : STRUCT …`), not a direct address. It is stored as `VarDecl.overlay`.
@@ -150,8 +151,14 @@ and the `S5T#`/`DTL#` literals. `AND_THEN` / `OR_ELSE` do not exist in SCL; they
 never produced by SCL code.
 
 ## 7. Error recovery
-The sync set adds `BEGIN`, `END_REGION`, `END_ORGANIZATION_BLOCK`, `END_DATA_BLOCK`, `END_CONST` and `END_LABEL` to
-the core's `;`, `END_*` set. A broken block header recovers at `BEGIN` or at the first `VAR*`.
+- The sync set adds `BEGIN`, `END_REGION`, `END_ORGANIZATION_BLOCK`, `END_DATA_BLOCK`, `END_CONST` and `END_LABEL`
+  to the core's `;`, `END_*` set.
+- It also adds `THEN`, `DO` and `OF`, so a broken condition (`IF a > THEN`) never deletes the keyword that ends it.
+  Without them, single-token deletion removed `THEN` and the next line became the right operand.
+- `compilationUnit` is `(libraryElement | strayToken)* EOF`. ANTLR does not resynchronise a `libraryElement*` loop
+  while it is still in error-recovery mode (`DefaultErrorStrategy.sync` returns early), so a block broken beyond repair
+  would otherwise cost every block after it. Stray tokens get one `PLC-SCL-006` per run.
+- The CODESYS grammar has both weaknesses too; fixing it there is a follow-up because it moves the M1 baselines.
 
 ## 8. Classic STEP 7 SCL (cheap support; TODO in M4 plan for more)
 | Construct | M4 | Evidence |

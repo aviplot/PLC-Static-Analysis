@@ -1,0 +1,26 @@
+FUNCTION_BLOCK "FB_Names"
+VERSION : 0.1
+   VAR 
+      region : Int;
+      title : Int;
+      name : String;
+      version : Int;
+      label : String;
+      on : Bool;
+      final : Bool;
+      method : Int;
+      program : Int;
+   END_VAR
+
+BEGIN
+	region := 1;
+	REGION Eixo Z (subir sempre; descer so com permissao) // comment
+	    title := region + version;
+	END_REGION
+	REGION
+	    region.%X0 := on AND final;
+	END_REGION;
+	name := label;
+	method := program;
+END_FUNCTION_BLOCK
+

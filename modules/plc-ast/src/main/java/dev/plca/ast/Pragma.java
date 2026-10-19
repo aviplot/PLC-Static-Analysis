@@ -1,6 +1,8 @@
 package dev.plca.ast;
 
 import dev.plca.core.source.Span;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,6 +28,7 @@ public record Pragma(Kind kind, String name, String value, String text, Span spa
     private static final Pattern ATTRIBUTE =
             Pattern.compile("(?is)^\\{\\s*attribute\\s+'([^']*)'\\s*(?::=\\s*'(.*)'\\s*)?\\}$");
     private static final Pattern WORD = Pattern.compile("(?s)^\\{\\s*([A-Za-z_]\\w*)\\s*(.*?)\\s*\\}?$");
+    private static final Pattern SIEMENS_PAIR = Pattern.compile("\\s*([A-Za-z_][\\w.]*)\\s*:=\\s*'([^']*)'\\s*(;|$)");
 
     /** Classifies the raw pragma text (including braces). */
     public static Pragma of(String text, Span span) {
@@ -49,6 +52,31 @@ public record Pragma(Kind kind, String name, String value, String text, Span spa
             rest = rest.substring(1, rest.length() - 1);
         }
         return new Pragma(kind, word, rest, text, span);
+    }
+
+    /**
+     * Siemens attributes {@code { S7_Optimized_Access := 'TRUE' }} or {@code {InstructionName := 'TON_TIME'; LibVersion
+     * := '1.0'}}: one {@link Kind#ATTRIBUTE} per pair, all with the text and span of the whole block. Text of another
+     * shape falls back to {@link #of}.
+     */
+    public static List<Pragma> siemensAttributes(String text, Span span) {
+        String inner = text.length() >= 2 && text.startsWith("{") && text.endsWith("}")
+                ? text.substring(1, text.length() - 1).strip()
+                : null;
+        if (inner == null || inner.isEmpty()) {
+            return List.of(of(text, span));
+        }
+        List<Pragma> out = new ArrayList<>();
+        Matcher m = SIEMENS_PAIR.matcher(inner);
+        int at = 0;
+        while (at < inner.length()) {
+            if (!m.find(at) || m.start() != at) {
+                return List.of(of(text, span));
+            }
+            out.add(new Pragma(Kind.ATTRIBUTE, m.group(1), m.group(2), text, span));
+            at = m.end();
+        }
+        return out;
     }
 
     public boolean isAttribute(String attributeName) {

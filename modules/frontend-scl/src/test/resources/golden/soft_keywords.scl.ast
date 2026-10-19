@@ -1,0 +1,76 @@
+SourceUnit dialect=SIEMENS
+  Pou kind=FUNCTION_BLOCK name="FB_Names" bodyLanguage="SCL" @1:1-25:19
+    varBlocks:
+      VarBlock section=VAR @3:4-13:11
+        variables:
+          VarDecl name=region referenceInit=false @4:7-4:20
+            type:
+              Named name=Int @4:16-4:19
+          VarDecl name=title referenceInit=false @5:7-5:19
+            type:
+              Named name=Int @5:15-5:18
+          VarDecl name=name referenceInit=false @6:7-6:21
+            type:
+              StringType wide=false @6:14-6:20
+          VarDecl name=version referenceInit=false @7:7-7:21
+            type:
+              Named name=Int @7:17-7:20
+          VarDecl name=label referenceInit=false @8:7-8:22
+            type:
+              StringType wide=false @8:15-8:21
+          VarDecl name=on referenceInit=false @9:7-9:17
+            type:
+              Named name=Bool @9:12-9:16
+          VarDecl name=final referenceInit=false @10:7-10:20
+            type:
+              Named name=Bool @10:15-10:19
+          VarDecl name=method referenceInit=false @11:7-11:20
+            type:
+              Named name=Int @11:16-11:19
+          VarDecl name=program referenceInit=false @12:7-12:21
+            type:
+              Named name=Int @12:17-12:20
+    body:
+      Assignment op=ASSIGN @16:2-16:14
+        target:
+          NameRef name=region globalScope=false @16:2-16:8
+        value:
+          Literal kind=INTEGER text="1" @16:12-16:13
+      Region name="Eixo Z (subir sempre; descer so com permissao)" @17:2-19:12
+        body:
+          Assignment op=ASSIGN @18:6-18:32
+            target:
+              NameRef name=title globalScope=false @18:6-18:11
+            value:
+              Binary op=ADD @18:15-18:31
+                left:
+                  NameRef name=region globalScope=false @18:15-18:21
+                right:
+                  NameRef name=version globalScope=false @18:24-18:31
+      Region name="" @20:2-22:13
+        body:
+          Assignment op=ASSIGN @21:6-21:33
+            target:
+              Slice width=BIT index=0 @21:6-21:16
+                target:
+                  NameRef name=region globalScope=false @21:6-21:12
+            value:
+              Binary op=AND @21:20-21:32
+                left:
+                  NameRef name=on globalScope=false @21:20-21:22
+                right:
+                  NameRef name=final globalScope=false @21:27-21:32
+      Assignment op=ASSIGN @23:2-23:16
+        target:
+          NameRef name=name globalScope=false @23:2-23:6
+        value:
+          NameRef name=label globalScope=false @23:10-23:15
+      Assignment op=ASSIGN @24:2-24:20
+        target:
+          NameRef name=method globalScope=false @24:2-24:8
+        value:
+          NameRef name=program globalScope=false @24:12-24:19
+    info:
+      BlockInfo version="0.1" knowHowProtected=false retention=UNSPECIFIED @2:1-2:14
+  comments: 0
+diagnostics:

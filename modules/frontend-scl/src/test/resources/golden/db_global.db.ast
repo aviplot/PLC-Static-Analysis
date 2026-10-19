@@ -1,0 +1,80 @@
+SourceUnit dialect=SIEMENS
+  DataBlock name="DB_Counters" @1:1-21:15
+    layout:
+      StructType @5:4-13:15
+        members:
+          VarDecl name=Line1 referenceInit=false @6:7-6:30
+            type:
+              Named name="UDT_Counters" @6:15-6:29
+          VarDecl name=Total referenceInit=false @7:7-7:25
+            type:
+              Named name=DInt @7:15-7:19
+            init:
+              Literal kind=INTEGER text="0" @7:23-7:24
+          VarDecl name=Limits referenceInit=false @8:7-8:35
+            type:
+              ArrayType @8:16-8:34
+                dimensions:
+                  Dimension @8:22-8:26
+                    low:
+                      Literal kind=INTEGER text="1" @8:22-8:23
+                    high:
+                      Literal kind=INTEGER text="2" @8:25-8:26
+                element:
+                  Named name=Int @8:31-8:34
+          VarDecl name=Setup referenceInit=false @9:7-12:18
+            type:
+              StructType @9:15-12:17
+                members:
+                  VarDecl name=Enabled referenceInit=false @10:10-10:25
+                    type:
+                      Named name=Bool @10:20-10:24
+                  VarDecl name=Name referenceInit=false @11:10-11:36
+                    type:
+                      StringType wide=false @11:17-11:27
+                        length:
+                          Literal kind=INTEGER text="10" @11:24-11:26
+                    init:
+                      Literal kind=STRING text="'L1'" @11:31-11:35
+    initialValues:
+      Assignment op=ASSIGN @17:4-17:17
+        target:
+          NameRef name=Total globalScope=false @17:4-17:9
+        value:
+          Literal kind=INTEGER text="100" @17:13-17:16
+      Assignment op=ASSIGN @18:4-18:19
+        target:
+          Index @18:4-18:13
+            target:
+              NameRef name=Limits globalScope=false @18:4-18:10
+            indices:
+              Literal kind=INTEGER text="1" @18:11-18:12
+        value:
+          Literal kind=INTEGER text="5" @18:17-18:18
+      Assignment op=ASSIGN @19:4-19:26
+        target:
+          MemberAccess member=Enabled @19:4-19:17
+            target:
+              NameRef name=Setup globalScope=false @19:4-19:9
+        value:
+          Literal kind=BOOL text="TRUE" @19:21-19:25
+    pragmas:
+      Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="FALSE" @2:1-2:35
+    info:
+      BlockInfo version="0.1" knowHowProtected=false retention=NON_RETAIN @3:1-4:11
+  DataBlock name="Conveyor_DB" basedOn="FB_Conveyor" @23:1-32:15
+    initialValues:
+      Assignment op=ASSIGN @31:4-31:17
+        target:
+          NameRef name=Speed globalScope=false @31:4-31:9
+        value:
+          Literal kind=REAL text="2.0" @31:13-31:16
+    pragmas:
+      Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @24:1-24:34
+    info:
+      BlockInfo author="plca" version="1.0" knowHowProtected=false retention=NON_RETAIN @25:1-27:11
+  pragmas:
+    Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="FALSE" @2:1-2:35
+    Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @24:1-24:34
+  comments: 1
+diagnostics:

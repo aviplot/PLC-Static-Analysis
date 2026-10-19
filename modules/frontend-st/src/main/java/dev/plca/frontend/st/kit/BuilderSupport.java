@@ -63,7 +63,7 @@ public abstract class BuilderSupport {
                                     Math.min(t.getStartIndex() + 2, text.text().length()))));
                 }
             } else if (channel == tok.pragmasChannel) {
-                pragmas.add(Pragma.of(t.getText(), tokenSpan(t)));
+                pragmas.addAll(pragmasOf(t));
             } else if (channel == tok.errorsChannel) {
                 if (lastError != null && lastError.getStopIndex() + 1 == t.getStartIndex()) {
                     lastError = t;
@@ -100,9 +100,14 @@ public abstract class BuilderSupport {
         }
         List<Pragma> out = new ArrayList<>(hidden.size());
         for (Token h : hidden) {
-            out.add(Pragma.of(h.getText(), tokenSpan(h)));
+            out.addAll(pragmasOf(h));
         }
         return out;
+    }
+
+    /** The pragmas one pragma token holds; dialects with another pragma syntax override it. */
+    protected List<Pragma> pragmasOf(Token t) {
+        return List.of(Pragma.of(t.getText(), tokenSpan(t)));
     }
 
     // ============================================================================================

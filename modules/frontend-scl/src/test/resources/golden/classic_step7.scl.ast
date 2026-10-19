@@ -1,0 +1,77 @@
+SourceUnit dialect=SIEMENS
+  Pou kind=FUNCTION_BLOCK name=FB10 bodyLanguage="SCL" @1:1-33:19
+    varBlocks:
+      VarBlock section=VAR qualifiers=[CONSTANT] @7:1-10:10
+        variables:
+          VarDecl name=LIMIT referenceInit=false @8:5-8:18
+            init:
+              Literal kind=INTEGER text="100" @8:14-8:17
+          VarDecl name=FACTOR referenceInit=false @9:5-9:19
+            init:
+              Literal kind=REAL text="2.5" @9:15-9:18
+      VarBlock section=INPUT @16:1-18:8
+        variables:
+          VarDecl name=In1 referenceInit=false @17:5-17:15
+            type:
+              Named name=INT @17:11-17:14
+      VarBlock section=VAR @19:1-21:8
+        variables:
+          VarDecl name=Count referenceInit=false @20:5-20:17
+            type:
+              Named name=INT @20:13-20:16
+    body:
+      Assignment op=ASSIGN @24:5-24:26
+        target:
+          NameRef name=Count globalScope=false @24:5-24:10
+        value:
+          Binary op=ADD @24:14-24:25
+            left:
+              NameRef name=Count globalScope=false @24:14-24:19
+            right:
+              NameRef name=In1 globalScope=false @24:22-24:25
+      If @25:5-27:11
+        branches:
+          Branch @25:5-25:26
+            condition:
+              Binary op=GT @25:8-25:21
+                left:
+                  NameRef name=Count globalScope=false @25:8-25:13
+                right:
+                  NameRef name=LIMIT globalScope=false @25:16-25:21
+            body:
+              Jump label=LBL_END @26:9-26:22
+      Empty @27:11-27:12
+      Assignment op=ASSIGN @28:5-28:37
+        target:
+          DirectAddress text="DB10.DBW2" @28:5-28:14
+        value:
+          Call @28:18-28:36
+            callee:
+              NameRef name=INT_TO_WORD globalScope=false @28:18-28:29
+            arguments:
+              Argument kind=POSITIONAL negated=false @28:30-28:35
+                value:
+                  NameRef name=Count globalScope=false @28:30-28:35
+      Assignment op=ASSIGN @29:5-29:25
+        target:
+          DirectAddress text="DB10.DBX4.1" @29:5-29:16
+        value:
+          Literal kind=BOOL text="TRUE" @29:20-29:24
+      Assignment op=ASSIGN @30:5-30:36
+        target:
+          NameRef name=Count globalScope=false @30:5-30:10
+        value:
+          Call @30:14-30:35
+            callee:
+              NameRef name=WORD_TO_INT globalScope=false @30:14-30:25
+            arguments:
+              Argument kind=POSITIONAL negated=false @30:26-30:34
+                value:
+                  DirectAddress text="DB10.DW6" @30:26-30:34
+      Label name=LBL_END @31:1-31:9
+      Empty @32:5-32:6
+    info:
+      BlockInfo title="Classic STEP 7 SCL" author="ACME" version="0.3" knowHowProtected=true retention=UNSPECIFIED @2:1-5:16
+  DataBlock name=DB10 basedOn=FB10 @35:1-37:15
+  comments: 0
+diagnostics:

@@ -1,0 +1,26 @@
+FUNCTION_BLOCK "FB_Broken"
+VERSION : 0.1
+VERSION : 0.2
+NON_RETAIN
+   VAR 
+      a : Int;
+      b : ;
+      c : Int;
+   END_VAR
+	#a := 1
+	#c := # a;
+	IF #a > THEN
+	    #c := 2;
+	END_IF;
+	#a;
+END_FUNCTION_BLOCK
+
+DATA_BLOCK "DB_Ok"
+   STRUCT 
+      x : Int;
+   END_STRUCT;
+BEGIN
+   x := 1;
+   "FC"();
+END_DATA_BLOCK
+

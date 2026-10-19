@@ -32,7 +32,9 @@ public record VarBlock(
         PUBLIC,
         PRIVATE,
         PROTECTED,
-        INTERNAL
+        INTERNAL,
+        /** Siemens {@code VAR DB_SPECIFIC}: values kept per instance DB (verify exact semantics). */
+        DB_SPECIFIC
     }
 
     public VarBlock {

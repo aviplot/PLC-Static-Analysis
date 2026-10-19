@@ -1,0 +1,17 @@
+TYPE "UDT_Counters"
+TITLE = Counter set
+VERSION : 0.1
+   STRUCT
+      Values : Array[0..9] of DInt;
+      Reset : Bool;
+   END_STRUCT;
+
+END_TYPE
+
+TYPE Motor_UDT :
+   STRUCT
+      Speed : Real;
+      Mode : Int;
+   END_STRUCT
+END_TYPE
+

@@ -1,0 +1,33 @@
+SourceUnit dialect=SIEMENS
+  TypeDecl name="UDT_Counters" @1:6-7:15
+    type:
+      StructType @4:4-7:14
+        members:
+          VarDecl name=Values referenceInit=false @5:7-5:36
+            type:
+              ArrayType @5:16-5:35
+                dimensions:
+                  Dimension @5:22-5:26
+                    low:
+                      Literal kind=INTEGER text="0" @5:22-5:23
+                    high:
+                      Literal kind=INTEGER text="9" @5:25-5:26
+                element:
+                  Named name=DInt @5:31-5:35
+          VarDecl name=Reset referenceInit=false @6:7-6:20
+            type:
+              Named name=Bool @6:15-6:19
+    info:
+      BlockInfo title="Counter set" version="0.1" knowHowProtected=false retention=UNSPECIFIED @2:1-3:14
+  TypeDecl name=Motor_UDT @11:6-15:14
+    type:
+      StructType @12:4-15:14
+        members:
+          VarDecl name=Speed referenceInit=false @13:7-13:20
+            type:
+              Named name=Real @13:15-13:19
+          VarDecl name=Mode referenceInit=false @14:7-14:18
+            type:
+              Named name=Int @14:14-14:17
+  comments: 0
+diagnostics:

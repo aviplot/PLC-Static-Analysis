@@ -1,0 +1,51 @@
+FUNCTION "FC_Scale" : Real
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Raw : Int;
+      Data : Variant;
+      Items : Array[*] of DInt;
+   END_VAR
+
+   VAR_TEMP 
+      Stamp : DTL;
+      Bytes : Array[0..3] of Byte;
+      Whole AT Bytes : DWord;
+      Ref : REF_TO "UDT_Item";
+      Text : String[20];
+      WText : WString;
+   END_VAR
+
+
+BEGIN
+	(*(* not nested in SCL *)
+	#Stamp := DTL#2024-01-31-12:00:00.123456789;
+	#Bytes[0] := B#16#81;
+	#Whole := DW#16#A5A5_A5A5;
+	#Text := 'line$R$N';
+	#WText := WSTRING#'Mötörhead';
+	#Bytes[1] := CHAR_TO_BYTE(CHAR#'a');
+	#Ref ?= #Data;
+	/* C style */ #FC_Scale := INT_TO_REAL(#Raw) * 0.001 + LREAL_TO_REAL(1.0E-3);
+	IF #Raw = 0 OR #Raw > INT#27648 THEN
+	    #FC_Scale := -1.0;
+	    RETURN;
+	END_IF;
+	#FC_Scale := #FC_Scale ** 2 + DINT_TO_REAL(L#100) - TIME_TO_DINT(S5T#2H_46M_30S);
+	WHILE #Raw > 0 DO
+	    #Raw := #Raw - 1;
+	    IF #Raw = 5 THEN
+	        CONTINUE;
+	    END_IF;
+	    EXIT;
+	END_WHILE;
+	REPEAT
+	    #Raw := #Raw + LT#5s;
+	UNTIL #Raw >= 10 END_REPEAT;
+END_FUNCTION
+
+FUNCTION "FC_Void" : Void
+BEGIN
+	"FC_Scale"(Raw := 1, Data := "DB_Data".x, Items := "DB_Data".arr);
+END_FUNCTION
+

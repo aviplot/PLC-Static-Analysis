@@ -1,0 +1,70 @@
+SourceUnit dialect=SIEMENS
+  Pou kind=FUNCTION_BLOCK name="FB_Broken" bodyLanguage="SCL" @1:1-16:19
+    varBlocks:
+      VarBlock section=VAR @5:4-9:11
+        variables:
+          VarDecl name=a referenceInit=false @6:7-6:15
+            type:
+              Named name=Int @6:11-6:14
+          VarDecl name=b referenceInit=false @7:7-7:12
+            type:
+              Invalid @7:11-7:11
+          VarDecl name=c referenceInit=false @8:7-8:15
+            type:
+              Named name=Int @8:11-8:14
+    body:
+      Assignment op=ASSIGN @10:2-10:9
+        target:
+          NameRef name=#a globalScope=false @10:2-10:4
+        value:
+          Literal kind=INTEGER text="1" @10:8-10:9
+      Assignment op=ASSIGN @11:2-11:12
+        target:
+          NameRef name=#c globalScope=false @11:2-11:4
+        value:
+          NameRef name=#a globalScope=false @11:8-11:11
+      If @12:2-14:8
+        branches:
+          Branch @12:2-12:14
+            condition:
+              Binary op=GT @12:5-12:9
+                left:
+                  NameRef name=#a globalScope=false @12:5-12:7
+                right:
+                  Invalid @12:10-12:10
+            body:
+              Assignment op=ASSIGN @13:6-13:14
+                target:
+                  NameRef name=#c globalScope=false @13:6-13:8
+                value:
+                  Literal kind=INTEGER text="2" @13:12-13:13
+      Empty @14:8-14:9
+      CallStatement @15:2-15:5
+        call:
+          NameRef name=#a globalScope=false @15:2-15:4
+    info:
+      BlockInfo version="0.1" knowHowProtected=false retention=NON_RETAIN @2:1-4:11
+  DataBlock name="DB_Ok" @18:1-25:15
+    layout:
+      StructType @19:4-21:15
+        members:
+          VarDecl name=x referenceInit=false @20:7-20:15
+            type:
+              Named name=Int @20:11-20:14
+    initialValues:
+      Assignment op=ASSIGN @23:4-23:11
+        target:
+          NameRef name=x globalScope=false @23:4-23:5
+        value:
+          Literal kind=INTEGER text="1" @23:9-23:10
+  comments: 0
+diagnostics:
+  ERROR PLC-SYN-001 @7:11 unexpected ';'
+  ERROR PLC-SYN-001 @11:2 missing ';' before '#'
+  ERROR PLC-SYN-001 @12:10 unexpected 'THEN'
+  WARNING PLC-SCL-004 @11:8 '#' must be written directly before the local name 'a'
+  WARNING PLC-SYN-006 @15:2 statement has no effect: '#a' is neither assigned nor called
+  WARNING PLC-SCL-001 @10:2 missing BEGIN between the declarations and the statements of 'FB_Broken'
+  WARNING PLC-SCL-002 @3:1 block attribute VERSION is given more than once; the first one is used
+  WARNING PLC-SCL-005 @4:1 NON_RETAIN belongs to data blocks only
+  WARNING PLC-SCL-003 @24:4 only assignments of initial values are allowed after BEGIN in a data block

@@ -1,0 +1,77 @@
+FUNCTION_BLOCK "FB_Conveyor"
+TITLE = Conveyor control with jam detection
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : 'plca'
+FAMILY : Conveyors
+NAME : CONV
+VERSION : 1.2
+   VAR_INPUT 
+      Start : Bool;   // start request
+      Stop : Bool;
+      Speed { ExternalWritable := 'False'} : Real := 1.5;
+   END_VAR
+
+   VAR_OUTPUT 
+      Running : Bool;
+      Status : Word;
+   END_VAR
+
+   VAR_IN_OUT 
+      Counters : "UDT_Counters";
+   END_VAR
+
+   VAR 
+      JamTimer {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;
+      Motor : "FB_Motor";
+      State : Int;
+      Edge : R_TRIG;
+   END_VAR
+
+   VAR_TEMP 
+      tmpIndex : Int;
+   END_VAR
+
+   VAR CONSTANT 
+      STATE_IDLE : Int := 0;
+      STATE_RUN : Int := 10;
+   END_VAR
+
+
+BEGIN
+	REGION Inputs and edges
+	    #Edge(CLK := #Start);
+	    IF #Edge.Q AND NOT #Stop THEN
+	        #State := #STATE_RUN;
+	    END_IF;
+	END_REGION
+	
+	REGION State machine
+	    CASE #State OF
+	        #STATE_IDLE:
+	            #Running := FALSE;
+	        #STATE_RUN, 11..19:
+	            #Running := TRUE;
+	            REGION Nested
+	                #Motor(Enable := TRUE, Speed := #Speed, Busy => #Status.%X3);
+	            END_REGION
+	        ELSE:
+	            #State := #STATE_IDLE;
+	    END_CASE;
+	END_REGION
+	
+	"IEC_Timer_0_DB".TON(IN := #Running AND NOT "di_ConveyorFree",
+	                     PT := T#5S);
+	#JamTimer(IN := #Running, PT := T#2s);
+	IF #JamTimer.Q THEN
+	    "Alarms".Conveyor."Jam" := TRUE;
+	    #Status.%B1 := 16#7F;
+	    GOTO Done;
+	END_IF;
+	FOR #tmpIndex := 0 TO 9 BY 1 DO
+	    #Counters.Values[#tmpIndex] := #Counters.Values[#tmpIndex] + 1;
+	END_FOR;
+	#"Status" := W#16#0001;
+Done:
+	ENO := #Running;
+END_FUNCTION_BLOCK
+
