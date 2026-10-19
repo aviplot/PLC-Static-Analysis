@@ -12,8 +12,9 @@ import picocli.CommandLine.Option;
         description = "Runs the language server over standard input/output (for editor extensions).")
 final class LspCommand implements Callable<Integer> {
 
+    // a list, not a flag: language clients append --stdio themselves, so it may come twice
     @Option(names = "--stdio", description = "Accepted for clients that pass it; stdio is the only transport.")
-    boolean stdio;
+    java.util.List<Boolean> stdio;
 
     @Override
     public Integer call() throws Exception {

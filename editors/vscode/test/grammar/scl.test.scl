@@ -1,0 +1,16 @@
+// SYNTAX TEST "source.siemens-scl" "Siemens SCL"
+FUNCTION_BLOCK "FB_Conveyor"
+// <------------- keyword.other.declaration.iec-st
+//             ^^^^^^^^^^^^^ variable.other.global.siemens-scl
+{ S7_Optimized_Access := 'TRUE' }
+// <- meta.preprocessor.pragma.iec-st
+BEGIN
+// <----- keyword.other.declaration.siemens-scl
+    REGION Motor
+//  ^^^^^^ keyword.other.declaration.siemens-scl
+    #speed := "Motor_DB".speed + %DB1.DBW2;
+//  ^^^^^^ variable.other.local.siemens-scl
+//            ^^^^^^^^^^ variable.other.global.siemens-scl
+//                               ^^^^^^^^^ variable.other.address.siemens-scl
+    END_REGION
+END_FUNCTION_BLOCK

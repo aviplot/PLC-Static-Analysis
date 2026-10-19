@@ -1,0 +1,65 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TwinCAT PLC object",
+  "scopeName": "text.xml.twincat",
+  "patterns": [
+    {
+      "begin": "(<)(Declaration|ST)\\b([^>]*)(>)",
+      "end": "(</)(\\2)(>)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml"
+        },
+        "2": {
+          "name": "entity.name.tag.xml"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.tag.xml"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml"
+        },
+        "2": {
+          "name": "entity.name.tag.xml"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.xml"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "<!\\[CDATA\\[",
+          "end": "\\]\\]>",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.xml"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.xml"
+            }
+          },
+          "contentName": "meta.embedded.block.iec-st",
+          "patterns": [
+            {
+              "include": "source.iec-st"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "include": "text.xml"
+    }
+  ]
+}

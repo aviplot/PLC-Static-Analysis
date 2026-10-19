@@ -5,6 +5,7 @@ import dev.plca.analysis.nav.Navigator;
 import dev.plca.analysis.nav.Outline;
 import dev.plca.core.source.SourceFile;
 import dev.plca.report.ToolInfo;
+import dev.plca.rules.RuleRegistry;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -63,6 +64,9 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
 
     /** Commands the server executes ({@code workspace/executeCommand}). */
     public static final String ANALYZE_WORKSPACE = "plca.analyzeWorkspace";
+
+    /** Arguments {@code [ruleId]}; returns the rule's documentation (Markdown), or null for an unknown id. */
+    public static final String RULE_DOC = "plca.ruleDoc";
 
     private final Session session = new Session();
     private final Runnable onExit;
@@ -133,7 +137,7 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         caps.setHoverProvider(true);
         caps.setDocumentSymbolProvider(true);
         caps.setWorkspaceSymbolProvider(true);
-        caps.setExecuteCommandProvider(new ExecuteCommandOptions(List.of(ANALYZE_WORKSPACE)));
+        caps.setExecuteCommandProvider(new ExecuteCommandOptions(List.of(ANALYZE_WORKSPACE, RULE_DOC)));
         return CompletableFuture.completedFuture(
                 new InitializeResult(caps, new ServerInfo(ToolInfo.NAME, ToolInfo.VERSION)));
     }
@@ -333,6 +337,16 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
             if (ANALYZE_WORKSPACE.equals(params.getCommand())) {
                 return session.reanalyze();
+            }
+            if (RULE_DOC.equals(params.getCommand())
+                    && params.getArguments() != null
+                    && !params.getArguments().isEmpty()) {
+                Object arg = params.getArguments().getFirst();
+                String id = arg instanceof com.google.gson.JsonPrimitive p ? p.getAsString() : String.valueOf(arg);
+                return CompletableFuture.completedFuture(RuleRegistry.standard()
+                        .descriptor(id.toUpperCase(java.util.Locale.ROOT))
+                        .map(d -> (Object) d.markdown())
+                        .orElse(null));
             }
             return CompletableFuture.completedFuture(null);
         }

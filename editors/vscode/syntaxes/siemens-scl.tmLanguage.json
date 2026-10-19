@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Siemens SCL",
+  "scopeName": "source.siemens-scl",
+  "patterns": [
+    {
+      "include": "source.iec-st#comments"
+    },
+    {
+      "include": "source.iec-st#pragmas"
+    },
+    {
+      "name": "variable.other.global.siemens-scl",
+      "match": "\"[^\"\\r\\n]*\""
+    },
+    {
+      "name": "variable.other.local.siemens-scl",
+      "match": "#(?:[A-Za-z_][A-Za-z0-9_]*|\\\"[^\\\"\\r\\n]*\\\")"
+    },
+    {
+      "name": "variable.other.address.siemens-scl",
+      "match": "(?i)%(?:DB\\d+\\.DB[XBWD]\\d+(?:\\.\\d+)?|[IQM][XBWD]?\\d+(?:\\.\\d+)?|[IQ]W\\d+:P)"
+    },
+    {
+      "name": "keyword.other.declaration.siemens-scl",
+      "match": "(?i)\\b(?:END_ORGANIZATION_BLOCK|S7_Optimized_Access|ORGANIZATION_BLOCK|KNOW_HOW_PROTECT|END_DATA_BLOCK|DB_SPECIFIC|DATA_BLOCK|END_REGION|NON_RETAIN|UNLINKED|VERSION|AUTHOR|FAMILY|REGION|BEGIN|TITLE|GOTO|NAME)\\b"
+    },
+    {
+      "include": "source.iec-st#strings"
+    },
+    {
+      "include": "source.iec-st#literals"
+    },
+    {
+      "include": "source.iec-st#addresses"
+    },
+    {
+      "include": "source.iec-st#keywords"
+    },
+    {
+      "include": "source.iec-st#operators"
+    },
+    {
+      "include": "source.iec-st#calls"
+    }
+  ]
+}

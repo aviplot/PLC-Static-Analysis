@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rockwell ladder rung text",
+  "scopeName": "source.rockwell-rll",
+  "patterns": [
+    {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.instruction.rockwell-rll"
+        }
+      }
+    },
+    {
+      "name": "punctuation.section.branch.rockwell-rll",
+      "match": "[\\[\\],]"
+    },
+    {
+      "name": "constant.language.placeholder.rockwell-rll",
+      "match": "\\?"
+    },
+    {
+      "name": "constant.numeric.rockwell-rll",
+      "match": "(?<![A-Za-z_.:])[+-]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b"
+    },
+    {
+      "name": "variable.other.program.rockwell-rll",
+      "match": "\\\\[A-Za-z_][A-Za-z0-9_]*"
+    },
+    {
+      "name": "variable.other.tag.rockwell-rll",
+      "match": "[A-Za-z_][A-Za-z0-9_:]*"
+    },
+    {
+      "name": "punctuation.terminator.rung.rockwell-rll",
+      "match": ";"
+    }
+  ]
+}

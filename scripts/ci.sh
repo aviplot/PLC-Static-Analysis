@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Local CI (no hosted CI yet): what a pipeline would run before merge.
-#   scripts/ci.sh          full build on JDK 21, tests again on JDK 25, harvester tests
+#   scripts/ci.sh          full build on JDK 21, tests again on JDK 25, harvester tests, VS Code extension
+#   PLCA_E2E=1 scripts/ci.sh   also the extension's smoke test in VS Code (opens a window; use xvfb-run headless)
 # Requires JDK 21 and 25 installed where Gradle can detect them (e.g. /usr/lib/jvm).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -24,5 +25,16 @@ fi
 
 echo "== corpus-harvester unit tests"
 (cd tools/corpus-harvester && python3 -m unittest discover -s tests -q)
+
+if command -v npm >/dev/null; then
+  echo "== VS Code extension: typecheck, grammar tests, package"
+  ./gradlew :editors:vscode:grammarTest :editors:vscode:package
+  if [[ -n "${PLCA_E2E:-}" ]]; then
+    echo "== VS Code extension: smoke test in VS Code"
+    ./gradlew :editors:vscode:e2eTest
+  fi
+else
+  echo "== VS Code extension skipped (no npm)"
+fi
 
 echo "== CI OK"

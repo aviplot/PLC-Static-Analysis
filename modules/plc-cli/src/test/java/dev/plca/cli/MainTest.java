@@ -119,6 +119,7 @@ class MainTest {
         Run help = run("lsp", "--help");
         assertThat(help.exit()).isZero();
         assertThat(help.out()).contains("language server");
+        assertThat(run("lsp", "--stdio", "--stdio", "--help").exit()).isZero();
     }
 
     @Test

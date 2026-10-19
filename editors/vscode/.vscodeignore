@@ -1,0 +1,8 @@
+**
+!dist/extension.js
+!server/lib/*.jar
+!syntaxes/*.json
+!language-configuration*.json
+!package.json
+!README.md
+!LICENSE.txt

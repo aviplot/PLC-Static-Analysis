@@ -32,3 +32,6 @@ listOf(
     include(name)
     project(":$name").projectDir = file("modules/$name")
 }
+
+// VS Code extension (M8): npm-driven, not part of `build` (Node is needed only for these tasks).
+include("editors:vscode")

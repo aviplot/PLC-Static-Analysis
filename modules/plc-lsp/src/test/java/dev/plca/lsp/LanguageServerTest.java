@@ -377,6 +377,19 @@ class LanguageServerTest {
     }
 
     @Test
+    void ruleDocumentation() throws Exception {
+        Object doc = remote.getWorkspaceService()
+                .executeCommand(
+                        new org.eclipse.lsp4j.ExecuteCommandParams(PlcaLanguageServer.RULE_DOC, List.of("plca-q003")))
+                .get(10, TimeUnit.SECONDS);
+        assertThat(String.valueOf(doc)).contains("REAL");
+        Object none = remote.getWorkspaceService()
+                .executeCommand(new org.eclipse.lsp4j.ExecuteCommandParams(PlcaLanguageServer.RULE_DOC, List.of("X")))
+                .get(10, TimeUnit.SECONDS);
+        assertThat(none).isNull();
+    }
+
+    @Test
     void messagesNeverIncludeInternalErrors() {
         assertThat(client.messages).noneMatch(m -> m.contains("internal error"));
     }

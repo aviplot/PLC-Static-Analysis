@@ -1,0 +1,156 @@
+{
+  "name": "plca",
+  "displayName": "plca — PLC static analysis",
+  "description": "Diagnostics, navigation and highlighting for IEC 61131-3 Structured Text (CODESYS, TwinCAT), Siemens SCL, Rockwell L5X and PLCopen XML, from the plca language server.",
+  "version": "0.1.0",
+  "publisher": "plca",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": ["Programming Languages", "Linters"],
+  "keywords": ["PLC", "IEC 61131-3", "Structured Text", "TwinCAT", "CODESYS", "SCL", "TIA Portal", "Studio 5000", "L5X", "PLCopen"],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,scl,SCL,L5X,l5x}"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "iec-st",
+        "aliases": ["Structured Text (IEC 61131-3)", "st"],
+        "extensions": [".st", ".ST"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "siemens-scl",
+        "aliases": ["Siemens SCL", "scl"],
+        "extensions": [".scl", ".SCL", ".db", ".udt"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "twincat-xml",
+        "aliases": ["TwinCAT PLC object"],
+        "extensions": [".TcPOU", ".TcDUT", ".TcGVL", ".TcIO"],
+        "configuration": "./language-configuration-xml.json"
+      },
+      {
+        "id": "rockwell-l5x",
+        "aliases": ["Rockwell L5X export"],
+        "extensions": [".L5X", ".l5x"],
+        "configuration": "./language-configuration-xml.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "iec-st",
+        "scopeName": "source.iec-st",
+        "path": "./syntaxes/iec-st.tmLanguage.json"
+      },
+      {
+        "language": "siemens-scl",
+        "scopeName": "source.siemens-scl",
+        "path": "./syntaxes/siemens-scl.tmLanguage.json"
+      },
+      {
+        "language": "twincat-xml",
+        "scopeName": "text.xml.twincat",
+        "path": "./syntaxes/twincat.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.iec-st": "iec-st"
+        }
+      },
+      {
+        "language": "rockwell-l5x",
+        "scopeName": "text.xml.l5x",
+        "path": "./syntaxes/l5x.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.iec-st": "iec-st"
+        }
+      },
+      {
+        "scopeName": "source.rockwell-rll",
+        "path": "./syntaxes/rockwell-rll.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "plca.analyzeWorkspace",
+        "title": "Analyze workspace",
+        "category": "plca"
+      },
+      {
+        "command": "plca.showRuleDoc",
+        "title": "Show rule documentation",
+        "category": "plca"
+      },
+      {
+        "command": "plca.restartServer",
+        "title": "Restart language server",
+        "category": "plca"
+      }
+    ],
+    "configuration": {
+      "title": "plca",
+      "properties": {
+        "plca.java.home": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "Java 21 or newer to run the language server. Empty: JAVA_HOME, then `java` on the PATH."
+        },
+        "plca.config": {
+          "type": "string",
+          "default": "",
+          "description": "Path of the rule configuration (relative to the workspace folder). Empty: plca.yaml in the workspace folder."
+        },
+        "plca.threads": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Threads for whole-project analysis. 0: one less than the processors."
+        },
+        "plca.maxFileSizeMb": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "description": "Larger files are analysed from disk only, never from the editor buffer (large L5X exports)."
+        },
+        "plca.server.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "description": "Development: a plca launcher (e.g. build/install/plca/bin/plca) to use instead of the bundled server."
+        },
+        "plca.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the plca language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outfile=dist/extension.js --sourcemap",
+    "typecheck": "tsc --noEmit -p .",
+    "test:grammar": "vscode-tmgrammar-test -g syntaxes/iec-st.tmLanguage.json -g syntaxes/siemens-scl.tmLanguage.json -g syntaxes/rockwell-rll.tmLanguage.json \"test/grammar/*.test.*\"",
+    "test:e2e": "npm run build && tsc -p test/e2e && node out/test/e2e/run.js",
+    "package": "npm run typecheck && npm run build && vsce package --no-dependencies --skip-license --allow-missing-repository --out plca.vsix"
+  },
+  "dependencies": {
+    "vscode-languageclient": "10.1.2"
+  },
+  "devDependencies": {
+    "@types/mocha": "10.0.10",
+    "@types/node": "20.19.0",
+    "@types/vscode": "1.100.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
+    "mocha": "12.0.3",
+    "typescript": "7.0.2",
+    "vscode-tmgrammar-test": "0.1.3"
+  }
+}
