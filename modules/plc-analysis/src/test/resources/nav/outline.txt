@@ -1,0 +1,128 @@
+== plant/FB_Motor.st
+  FUNCTION_BLOCK FB_Motor @FB_Motor.st:1:16-1:24
+    VARIABLE rSetpoint : input T_Speed @FB_Motor.st:3:5-3:14
+    VARIABLE bRunning : output BOOL @FB_Motor.st:6:5-6:13
+    VARIABLE stData : in out ST_Motor @FB_Motor.st:9:5-9:11
+    VARIABLE fbDelay : Tc2_Standard.TON @FB_Motor.st:12:5-12:12
+    VARIABLE fbPower : Tc2_MC2.MC_Power @FB_Motor.st:13:5-13:12
+    VARIABLE eState : E_State @FB_Motor.st:14:5-14:11
+    VARIABLE pData : POINTER TO ST_Motor @FB_Motor.st:15:5-15:10
+    METHOD Reset : BOOL @FB_Motor.st:29:15-29:20
+    PROPERTY Speed : REAL @FB_Motor.st:34:17-34:22
+      PROPERTY GET @FB_Motor.st:35:1-35:4
+    ACTION Stop @FB_Motor.st:40:8-40:12
+== plant/types.st
+  ENUM E_State @types.st:3:6-3:13
+    ENUM_VALUE Idle @types.st:3:17-3:21
+    ENUM_VALUE Starting @types.st:3:23-3:31
+    ENUM_VALUE Running @types.st:3:38-3:45
+    ENUM_VALUE Faulted @types.st:3:47-3:54
+  ENUM E_Mode @types.st:6:6-6:12
+    ENUM_VALUE Manual @types.st:6:16-6:22
+    ENUM_VALUE Auto @types.st:6:24-6:28
+  STRUCT ST_Base @types.st:10:5-10:12
+    VARIABLE nId : UDINT @types.st:12:9-12:12
+  STRUCT ST_Motor @types.st:14:5-14:13
+    VARIABLE rSpeed : REAL @types.st:16:9-16:15
+    VARIABLE aLog : ARRAY[0..LOG_SIZE - 1] OF INT @types.st:17:9-17:13
+  TYPE T_Speed : REAL @types.st:19:5-19:12
+== plant/GVL_IO.TcGVL
+  VARIABLE_LIST GVL_IO @GVL_IO.TcGVL:3:3-3:66
+    VARIABLE bStart : global BOOL @GVL_IO.TcGVL:6:5-6:11
+== rockwell_line/Line1.L5X
+  STRUCT UDT_Motor @Line1.L5X:5:17-5:26
+    VARIABLE Speed : REAL @Line1.L5X:7:15-7:20
+    VARIABLE Run : BIT @Line1.L5X:9:15-9:18
+    VARIABLE Fault : BIT @Line1.L5X:10:15-10:20
+  FUNCTION_BLOCK Valve @Line1.L5X:19:35-19:40
+    VARIABLE EnableIn : input BOOL @Line1.L5X:21:18-21:26
+    VARIABLE Cmd : input BOOL @Line1.L5X:23:18-23:21
+    VARIABLE Delay : input DINT @Line1.L5X:25:18-25:23
+    VARIABLE EnableOut : output BOOL @Line1.L5X:22:18-22:27
+    VARIABLE Open : output BOOL @Line1.L5X:24:18-24:22
+    VARIABLE Tmr : TIMER @Line1.L5X:28:17-28:20
+    VARIABLE Spare1 : DINT @Line1.L5X:29:17-29:23
+    ROUTINE Prescan @Line1.L5X:42:16-42:23
+  VARIABLE_LIST Line1 @Line1.L5X:3:32-3:37
+    VARIABLE StartPB : global BOOL @Line1.L5X:53:12-53:19
+    VARIABLE StopPB : global BOOL @Line1.L5X:54:12-54:18
+    VARIABLE Motor1 : global UDT_Motor @Line1.L5X:55:12-55:18
+    VARIABLE Horn : global @Line1.L5X:56:12-56:16
+    VARIABLE MotorRun : global @Line1.L5X:57:12-57:20
+    VARIABLE Counts : global DINT @Line1.L5X:58:12-58:18
+    VARIABLE Line_Name : global STRING @Line1.L5X:59:12-59:21
+  PROGRAM MainProgram @Line1.L5X:64:16-64:27
+    VARIABLE Seal : BOOL @Line1.L5X:66:12-66:16
+    VARIABLE V1 : Valve @Line1.L5X:68:12-68:14
+    VARIABLE OS : BOOL @Line1.L5X:69:12-69:14
+    VARIABLE Unused_Work : DINT @Line1.L5X:70:12-70:23
+    VARIABLE T_Delay : TIMER @Line1.L5X:71:12-71:19
+    VARIABLE Ready : output BOOL @Line1.L5X:67:12-67:17
+    ROUTINE MainRoutine @Line1.L5X:74:16-74:27
+    ROUTINE Calc @Line1.L5X:94:16-94:20
+    ROUTINE Alarms @Line1.L5X:104:16-104:22
+    ROUTINE Faults @Line1.L5X:114:16-114:22
+  PROGRAM Monitor @Line1.L5X:123:16-123:23
+    ROUTINE Main @Line1.L5X:126:16-126:20
+  CONFIGURATION Line1 @Line1.L5X:3:32-3:37
+    TASK MainTask : TASK @Line1.L5X:137:13-137:21
+    VARIABLE MainProgram : MainProgram @Line1.L5X:139:25-139:36
+    TASK Fast : TASK @Line1.L5X:142:13-142:17
+    VARIABLE Monitor : Monitor @Line1.L5X:144:25-144:32
+== tia_line/Program_blocks/Main.scl
+  PROGRAM Main @Main.scl:1:20-1:26
+    VARIABLE scaled : temp Real @Main.scl:6:7-6:13
+== tia_line/Program_blocks/DB_Counters.db
+  DATA_BLOCK DB_Counters @DB_Counters.db:1:12-1:25
+    VARIABLE Line1 : "UDT_Counters" @DB_Counters.db:6:7-6:12
+    VARIABLE Total : DInt @DB_Counters.db:7:7-7:12
+== plcopen_mixer/Mixer.xml
+  ENUM E_Mode @Mixer.xml:9:23-9:29
+    ENUM_VALUE Idle @Mixer.xml:10:46-10:50
+    ENUM_VALUE Fill @Mixer.xml:10:66-10:70
+    ENUM_VALUE Mix @Mixer.xml:10:97-10:100
+  STRUCT ST_Tank @Mixer.xml:12:23-12:30
+    VARIABLE Level : REAL @Mixer.xml:15:29-15:34
+    VARIABLE Name : STRING @Mixer.xml:16:29-16:33
+    VARIABLE History : ARRAY OF INT @Mixer.xml:17:29-17:36
+  TYPE T_Percent : INT @Mixer.xml:21:23-21:32
+  FUNCTION Scale : REAL @Mixer.xml:26:18-26:23
+    VARIABLE Raw : input INT @Mixer.xml:29:38-29:41
+  FUNCTION_BLOCK Counter @Mixer.xml:33:18-33:25
+    VARIABLE Reset : input BOOL @Mixer.xml:35:38-35:43
+    VARIABLE OUT : output INT @Mixer.xml:36:39-36:42
+    VARIABLE Cnt : INT @Mixer.xml:37:38-37:41
+  PROGRAM Main @Mixer.xml:77:18-77:22
+    VARIABLE Start : input BOOL @Mixer.xml:80:29-80:34
+    VARIABLE Stop : input BOOL @Mixer.xml:81:29-81:33
+    VARIABLE Level : input INT @Mixer.xml:82:29-82:34
+    VARIABLE Motor : output BOOL @Mixer.xml:85:29-85:34
+    VARIABLE Alarm : output BOOL @Mixer.xml:86:29-86:34
+    VARIABLE Delay : TON @Mixer.xml:89:29-89:34
+    VARIABLE Cycles : Counter @Mixer.xml:90:29-90:35
+    VARIABLE Mode : E_Mode @Mixer.xml:91:29-91:33
+  PROGRAM Sequence @Mixer.xml:117:18-117:26
+    VARIABLE Go : input BOOL @Mixer.xml:119:38-119:40
+    VARIABLE Done : input BOOL @Mixer.xml:119:89-119:93
+    VARIABLE Valve : output BOOL @Mixer.xml:120:39-120:44
+    VARIABLE Pump : output BOOL @Mixer.xml:120:93-120:97
+    VARIABLE Init : STRUCT @Mixer.xml:130:37-130:41
+    VARIABLE Filling : STRUCT @Mixer.xml:133:37-133:44
+    ACTION OpenValve @Mixer.xml:123:25-123:34
+    ACTION Finished @Mixer.xml:126:29-126:37
+  CONFIGURATION config @Mixer.xml:151:28-151:34
+    CONFIGURATION cpu : RESOURCE @Mixer.xml:152:25-152:28
+      VARIABLE Setpoint : global REAL @Mixer.xml:155:39-155:47
+      TASK fast : TASK @Mixer.xml:153:23-153:27
+      VARIABLE main_inst : Main @Mixer.xml:153:79-153:88
+      TASK slow : TASK @Mixer.xml:154:23-154:27
+      VARIABLE seq_inst : Sequence @Mixer.xml:154:80-154:88
+== workspace 'mot'
+  VARIABLE Motor1 in Line1 @Line1.L5X:55:12-55:18
+  VARIABLE MotorRun in Line1 @Line1.L5X:57:12-57:20
+  FUNCTION_BLOCK FB_Motor @FB_Motor.st:1:16-1:24
+  FUNCTION_BLOCK FB_Motor @FB_Motor.scl:1:16-1:26
+  ROUTINE MainRoutine in MainProgram @Line1.L5X:74:16-74:27
+  PROGRAM Monitor @Line1.L5X:123:16-123:23
+  STRUCT ST_Motor @types.st:14:5-14:13
+  STRUCT UDT_Motor @Line1.L5X:5:17-5:26

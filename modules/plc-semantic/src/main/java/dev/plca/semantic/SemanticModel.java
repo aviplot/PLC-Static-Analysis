@@ -9,6 +9,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * The semantic model of a project (design rule 4: one model for all languages). Built by {@link SemanticBuilder};
@@ -70,6 +71,16 @@ public final class SemanticModel {
     /** What a name, member access or call callee refers to; empty if unresolved. */
     public Optional<Symbol> symbol(Expression e) {
         return Optional.ofNullable(symbols.get(e));
+    }
+
+    /** Every bound expression with its symbol (names, member accesses, callees), in no particular order. */
+    public void forEachBinding(BiConsumer<Expression, Symbol> action) {
+        symbols.forEach(action);
+    }
+
+    /** Every argument bound to a callee parameter, in no particular order. */
+    public void forEachParameterBinding(BiConsumer<Expression.Argument, VariableSymbol> action) {
+        parameters.forEach(action);
     }
 
     /** Static type of an expression; {@link Type.Unknown} when it could not be determined. */

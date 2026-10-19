@@ -11,3 +11,7 @@ dependencies {
     implementation(project(":frontend-plcopen"))
     implementation(libs.jackson.yaml)
 }
+
+dependencies {
+    testImplementation(testFixtures(project(":plc-core")))
+}

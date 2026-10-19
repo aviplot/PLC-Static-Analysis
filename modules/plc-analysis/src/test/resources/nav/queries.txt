@@ -1,0 +1,264 @@
+== plant/MAIN.st 'fbMotor(bEnable' +0
+  symbol: VariableSymbol fbMotor @MAIN.st:11:1-11:8
+  definition: MAIN.st:3:5-3:12
+  references: MAIN.st:11:1-11:8 MAIN.st:12:11-12:18 MAIN.st:19:4-19:11
+  hover @MAIN.st:11:1-11:8:
+    ```iec-st
+    VAR fbMotor : FB_Motor
+    ```
+    
+    in `MAIN`
+== plant/MAIN.st 'fbMotor(bEnable' +9
+  symbol: VariableSymbol bEnable @MAIN.st:11:9-11:16
+  definition: FB_Base.st:3:5-3:12
+  references: FB_Motor.st:18:15-18:22 FB_Motor.st:20:14-20:21 FB_Motor.st:26:34-26:41 MAIN.st:11:9-11:16
+  hover @MAIN.st:11:9-11:16:
+    ```iec-st
+    VAR_INPUT bEnable : BOOL
+    ```
+    
+    in `FB_Base`
+== plant/MAIN.st 'fbMotor.Speed' +8
+  symbol: PouSymbol Speed @MAIN.st:12:19-12:24
+  definition: FB_Motor.st:34:17-34:22
+  references: MAIN.st:12:19-12:24
+  hover @MAIN.st:12:19-12:24:
+    ```iec-st
+    PROPERTY Speed : REAL
+    ```
+    
+    in `FB_Motor`
+== plant/MAIN.st 'fbMotor.Speed' +13
+  symbol: PouSymbol Speed @MAIN.st:12:19-12:24
+  definition: FB_Motor.st:34:17-34:22
+  references: MAIN.st:12:19-12:24
+  hover @MAIN.st:12:19-12:24:
+    ```iec-st
+    PROPERTY Speed : REAL
+    ```
+    
+    in `FB_Motor`
+== plant/MAIN.st 'F_Scale(' +2
+  symbol: PouSymbol F_Scale @MAIN.st:12:27-12:34
+  definition: functions.st:1:10-1:17
+  references: MAIN.st:12:27-12:34 functions.st:18:13-18:20
+  hover @MAIN.st:12:27-12:34:
+    ```iec-st
+    FUNCTION F_Scale : REAL
+    ```
+== plant/MAIN.st 'GVL_IO.bStart' +7
+  symbol: VariableSymbol bStart @MAIN.st:11:27-11:33
+  definition: GVL_IO.TcGVL:6:5-6:11
+  references: MAIN.st:11:27-11:33
+  hover @MAIN.st:11:27-11:33:
+    ```iec-st
+    VAR_GLOBAL bStart AT %I* : BOOL
+    ```
+    
+    in `GVL_IO`
+    
+    at `%I*`
+== plant/MAIN.st 'eMode := Auto' +9
+  symbol: EnumValueSymbol Auto @MAIN.st:18:10-18:14
+  definition: types.st:6:24-6:28
+  references: MAIN.st:18:10-18:14
+  hover @MAIN.st:18:10-18:14:
+    ```iec-st
+    E_Mode.Auto = 1
+    ```
+== plant/MAIN.st 'i + 1' +2
+  no symbol
+  hover @MAIN.st:13:6-13:11:
+    Type: `INT`
+== plant/MAIN.st 'fbMotor : FB_Motor' +10
+  symbol: PouSymbol FB_Motor @MAIN.st:3:15-3:23
+  definition: FB_Motor.st:1:16-1:24
+  references: MAIN.st:3:15-3:23 MAIN.st:4:30-4:38 FB_Conveyor.scl:16:15-16:25
+  hover @MAIN.st:3:15-3:23:
+    ```iec-st
+    FUNCTION_BLOCK FB_Motor EXTENDS FB_Base
+    ```
+== plant/FB_Motor.st 'FB_Base' +3
+  symbol: PouSymbol FB_Base @FB_Motor.st:1:33-1:40
+  definition: FB_Base.st:1:25-1:32
+  references: FB_Motor.st:1:33-1:40
+  hover @FB_Motor.st:1:33-1:40:
+    ```iec-st
+    FUNCTION_BLOCK FB_Base
+    ```
+== plant/FB_Motor.st 'stData : ST_Motor' +10
+  symbol: TypeSymbol ST_Motor @FB_Motor.st:9:14-9:22
+  definition: types.st:14:5-14:13
+  references: FB_Motor.st:9:14-9:22 FB_Motor.st:15:24-15:32 MAIN.st:5:15-5:23
+  hover @FB_Motor.st:9:14-9:22:
+    ```iec-st
+    ST_Motor EXTENDS ST_Base :
+        STRUCT
+            rSpeed : REAL;
+            aLog : ARRAY[0..LOG_SIZE - 1] OF INT;
+        END_STRUCT
+    ```
+== plant/FB_Motor.st 'E_State.Starting' +9
+  symbol: EnumValueSymbol Starting @FB_Motor.st:20:45-20:53
+  definition: types.st:3:23-3:31
+  references: FB_Motor.st:20:45-20:53 FB_Motor.st:21:5-21:13
+  hover @FB_Motor.st:20:45-20:53:
+    ```iec-st
+    E_State.Starting = 5
+    ```
+== plant/FB_Motor.st 'fbDelay : ' +0
+  symbol: VariableSymbol fbDelay @FB_Motor.st:12:5-12:12
+  definition: FB_Motor.st:12:5-12:12
+  references: FB_Motor.st:18:1-18:8
+  hover @FB_Motor.st:12:5-12:12:
+    ```iec-st
+    VAR fbDelay : Tc2_Standard.TON
+    ```
+    
+    in `FB_Motor`
+== plant/FB_Motor.st 'fbDelay(IN' +8
+  symbol: VariableSymbol IN @FB_Motor.st:18:9-18:11
+  definition: none
+  references: FB_Motor.st:18:9-18:11 Mixer.xml:101:13-101:91
+  hover @FB_Motor.st:18:9-18:11:
+    ```iec-st
+    VAR_INPUT IN : BOOL
+    ```
+    
+    in `TON`
+== plant/FB_Motor.st 'Stop();' +1
+  symbol: PouSymbol Stop @FB_Motor.st:27:1-27:5
+  definition: FB_Motor.st:40:8-40:12
+  references: FB_Motor.st:27:1-27:5
+  hover @FB_Motor.st:27:1-27:5:
+    ```iec-st
+    ACTION Stop
+    ```
+    
+    in `FB_Motor`
+== plant/GVL_IO.TcGVL 'bStart AT' +1
+  symbol: VariableSymbol bStart @GVL_IO.TcGVL:6:5-6:11
+  definition: GVL_IO.TcGVL:6:5-6:11
+  references: MAIN.st:11:27-11:33
+  hover @GVL_IO.TcGVL:6:5-6:11:
+    ```iec-st
+    VAR_GLOBAL bStart AT %I* : BOOL
+    ```
+    
+    in `GVL_IO`
+    
+    at `%I*`
+== plant/types.st 'ST_Motor EXTENDS' +2
+  symbol: TypeSymbol ST_Motor @types.st:14:5-14:13
+  definition: types.st:14:5-14:13
+  references: FB_Motor.st:9:14-9:22 FB_Motor.st:15:24-15:32 MAIN.st:5:15-5:23
+  hover @types.st:14:5-14:13:
+    ```iec-st
+    ST_Motor EXTENDS ST_Base :
+        STRUCT
+            rSpeed : REAL;
+            aLog : ARRAY[0..LOG_SIZE - 1] OF INT;
+        END_STRUCT
+    ```
+== rockwell_line/Line1.L5X 'XIC(Seal)OTE(MotorRun)' +4
+  symbol: VariableSymbol Seal @Line1.L5X:81:20-81:24
+  definition: Line1.L5X:66:12-66:16
+  references: Line1.L5X:78:35-78:39 Line1.L5X:78:74-78:78 Line1.L5X:81:20-81:24 Line1.L5X:87:25-87:29 Line1.L5X:110:20-110:24 Line1.L5X:117:20-117:24
+  hover @Line1.L5X:81:20-81:24:
+    ```iec-st
+    VAR Seal : BOOL
+    ```
+    
+    in `MainProgram`
+== rockwell_line/Line1.L5X 'XIO(Motor1.Fault)' +11
+  symbol: VariableSymbol Fault @Line1.L5X:78:64-78:69
+  definition: Line1.L5X:10:15-10:20
+  references: Line1.L5X:78:64-78:69
+  hover @Line1.L5X:78:64-78:69:
+    ```iec-st
+    VAR Fault : BOOL
+    ```
+    
+    in `UDT_Motor`
+== rockwell_line/Line1.L5X 'TON(Tmr' +1
+  symbol: InstructionSymbol TON @Line1.L5X:35:24-35:27
+  definition: none
+  references: Line1.L5X:35:24-35:27
+  hover @Line1.L5X:35:24-35:27:
+    Rockwell instruction `TON`
+== rockwell_line/Line1.L5X 'Valve(V1' +1
+  symbol: PouSymbol Valve @Line1.L5X:87:16-87:21
+  definition: Line1.L5X:19:35-19:40
+  references: Line1.L5X:68:41-68:46 Line1.L5X:87:16-87:21
+  hover @Line1.L5X:87:16-87:21:
+    ```iec-st
+    FUNCTION_BLOCK Valve
+    ```
+== rockwell_line/Line1.L5X '<Tag Name="StartPB"' +12
+  symbol: VariableSymbol StartPB @Line1.L5X:53:12-53:19
+  definition: Line1.L5X:53:12-53:19
+  references: Line1.L5X:78:21-78:28
+  hover @Line1.L5X:53:12-53:19:
+    ```iec-st
+    VAR_GLOBAL StartPB : BOOL
+    ```
+    
+    in `Line1`
+== tia_line/Program_blocks/Main.scl '"Conveyor_DB".Running' +15
+  symbol: VariableSymbol Running @Main.scl:11:30-11:37
+  definition: FB_Conveyor.scl:9:7-9:14
+  references: FB_Conveyor.scl:30:10-30:18 FB_Conveyor.scl:32:10-32:18 FB_Conveyor.scl:35:19-35:27 FB_Conveyor.scl:36:18-36:26 FB_Conveyor.scl:43:9-43:17 Main.scl:11:30-11:37
+  hover @Main.scl:11:30-11:37:
+    ```iec-st
+    VAR_OUTPUT Running : Bool
+    ```
+    
+    in `FB_Conveyor`
+== tia_line/Program_blocks/Main.scl '#scaled' +1
+  symbol: VariableSymbol scaled @Main.scl:12:2-12:9
+  definition: Main.scl:6:7-6:13
+  references: Main.scl:12:2-12:9
+  hover @Main.scl:12:2-12:9:
+    ```iec-st
+    VAR_TEMP scaled : Real
+    ```
+    
+    in `Main`
+== tia_line/Program_blocks/Main.scl '"FC_Scale"(' +1
+  symbol: PouSymbol FC_Scale @Main.scl:12:13-12:23
+  definition: FC_Scale.scl:1:10-1:20
+  references: Main.scl:12:13-12:23
+  hover @Main.scl:12:13-12:23:
+    ```iec-st
+    FUNCTION FC_Scale : Real
+    ```
+== tia_line/Program_blocks/Main.scl 'Raw :=' +0
+  symbol: VariableSymbol Raw @Main.scl:12:24-12:27
+  definition: FC_Scale.scl:5:7-5:10
+  references: FC_Scale.scl:8:27-8:31 Main.scl:12:24-12:27
+  hover @Main.scl:12:24-12:27:
+    ```iec-st
+    VAR_INPUT Raw : Int
+    ```
+    
+    in `FC_Scale`
+== plcopen_mixer/Mixer.xml 'Raw) / 27' +0
+  symbol: VariableSymbol Raw @Mixer.xml:31:58-31:61
+  definition: Mixer.xml:29:38-29:41
+  references: Mixer.xml:31:58-31:61
+  hover @Mixer.xml:31:58-31:61:
+    ```iec-st
+    VAR_INPUT Raw : INT
+    ```
+    
+    in `Scale`
+== plcopen_mixer/Mixer.xml 'Valve := TRUE' +1
+  symbol: VariableSymbol Valve @Mixer.xml:123:64-123:69
+  definition: Mixer.xml:120:39-120:44
+  references: Mixer.xml:123:64-123:69
+  hover @Mixer.xml:123:64-123:69:
+    ```iec-st
+    VAR_OUTPUT Valve : BOOL
+    ```
+    
+    in `Sequence`
