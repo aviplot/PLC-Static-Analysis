@@ -115,6 +115,13 @@ class MainTest {
     }
 
     @Test
+    void lspCommandIsListed() {
+        Run help = run("lsp", "--help");
+        assertThat(help.exit()).isZero();
+        assertThat(help.out()).contains("language server");
+    }
+
+    @Test
     void usageErrorsExitWithTwo() throws IOException {
         Path p = project("P.st", WARNINGS_ONLY);
         assertThat(run("analyze", tmp.resolve("missing").toString()).exit()).isEqualTo(2);

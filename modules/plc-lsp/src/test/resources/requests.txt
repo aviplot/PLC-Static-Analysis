@@ -1,0 +1,33 @@
+definition Speed: plant/FB_Motor.st 33:16-33:21
+references fbMotor: plant/MAIN.st 2:4-2:11, plant/MAIN.st 10:0-10:7, plant/MAIN.st 11:10-11:17, plant/MAIN.st 18:3-18:10
+hover fbMotor 10:0-10:7:
+```iec-st
+VAR fbMotor : FB_Motor
+```
+
+in `MAIN`
+hover in TcGVL 5:4-5:10:
+```iec-st
+VAR_GLOBAL bStart AT %I* : BOOL
+```
+
+in `GVL_IO`
+
+at `%I*`
+hover in XML markup: null
+outline FB_Motor.st:
+  Class FB_Motor 0:0-42:18 sel 0:15-0:23
+    Variable rSetpoint : input T_Speed 2:4-2:24 sel 2:4-2:13
+    Variable bRunning : output BOOL 5:4-5:20 sel 5:4-5:12
+    Variable stData : in out ST_Motor 8:4-8:22 sel 8:4-8:10
+    Variable fbDelay : Tc2_Standard.TON 11:4-11:31 sel 11:4-11:11
+    Variable fbPower : Tc2_MC2.MC_Power 12:4-12:31 sel 12:4-12:11
+    Variable eState : E_State 13:4-13:21 sel 13:4-13:10
+    Variable pData : POINTER TO ST_Motor 14:4-14:32 sel 14:4-14:9
+    Method Reset : BOOL 28:0-31:10 sel 28:14-28:19
+    Property Speed : REAL 33:0-37:12 sel 33:16-33:21
+      Property GET 34:0-36:7 sel 34:0-34:3
+    Method Stop 39:0-41:10 sel 39:7-39:11
+workspace 'start':
+  Variable StartPB rockwell_line/Line1.L5X 52:11-52:18
+  Variable bStart plant/GVL_IO.TcGVL 5:4-5:10

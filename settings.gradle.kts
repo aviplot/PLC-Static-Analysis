@@ -25,6 +25,7 @@ listOf(
     "plc-rules",
     "plc-report",
     "plc-analysis",
+    "plc-lsp",
     "plc-cli",
     "plc-devtools",
 ).forEach { name ->

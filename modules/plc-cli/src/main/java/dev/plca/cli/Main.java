@@ -10,7 +10,7 @@ import picocli.CommandLine.Command;
         mixinStandardHelpOptions = true,
         versionProvider = Main.Version.class,
         description = "Static analysis for PLC programs (CODESYS / TwinCAT Structured Text).",
-        subcommands = {AnalyzeCommand.class, RulesCommand.class, CommandLine.HelpCommand.class})
+        subcommands = {AnalyzeCommand.class, RulesCommand.class, LspCommand.class, CommandLine.HelpCommand.class})
 public final class Main implements Runnable {
 
     @CommandLine.Spec
@@ -38,7 +38,7 @@ public final class Main implements Runnable {
 
     @Override
     public void run() {
-        throw new CommandLine.ParameterException(spec.commandLine(), "missing command: analyze or rules");
+        throw new CommandLine.ParameterException(spec.commandLine(), "missing command: analyze, rules or lsp");
     }
 
     static final class Version implements CommandLine.IVersionProvider {

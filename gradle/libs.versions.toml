@@ -12,6 +12,8 @@ jazzer = "0.30.0"
 jmh = "1.37"
 jackson = "3.2.3"
 json-schema-validator = "3.0.8"
+lsp4j = "1.0.0"
+gson = "2.14.0"
 
 [libraries]
 antlr-tool = { module = "org.antlr:antlr4", version.ref = "antlr" }
@@ -24,5 +26,7 @@ jmh-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.
 jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-yaml = { module = "tools.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version.ref = "lsp4j" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 spotless-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
