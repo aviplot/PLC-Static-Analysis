@@ -54,12 +54,15 @@ class SclLexerTest {
                 "REGION Motor control (main; aux)|REGION_LINE[REGION Motor control (main; aux)]",
                 "  REGION|REGION_LINE[REGION]",
                 "REGION (Init)|REGION_LINE[REGION (Init)]",
+                "REGION [1] Messages 1 .. 16|REGION_LINE[REGION [1] Messages 1 .. 16]",
+                "END_REGION Validation of inputs|END_REGION",
                 // ... but a variable called region is a name
                 "region := 1;|IDENT[region] ASSIGN INTEGER[1] SEMI",
                 "region : Int;|IDENT[region] COLON IDENT[Int] SEMI",
                 "region, x : Int;|IDENT[region] COMMA IDENT[x] COLON IDENT[Int] SEMI",
                 "region.%X0 := on;|IDENT[region] SLICE[.%X0] ASSIGN ON SEMI",
                 "region(x);|IDENT[region] LPAREN IDENT[x] RPAREN SEMI",
+                "region[1] := 2;|IDENT[region] LBRACK INTEGER[1] RBRACK ASSIGN INTEGER[2] SEMI",
                 "x := region;|IDENT[x] ASSIGN IDENT[region] SEMI",
                 "regional := 1;|IDENT[regional] ASSIGN INTEGER[1] SEMI",
                 "END_REGION;|END_REGION SEMI",
@@ -92,10 +95,19 @@ class SclLexerTest {
     }
 
     @Test
-    void blockCommentsDoNotNest() {
-        // nested lexing would run to the end of the text and swallow the assignment
-        assertThat(tokens("(*(* text *) x := 1;")).containsExactly("IDENT[x]", "ASSIGN", "INTEGER[1]", "SEMI");
-        assertThat(tokens("/* a /* b */ y := 2;")).containsExactly("IDENT[y]", "ASSIGN", "INTEGER[2]", "SEMI");
+    void blockCommentsNest() {
+        // commenting out code that contains comments (corpus: TIA export of the Siemens LKinCtrl library)
+        assertThat(tokens("(* x := (*inner*) 6; *) y := 1;"))
+                .containsExactly("IDENT[y]", "ASSIGN", "INTEGER[1]", "SEMI");
+        assertThat(tokens("/* a /* b */ c */ y := 2;")).containsExactly("IDENT[y]", "ASSIGN", "INTEGER[2]", "SEMI");
+    }
+
+    @Test
+    void commentSection() {
+        assertThat(tokens("(/*\n  doc\n*/)\nx := 1;")).containsExactly("IDENT[x]", "ASSIGN", "INTEGER[1]", "SEMI");
+        assertThat(hidden("(/* doc */)"))
+                .singleElement()
+                .satisfies(h -> assertThat(h.getType()).isEqualTo(SiemensSclLexer.SECTION_COMMENT));
     }
 
     @Test

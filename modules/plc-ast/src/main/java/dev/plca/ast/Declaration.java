@@ -137,6 +137,7 @@ public sealed interface Declaration extends Node {
             String name,
             String version,
             boolean knowHowProtected,
+            boolean unlinked,
             Retention retention,
             Span span)
             implements Node {

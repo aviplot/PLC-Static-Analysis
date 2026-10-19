@@ -71,6 +71,6 @@ SourceUnit dialect=SIEMENS
         value:
           NameRef name=program globalScope=false @24:12-24:19
     info:
-      BlockInfo version="0.1" knowHowProtected=false retention=UNSPECIFIED @2:1-2:14
+      BlockInfo version="0.1" knowHowProtected=false unlinked=false retention=UNSPECIFIED @2:1-2:14
   comments: 0
 diagnostics:

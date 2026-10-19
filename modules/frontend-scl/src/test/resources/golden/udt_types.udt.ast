@@ -18,7 +18,7 @@ SourceUnit dialect=SIEMENS
             type:
               Named name=Bool @6:15-6:19
     info:
-      BlockInfo title="Counter set" version="0.1" knowHowProtected=false retention=UNSPECIFIED @2:1-3:14
+      BlockInfo title="Counter set" version="0.1" knowHowProtected=false unlinked=false retention=UNSPECIFIED @2:1-3:14
   TypeDecl name=Motor_UDT @11:6-15:14
     type:
       StructType @12:4-15:14

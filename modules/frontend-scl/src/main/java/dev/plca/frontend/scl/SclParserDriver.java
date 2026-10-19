@@ -18,8 +18,8 @@ import org.antlr.v4.runtime.misc.IntervalSet;
 final class SclParserDriver {
 
     /** Tokens that start a block; an empty text (EOF) is a compilation unit too. */
-    private static final IntervalSet BLOCK_START =
-            withEof(SclAstBuilder.TOKENS.set("ORGANIZATION_BLOCK", "FUNCTION_BLOCK", "FUNCTION", "DATA_BLOCK", "TYPE"));
+    private static final IntervalSet BLOCK_START = withEof(SclAstBuilder.TOKENS.set(
+            "ORGANIZATION_BLOCK", "FUNCTION_BLOCK", "FUNCTION", "DATA_BLOCK", "TYPE", "NAMESPACE"));
 
     /**
      * {@code ;}, block terminators, {@code BEGIN}, and the keywords that end a statement header ({@code THEN},
@@ -46,7 +46,8 @@ final class SclParserDriver {
             "END_FUNCTION_BLOCK",
             "END_FUNCTION",
             "END_ORGANIZATION_BLOCK",
-            "END_DATA_BLOCK");
+            "END_DATA_BLOCK",
+            "END_NAMESPACE");
 
     private final TwoStageParser<SiemensSclParser> parser;
 

@@ -258,7 +258,7 @@ SourceUnit dialect=SIEMENS
     pragmas:
       Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @3:1-3:34
     info:
-      BlockInfo title="Conveyor control with jam detection" author="plca" family="Conveyors" name="CONV" version="1.2" knowHowProtected=false retention=UNSPECIFIED @2:1-7:14
+      BlockInfo title="Conveyor control with jam detection" author="plca" family="Conveyors" name="CONV" version="1.2" knowHowProtected=false unlinked=false retention=UNSPECIFIED @2:1-7:14
   pragmas:
     Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @3:1-3:34
     Pragma kind=ATTRIBUTE name="ExternalWritable" value="False" @11:13-11:43

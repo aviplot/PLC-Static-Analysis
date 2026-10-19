@@ -1,0 +1,126 @@
+SourceUnit dialect=SIEMENS
+  Namespace name=Line.Unit2 @1:1-26:14
+    members:
+      Pou kind=FUNCTION_BLOCK name=FB_Counter bodyLanguage="SCL" @2:1-25:19
+        varBlocks:
+          VarBlock section=INPUT @5:4-8:11
+            variables:
+              VarDecl name="array" referenceInit=false @6:7-6:34
+                type:
+                  ArrayType @6:17-6:33
+                    dimensions:
+                      Dimension @6:23-6:24
+                    element:
+                      Named name=DInt @6:29-6:33
+              VarDecl name="string" referenceInit=false @7:7-7:25
+                type:
+                  StringType wide=false @7:18-7:24
+          VarBlock section=VAR @9:4-13:11
+            variables:
+              VarDecl name=total referenceInit=false @10:7-10:20
+                type:
+                  Named name=DInt @10:15-10:19
+              VarDecl name=diag referenceInit=false @11:7-11:82
+                type:
+                  Named name="UDT_Diag" @11:40-11:50
+                init:
+                  StructInit @11:54-11:81
+                    fields:
+                      FieldInit @11:55-11:62
+                        value:
+                          Literal kind=INTEGER text="16#7000" @11:55-11:62
+                      FieldInit @11:64-11:66
+                        value:
+                          StructInit @11:64-11:66
+                      FieldInit @11:68-11:80
+                        value:
+                          StructInit @11:68-11:80
+                            fields:
+                              FieldInit @11:69-11:75
+                                value:
+                                  ArrayInit @11:69-11:75
+                                    elements:
+                                      Element repeat=1 @11:70-11:71
+                                        value:
+                                          Literal kind=INTEGER text="1" @11:70-11:71
+                                      Element repeat=1 @11:73-11:74
+                                        value:
+                                          Literal kind=INTEGER text="2" @11:73-11:74
+                              FieldInit @11:77-11:79
+                                value:
+                                  StructInit @11:77-11:79
+                pragmas:
+                  Pragma kind=ATTRIBUTE name="S7_SetPoint" value="False" @11:12-11:37
+              VarDecl name=items referenceInit=false @12:7-12:41
+                type:
+                  ArrayType @12:15-12:40
+                    dimensions:
+                      Dimension @12:21-12:25
+                        low:
+                          Literal kind=INTEGER text="0" @12:21-12:22
+                        high:
+                          Literal kind=INTEGER text="1" @12:24-12:25
+                    element:
+                      Named name=_.UDT_Item @12:30-12:40
+        body:
+          Region name="Sum up" @16:2-21:19
+            body:
+              Assignment op=ADD @17:6-17:26
+                target:
+                  NameRef name=#total globalScope=false @17:6-17:12
+                value:
+                  Index @17:16-17:25
+                    target:
+                      NameRef name=#array globalScope=false @17:16-17:22
+                    indices:
+                      Literal kind=INTEGER text="0" @17:23-17:24
+              Assignment op=SUB @18:6-18:18
+                target:
+                  NameRef name=#total globalScope=false @18:6-18:12
+                value:
+                  Literal kind=INTEGER text="1" @18:16-18:17
+              Assignment op=MUL @19:6-19:18
+                target:
+                  NameRef name=#total globalScope=false @19:6-19:12
+                value:
+                  Literal kind=INTEGER text="2" @19:16-19:17
+              Assignment op=DIV @20:6-20:18
+                target:
+                  NameRef name=#total globalScope=false @20:6-20:12
+                value:
+                  Literal kind=INTEGER text="2" @20:16-20:17
+          If @22:2-24:8
+            branches:
+              Branch @22:2-22:26
+                condition:
+                  Binary op=GT @22:5-22:21
+                    left:
+                      Call @22:5-22:17
+                        callee:
+                          NameRef name=LEN globalScope=false @22:5-22:8
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @22:9-22:16
+                            value:
+                              NameRef name=#string globalScope=false @22:9-22:16
+                    right:
+                      Literal kind=INTEGER text="0" @22:20-22:21
+                body:
+                  Assignment op=ASSIGN @23:6-23:25
+                    target:
+                      MemberAccess member=status @23:6-23:19
+                        target:
+                          NameRef name=#diag globalScope=false @23:6-23:11
+                    value:
+                      Literal kind=INTEGER text="0" @23:23-23:24
+          Empty @24:8-24:9
+        pragmas:
+          Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @3:1-3:57
+          Pragma kind=ATTRIBUTE name="Published" value="FALSE" @3:1-3:57
+        info:
+          BlockInfo version="0.1" knowHowProtected=false unlinked=false retention=UNSPECIFIED @4:1-4:14
+  pragmas:
+    Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @3:1-3:57
+    Pragma kind=ATTRIBUTE name="Published" value="FALSE" @3:1-3:57
+    Pragma kind=ATTRIBUTE name="S7_SetPoint" value="False" @11:12-11:37
+  comments: 0
+diagnostics:

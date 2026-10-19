@@ -18,7 +18,7 @@ VERSION : 0.1
 
 
 BEGIN
-	(*(* not nested in SCL *)
+	(* outer (* nested *) still a comment *)
 	#Stamp := DTL#2024-01-31-12:00:00.123456789;
 	#Bytes[0] := B#16#81;
 	#Whole := DW#16#A5A5_A5A5;

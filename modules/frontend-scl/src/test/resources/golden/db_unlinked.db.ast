@@ -1,0 +1,40 @@
+SourceUnit dialect=SIEMENS
+  DataBlock name="DB_Recipe" @1:1-13:15
+    varBlocks:
+      VarBlock section=VAR @6:4-9:11
+        variables:
+          VarDecl name=Bytes referenceInit=false @7:7-7:125
+            type:
+              ArrayType @7:104-7:124
+                dimensions:
+                  Dimension @7:110-7:115
+                    low:
+                      Literal kind=INTEGER text="0" @7:110-7:111
+                    high:
+                      Literal kind=INTEGER text="15" @7:113-7:115
+                element:
+                  Named name=Byte @7:120-7:124
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccessible" value="False" @7:13-7:101
+              Pragma kind=ATTRIBUTE name="ExternalVisible" value="False" @7:13-7:101
+              Pragma kind=ATTRIBUTE name="ExternalWritable" value="False" @7:13-7:101
+          VarDecl name=Count referenceInit=false @8:7-8:19
+            type:
+              Named name=Int @8:15-8:18
+    initialValues:
+      Assignment op=ASSIGN @12:4-12:15
+        target:
+          NameRef name=Count globalScope=false @12:4-12:9
+        value:
+          Literal kind=INTEGER text="4" @12:13-12:14
+    pragmas:
+      Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="FALSE" @2:1-2:35
+    info:
+      BlockInfo knowHowProtected=false unlinked=true retention=NON_RETAIN @3:1-5:11
+  pragmas:
+    Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="FALSE" @2:1-2:35
+    Pragma kind=ATTRIBUTE name="ExternalAccessible" value="False" @7:13-7:101
+    Pragma kind=ATTRIBUTE name="ExternalVisible" value="False" @7:13-7:101
+    Pragma kind=ATTRIBUTE name="ExternalWritable" value="False" @7:13-7:101
+  comments: 0
+diagnostics:

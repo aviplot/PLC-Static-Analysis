@@ -71,7 +71,7 @@ SourceUnit dialect=SIEMENS
       Label name=LBL_END @31:1-31:9
       Empty @32:5-32:6
     info:
-      BlockInfo title="Classic STEP 7 SCL" author="ACME" version="0.3" knowHowProtected=true retention=UNSPECIFIED @2:1-5:16
+      BlockInfo title="Classic STEP 7 SCL" author="ACME" version="0.3" knowHowProtected=true unlinked=false retention=UNSPECIFIED @2:1-5:16
   DataBlock name=DB10 basedOn=FB10 @35:1-37:15
   comments: 0
 diagnostics:

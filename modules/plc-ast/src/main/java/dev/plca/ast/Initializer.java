@@ -21,5 +21,9 @@ public sealed interface Initializer extends Node permits Expression, Initializer
         }
     }
 
+    /**
+     * {@code a := 1}; {@code name} is null in Siemens' positional form {@code (1, (), 2)}, where {@code ()} (an empty
+     * {@code StructInit}) keeps the member's default.
+     */
     record FieldInit(Identifier name, Initializer value, Span span) implements Node {}
 }

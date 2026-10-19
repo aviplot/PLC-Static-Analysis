@@ -61,7 +61,7 @@ SourceUnit dialect=SIEMENS
     pragmas:
       Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="FALSE" @2:1-2:35
     info:
-      BlockInfo version="0.1" knowHowProtected=false retention=NON_RETAIN @3:1-4:11
+      BlockInfo version="0.1" knowHowProtected=false unlinked=false retention=NON_RETAIN @3:1-4:11
   DataBlock name="Conveyor_DB" basedOn="FB_Conveyor" @23:1-32:15
     initialValues:
       Assignment op=ASSIGN @31:4-31:17
@@ -72,7 +72,7 @@ SourceUnit dialect=SIEMENS
     pragmas:
       Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @24:1-24:34
     info:
-      BlockInfo author="plca" version="1.0" knowHowProtected=false retention=NON_RETAIN @25:1-27:11
+      BlockInfo author="plca" version="1.0" knowHowProtected=false unlinked=false retention=NON_RETAIN @25:1-27:11
   pragmas:
     Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="FALSE" @2:1-2:35
     Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @24:1-24:34

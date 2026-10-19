@@ -53,8 +53,7 @@ public abstract class BuilderSupport {
             if (channel == tok.commentsChannel) {
                 boolean line = t.getType() == tok.lineComment;
                 comments.add(new Comment(line ? Comment.Kind.LINE : Comment.Kind.BLOCK, tokenSpan(t)));
-                String s = t.getText();
-                if (!line && !(s.endsWith(t.getType() == tok.blockComment ? "*)" : "*/")) || !line && s.length() < 4) {
+                if (!line && !commentTerminated(t)) {
                     sink.report(Diagnostic.error(
                             SyntaxCodes.UNTERMINATED_COMMENT,
                             "comment is not closed before the end of the text",
@@ -75,6 +74,12 @@ public abstract class BuilderSupport {
             }
         }
         reportStray(pendingError, lastError);
+    }
+
+    /** Whether a block comment token has its closing delimiter; dialects with other comment forms override it. */
+    protected boolean commentTerminated(Token t) {
+        String s = t.getText();
+        return s.length() >= 4 && s.endsWith(t.getType() == tok.blockComment ? "*)" : "*/");
     }
 
     private void reportStray(Token first, Token last) {

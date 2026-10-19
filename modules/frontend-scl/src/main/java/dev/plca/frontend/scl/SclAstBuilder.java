@@ -136,6 +136,13 @@ final class SclAstBuilder extends BuilderSupport {
             out.add(dataBlock(ctx.dataBlock()));
         } else if (ctx.dataTypeDeclaration() != null) {
             out.addAll(dataTypeDeclaration(ctx.dataTypeDeclaration()));
+        } else if (ctx.namespaceDeclaration() != null) {
+            NamespaceDeclarationContext n = ctx.namespaceDeclaration();
+            List<Declaration> members = new ArrayList<>();
+            for (LibraryElementContext e : n.libraryElement()) {
+                libraryElement(e, members);
+            }
+            out.add(new Declaration.Namespace(qualifiedName(n.qualifiedName()), members, span(n)));
         }
     }
 
@@ -286,6 +293,7 @@ final class SclAstBuilder extends BuilderSupport {
         String name = null;
         String version = null;
         boolean knowHow = false;
+        boolean unlinked = false;
         BlockInfo.Retention retention = BlockInfo.Retention.UNSPECIFIED;
         Set<String> seen = new java.util.HashSet<>();
         for (BlockAttributeContext a : attributes) {
@@ -314,6 +322,7 @@ final class SclAstBuilder extends BuilderSupport {
                     }
                 }
                 case KnowHowAttributeContext k -> knowHow = true;
+                case UnlinkedAttributeContext u -> unlinked = true;
                 case RetainAttributeContext r -> {
                     if (!dataBlock) {
                         sink.report(Diagnostic.warning(
@@ -328,7 +337,7 @@ final class SclAstBuilder extends BuilderSupport {
         }
         Span span = text.span(
                 span(attributes.getFirst()).start(), span(attributes.getLast()).end());
-        return new BlockInfo(title, author, family, name, version, knowHow, retention, span);
+        return new BlockInfo(title, author, family, name, version, knowHow, unlinked, retention, span);
     }
 
     /** {@code TITLE = Main Program Sweep (Cycle)} or with the text in quotes: the text. */
@@ -340,9 +349,6 @@ final class SclAstBuilder extends BuilderSupport {
     private String attributeValue(AttributeValueContext v) {
         if (v == null) {
             return null;
-        }
-        if (v.identifier() != null) {
-            return identifier(v.identifier()).name();
         }
         return unquote(v.getText());
     }
@@ -450,7 +456,11 @@ final class SclAstBuilder extends BuilderSupport {
         Initializer init = null;
         VariableInitContext vi = ctx.variableInit();
         if (vi != null) {
-            init = vi.initializer() == null ? new Expression.Invalid(span(vi)) : initializer(vi.initializer());
+            if (vi.bareArrayInit() != null) {
+                init = bareArrayInit(vi.bareArrayInit());
+            } else {
+                init = vi.initializer() == null ? new Expression.Invalid(span(vi)) : initializer(vi.initializer());
+            }
         }
         for (VariablePathContext p : ctx.variablePath()) {
             QualifiedName path = variablePath(p);
@@ -463,41 +473,84 @@ final class SclAstBuilder extends BuilderSupport {
     }
 
     private QualifiedName variablePath(VariablePathContext ctx) {
-        if (ctx == null || ctx.identifier().isEmpty()) {
+        if (ctx == null || ctx.declaredName().isEmpty()) {
             return null;
         }
         List<Identifier> parts = new ArrayList<>();
-        for (IdentifierContext i : ctx.identifier()) {
-            parts.add(identifier(i));
+        for (DeclaredNameContext n : ctx.declaredName()) {
+            parts.add(n.identifier() != null ? identifier(n.identifier()) : new Identifier(n.getText(), span(n)));
         }
         return new QualifiedName(parts, span(ctx));
     }
 
+    /** {@code := 1, 2, 3} / {@code := 32(0)} without brackets: an array initialiser. */
+    private Initializer bareArrayInit(BareArrayInitContext ctx) {
+        List<Initializer.Element> elements = new ArrayList<>();
+        if (ctx.arrayInitElement().isEmpty()) {
+            int repeat = parseIntOr(ctx.INTEGER().getText(), 1);
+            elements.add(new Initializer.Element(
+                    repeat, ctx.initializer() == null ? null : initializer(ctx.initializer()), span(ctx)));
+        }
+        for (ArrayInitElementContext e : ctx.arrayInitElement()) {
+            elements.add(arrayElement(e));
+        }
+        return new Initializer.ArrayInit(elements, span(ctx));
+    }
+
+    private Initializer.Element arrayElement(ArrayInitElementContext e) {
+        if (e.INTEGER() != null) {
+            int repeat = parseIntOr(e.INTEGER().getText(), 1);
+            return new Initializer.Element(
+                    repeat, e.initializer() == null ? null : initializer(e.initializer()), span(e));
+        }
+        if (e.initializer() == null) {
+            // `()`: the element keeps its default
+            return new Initializer.Element(1, new Initializer.StructInit(List.of(), span(e)), span(e));
+        }
+        return new Initializer.Element(1, initializer(e.initializer()), span(e));
+    }
+
     private Initializer initializer(InitializerContext ctx) {
         if (ctx.arrayInitializer() != null) {
-            ArrayInitializerContext a = ctx.arrayInitializer();
-            List<Initializer.Element> elements = new ArrayList<>();
-            for (ArrayInitElementContext e : a.arrayInitElement()) {
-                if (e.INTEGER() != null) {
-                    int repeat = parseIntOr(e.INTEGER().getText(), 1);
-                    elements.add(new Initializer.Element(
-                            repeat, e.initializer() == null ? null : initializer(e.initializer()), span(e)));
-                } else {
-                    elements.add(new Initializer.Element(1, initializerOrInvalid(e.initializer(), span(e)), span(e)));
-                }
-            }
-            return new Initializer.ArrayInit(elements, span(a));
+            return arrayInit(ctx.arrayInitializer());
         }
         if (ctx.structInitializer() != null) {
-            StructInitializerContext s = ctx.structInitializer();
-            List<Initializer.FieldInit> fields = new ArrayList<>();
-            for (StructInitElementContext f : s.structInitElement()) {
-                fields.add(new Initializer.FieldInit(
-                        identifier(f.identifier()), initializerOrInvalid(f.initializer(), span(f)), span(f)));
-            }
-            return new Initializer.StructInit(fields, span(s));
+            return structInit(ctx.structInitializer());
         }
         return expression(ctx.expression(), span(ctx));
+    }
+
+    private Initializer arrayInit(ArrayInitializerContext a) {
+        List<Initializer.Element> elements = new ArrayList<>();
+        for (ArrayInitElementContext e : a.arrayInitElement()) {
+            elements.add(arrayElement(e));
+        }
+        return new Initializer.ArrayInit(elements, span(a));
+    }
+
+    /** Named {@code (a := 1)}, or positional {@code (1, (), [2])} where {@code ()} keeps the member's default. */
+    private Initializer structInit(StructInitializerContext s) {
+        List<Initializer.FieldInit> fields = new ArrayList<>();
+        for (StructInitElementContext f : s.structInitElement()) {
+            fields.add(new Initializer.FieldInit(
+                    identifier(f.identifier()), initializerOrInvalid(f.initializer(), span(f)), span(f)));
+        }
+        SinglePositionalContext single = s.singlePositional();
+        if (single != null) {
+            Initializer value = single.arrayInitializer() != null
+                    ? arrayInit(single.arrayInitializer())
+                    : single.structInitializer() != null
+                            ? structInit(single.structInitializer())
+                            : new Initializer.StructInit(List.of(), span(single));
+            fields.add(new Initializer.FieldInit(null, value, span(single)));
+        }
+        for (PositionalInitContext p : s.positionalInit()) {
+            Initializer value = p.initializer() == null
+                    ? new Initializer.StructInit(List.of(), span(p))
+                    : initializer(p.initializer());
+            fields.add(new Initializer.FieldInit(null, value, span(p)));
+        }
+        return new Initializer.StructInit(fields, span(s));
     }
 
     private Initializer initializerOrInvalid(InitializerContext ctx, Span fallback) {
@@ -657,6 +710,16 @@ final class SclAstBuilder extends BuilderSupport {
             return;
         }
         Expression value = expression(tail.expression(), span(tail));
+        if (tail.op != null) {
+            AssignOp compound = switch (tail.op.getType()) {
+                case SiemensSclLexer.ADD_ASSIGN -> AssignOp.ADD;
+                case SiemensSclLexer.SUB_ASSIGN -> AssignOp.SUB;
+                case SiemensSclLexer.MUL_ASSIGN -> AssignOp.MUL;
+                default -> AssignOp.DIV;
+            };
+            out.add(new Statement.Assignment(target, compound, value, span));
+            return;
+        }
         AssignOp op = tail.ATTEMPT_ASSIGN() != null ? AssignOp.ATTEMPT : AssignOp.ASSIGN;
         List<DesignatorContext> chained = tail.designator();
         // evaluation order of `a := b := v`: b := v, then a := v
@@ -735,6 +798,10 @@ final class SclAstBuilder extends BuilderSupport {
         if (ctx.designator() != null) {
             return designator(ctx.designator(), span);
         }
+        if (ctx.expression() == null && (ctx.STRING() != null || ctx.WSTRING() != null)) {
+            Span s = span(ctx);
+            return new Expression.TypeOperand(new TypeRef.StringType(ctx.WSTRING() != null, null, s), s);
+        }
         return expression(ctx.expression(), span);
     }
 
@@ -747,7 +814,7 @@ final class SclAstBuilder extends BuilderSupport {
         List<PostfixOpContext> ops = ctx.postfixOp();
         int firstOp = 0;
         Expression e;
-        if (root.DIRECT_ADDRESS() != null) {
+        if (root.DIRECT_ADDRESS() != null || root.ANY_POINTER() != null) {
             e = new Expression.DirectAddress(root.getText(), rootSpan);
         } else if (root.HASH() != null) {
             e = new Expression.NameRef(local(root), false, rootSpan);
@@ -771,7 +838,7 @@ final class SclAstBuilder extends BuilderSupport {
             e = switch (op) {
                 case MemberOpContext m ->
                     new Expression.MemberAccess(
-                            e, m.identifier() == null ? missingIdentifier(s) : identifier(m.identifier()), s);
+                            e, m.localName() == null ? missingIdentifier(s) : localName(m.localName()), s);
                 case BitOpContext b ->
                     new Expression.BitAccess(e, parseIntOr(b.INTEGER().getText(), -1), s);
                 case SliceOpContext sl -> slice(e, sl.SLICE().getText(), s);
@@ -790,12 +857,24 @@ final class SclAstBuilder extends BuilderSupport {
         return e;
     }
 
+    private Identifier argumentName(ArgumentNameContext ctx) {
+        if (ctx == null) {
+            return new Identifier("<missing>", text.span(0, 0));
+        }
+        return ctx.localName() != null ? localName(ctx.localName()) : new Identifier(ctx.getText(), span(ctx));
+    }
+
+    /** A name after {@code #} or {@code .}, where keywords are names too ({@code #array}). */
+    private Identifier localName(LocalNameContext ctx) {
+        return ctx.identifier() != null ? identifier(ctx.identifier()) : new Identifier(ctx.getText(), span(ctx));
+    }
+
     /** {@code #x} / {@code #"x y"}; warns when the prefix is separated from the name. */
     private Identifier local(DesignatorRootContext root) {
         Token hash = root.HASH().getSymbol();
-        Identifier name =
-                root.identifier() == null ? missingIdentifier(tokenSpan(hash)) : identifier(root.identifier());
-        if (root.identifier() != null && root.identifier().getStart().getStartIndex() != hash.getStopIndex() + 1) {
+        LocalNameContext n = root.localName();
+        Identifier name = n == null ? missingIdentifier(tokenSpan(hash)) : localName(n);
+        if (n != null && n.getStart().getStartIndex() != hash.getStopIndex() + 1) {
             sink.report(Diagnostic.warning(
                     SclCodes.DETACHED_LOCAL_PREFIX,
                     "'#' must be written directly before the local name '" + name.name() + "'",
@@ -816,8 +895,9 @@ final class SclAstBuilder extends BuilderSupport {
                 || !CLASSIC_DB.matcher(root.name()).matches()
                 || ops.isEmpty()
                 || !(ops.getFirst() instanceof MemberOpContext m)
-                || m.identifier() == null
-                || !CLASSIC_DB_ELEMENT.matcher(m.identifier().getText()).matches()) {
+                || m.localName() == null
+                || m.HASH() != null
+                || !CLASSIC_DB_ELEMENT.matcher(m.localName().getText()).matches()) {
             return 0;
         }
         return ops.size() > 1 && ops.get(1) instanceof BitOpContext ? 2 : 1;
@@ -845,14 +925,14 @@ final class SclAstBuilder extends BuilderSupport {
                         case NamedArgumentContext n ->
                             new Argument(
                                     ArgumentKind.INPUT,
-                                    identifier(n.identifier()),
+                                    argumentName(n.argumentName()),
                                     false,
                                     n.expression() == null ? null : expression(n.expression(), span),
                                     span);
                         case OutputArgumentContext o ->
                             new Argument(
                                     ArgumentKind.OUTPUT,
-                                    identifier(o.identifier()),
+                                    argumentName(o.argumentName()),
                                     o.NOT() != null,
                                     o.designator() == null ? null : designator(o.designator(), span),
                                     span);
@@ -879,6 +959,15 @@ final class SclAstBuilder extends BuilderSupport {
     // ============================================================================================
     // Names and pragmas
     // ============================================================================================
+
+    /** {@code (/* … *}{@code /)} comment sections close with {@code *}{@code /)}. */
+    @Override
+    protected boolean commentTerminated(Token t) {
+        if (t.getType() == SiemensSclLexer.SECTION_COMMENT) {
+            return t.getText().length() >= 6 && t.getText().endsWith("*/)");
+        }
+        return super.commentTerminated(t);
+    }
 
     /** SCL attributes are {@code key := 'value'} pairs: one ATTRIBUTE pragma each. */
     @Override

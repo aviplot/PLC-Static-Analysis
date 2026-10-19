@@ -24,11 +24,17 @@ configurations.api {
 // generated on their own: a core grammar alone has no channels, options or token vocabulary.
 tasks.generateGrammarSource {
     exclude("StLexer.g4", "StParser.g4")
-    // Excluded files are no longer task inputs; declare them so that editing the core regenerates every
-    // dialect grammar (a non-source input change makes the task run non-incrementally).
+    // Every grammar is also a non-source input, so any grammar change regenerates all of them (a non-source input
+    // change makes the task run non-incrementally). Needed twice over: the excluded core grammars are no longer
+    // task inputs at all, and a parser takes its token types from its lexer's .tokens file (tokenVocab), so
+    // regenerating only a changed lexer leaves its parser with stale token numbers.
     inputs
-        .files(layout.projectDirectory.files("src/main/antlr/StLexer.g4", "src/main/antlr/StParser.g4"))
-        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .files(
+            layout.projectDirectory
+                .dir("src/main/antlr")
+                .asFileTree
+                .matching { include("*.g4") },
+        ).withPathSensitivity(PathSensitivity.RELATIVE)
     packageName = "dev.plca.grammar"
     arguments.addAll(listOf("-visitor", "-no-listener", "-Werror"))
 }

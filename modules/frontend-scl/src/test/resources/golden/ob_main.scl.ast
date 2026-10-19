@@ -50,7 +50,7 @@ SourceUnit dialect=SIEMENS
     pragmas:
       Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @3:1-3:34
     info:
-      BlockInfo title="Main Program Sweep (Cycle)" version="0.1" knowHowProtected=false retention=UNSPECIFIED @2:1-4:14
+      BlockInfo title="Main Program Sweep (Cycle)" version="0.1" knowHowProtected=false unlinked=false retention=UNSPECIFIED @2:1-4:14
   pragmas:
     Pragma kind=ATTRIBUTE name="S7_Optimized_Access" value="TRUE" @3:1-3:34
   comments: 0

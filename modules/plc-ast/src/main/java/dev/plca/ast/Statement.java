@@ -16,7 +16,17 @@ public sealed interface Statement extends Node {
         /** CODESYS {@code R=} */
         RESET,
         /** CODESYS {@code REF=} */
-        REF
+        REF,
+        /** Siemens {@code +=} (and the other compound operators): {@code x := x + value}. */
+        ADD,
+        SUB,
+        MUL,
+        DIV;
+
+        /** {@code +=}, {@code -=}, {@code *=}, {@code /=}: the target is read as well as written. */
+        public boolean isCompound() {
+            return this == ADD || this == SUB || this == MUL || this == DIV;
+        }
     }
 
     /** {@code a := b := 0;} becomes two assignments sharing the value and span. */

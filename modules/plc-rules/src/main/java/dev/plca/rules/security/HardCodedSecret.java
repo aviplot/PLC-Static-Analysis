@@ -122,7 +122,12 @@ public final class HardCodedSecret implements ProjectRule {
                 }
                 case Initializer.ArrayInit a -> a.elements().forEach(el -> initializer(el.value(), name, p));
                 case Initializer.StructInit st ->
-                    st.fields().forEach(f -> initializer(f.value(), f.name().name(), p));
+                    // positional Siemens fields have no name: keep the enclosing one
+                    st.fields()
+                            .forEach(f -> initializer(
+                                    f.value(),
+                                    f.name() == null ? name : f.name().name(),
+                                    p));
             }
         }
 

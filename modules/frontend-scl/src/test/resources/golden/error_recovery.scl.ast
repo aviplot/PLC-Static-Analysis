@@ -43,7 +43,7 @@ SourceUnit dialect=SIEMENS
         call:
           NameRef name=#a globalScope=false @15:2-15:4
     info:
-      BlockInfo version="0.1" knowHowProtected=false retention=NON_RETAIN @2:1-4:11
+      BlockInfo version="0.1" knowHowProtected=false unlinked=false retention=NON_RETAIN @2:1-4:11
   DataBlock name="DB_Ok" @18:1-25:15
     layout:
       StructType @19:4-21:15
