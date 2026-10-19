@@ -117,6 +117,8 @@ public final class SemanticBuilder {
                     }
                 }
                 case Declaration.Using u -> {}
+                // Siemens DBs are declared by the M4 semantic step (global DB / instance DB / typed DB)
+                case Declaration.DataBlock db -> {}
             }
         }
     }

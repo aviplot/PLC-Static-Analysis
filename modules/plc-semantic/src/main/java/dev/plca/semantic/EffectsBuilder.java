@@ -126,6 +126,10 @@ final class EffectsBuilder {
                 PathRef base = path(b.target());
                 yield base == null ? null : new PathRef(base.variable(), base.path() + "." + b.bit());
             }
+            case Expression.Slice sl -> {
+                PathRef base = path(sl.target());
+                yield base == null ? null : new PathRef(base.variable(), base.path() + "." + slicePath(sl));
+            }
             default -> null;
         };
     }
@@ -166,6 +170,7 @@ final class EffectsBuilder {
             }
             case Expression.Deref d -> readSubexpressions(d.target(), c);
             case Expression.BitAccess b -> readSubexpressions(b.target(), c);
+            case Expression.Slice sl -> readSubexpressions(sl.target(), c);
             default -> {}
         }
     }
@@ -197,9 +202,22 @@ final class EffectsBuilder {
                     read(d.target(), c);
                 } else if (e instanceof Expression.BitAccess b) {
                     read(b.target(), c);
+                } else if (e instanceof Expression.Slice sl) {
+                    read(sl.target(), c);
                 }
             }
         }
+    }
+
+    /** {@code %X3} for bit 3, {@code %B1} for byte 1: the selector spelled as in SCL, so paths read like the source. */
+    private static String slicePath(Expression.Slice s) {
+        char w = switch (s.width()) {
+            case BIT -> 'X';
+            case BYTE -> 'B';
+            case WORD -> 'W';
+            case DWORD -> 'D';
+        };
+        return "%" + w + s.index();
     }
 
     private void address(Expression e, Collector c) {

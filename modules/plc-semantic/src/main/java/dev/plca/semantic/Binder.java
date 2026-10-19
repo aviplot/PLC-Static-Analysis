@@ -118,6 +118,7 @@ final class Binder {
                 body(t.catchBody(), pou);
                 body(t.finallyBody(), pou);
             }
+            case Statement.Region r -> body(r.body(), pou);
             default -> {}
         }
     }
@@ -159,6 +160,15 @@ final class Binder {
             case Expression.BitAccess b -> {
                 expression(b.target(), pou);
                 yield Type.BOOL;
+            }
+            case Expression.Slice s -> {
+                expression(s.target(), pou);
+                yield switch (s.width()) {
+                    case BIT -> Type.BOOL;
+                    case BYTE -> Type.of(ElementaryKind.BYTE);
+                    case WORD -> Type.of(ElementaryKind.WORD);
+                    case DWORD -> Type.of(ElementaryKind.DWORD);
+                };
             }
             case Expression.Deref d -> {
                 Type target = expression(d.target(), pou).resolved();

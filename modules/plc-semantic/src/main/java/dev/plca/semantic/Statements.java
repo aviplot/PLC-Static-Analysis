@@ -27,6 +27,7 @@ public final class Statements {
             case Statement.For f -> action.accept(f.body());
             case Statement.While w -> action.accept(w.body());
             case Statement.Repeat r -> action.accept(r.body());
+            case Statement.Region r -> action.accept(r.body());
             case Statement.Try t -> {
                 action.accept(t.body());
                 if (t.catchBody() != null) {

@@ -106,6 +106,13 @@ public sealed interface Statement extends Node {
     }
 
     /** A lone {@code ;} (also the {@code ;} after {@code END_IF}). */
+    /** SCL {@code REGION name … END_REGION}: a named group of statements (outline only, no semantics). */
+    record Region(String name, List<Statement> body, Span span) implements Statement {
+        public Region {
+            body = List.copyOf(body);
+        }
+    }
+
     record Empty(Span span) implements Statement {}
 
     /** A region that did not parse; a diagnostic has been reported. */

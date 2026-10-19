@@ -36,7 +36,7 @@ public sealed interface Expression extends Node, Initializer {
 
     record SuperRef(Span span) implements Expression {}
 
-    /** {@code %IX0.1}, {@code %QW10}, {@code %I*} */
+    /** {@code %IX0.1}, {@code %QW10}, {@code %I*}; SCL also {@code %DB1.DBX0.0} and classic {@code DB10.DBW2}. */
     record DirectAddress(String text, Span span) implements Expression {}
 
     record MemberAccess(Expression target, Identifier member, Span span) implements Expression {}
@@ -46,6 +46,16 @@ public sealed interface Expression extends Node, Initializer {
 
     /** {@code p^} */
     record Deref(Expression target, Span span) implements Expression {}
+
+    /** SCL slice access {@code w.%X3}, {@code d.%B1}: element {@code index} of the given width inside a bit string. */
+    record Slice(Expression target, SliceWidth width, int index, Span span) implements Expression {}
+
+    enum SliceWidth {
+        BIT,
+        BYTE,
+        WORD,
+        DWORD
+    }
 
     record Index(Expression target, List<Expression> indices, Span span) implements Expression {
         public Index {

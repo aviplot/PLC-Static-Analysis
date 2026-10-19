@@ -18,7 +18,9 @@ public sealed interface Declaration extends Node {
         PROPERTY_GET,
         PROPERTY_SET,
         ACTION,
-        TRANSITION
+        TRANSITION,
+        /** Siemens OB: a cyclic or event entry point, called by the operating system. */
+        ORGANIZATION_BLOCK
     }
 
     enum Modifier {
@@ -37,6 +39,7 @@ public sealed interface Declaration extends Node {
      * <p>{@code body} is null when the POU has none (interface members, abstract methods, declarations only) or when it
      * is written in a language we do not parse; then {@code bodyLanguage} names that language (e.g. {@code "LD"},
      * TwinCAT {@code "NWL"}). {@code returnType} is the result type of functions/methods and the type of properties.
+     * {@code info} holds the Siemens block header ({@code TITLE}, {@code VERSION}, …); null for other dialects.
      */
     record Pou(
             PouKind kind,
@@ -50,8 +53,38 @@ public sealed interface Declaration extends Node {
             List<Statement> body,
             String bodyLanguage,
             List<Pragma> pragmas,
+            BlockInfo info,
             Span span)
             implements Declaration {
+
+        public Pou(
+                PouKind kind,
+                Identifier name,
+                Set<Modifier> modifiers,
+                TypeRef returnType,
+                List<QualifiedName> extendsTypes,
+                List<QualifiedName> implementsTypes,
+                List<VarBlock> varBlocks,
+                List<Pou> members,
+                List<Statement> body,
+                String bodyLanguage,
+                List<Pragma> pragmas,
+                Span span) {
+            this(
+                    kind,
+                    name,
+                    modifiers,
+                    returnType,
+                    extendsTypes,
+                    implementsTypes,
+                    varBlocks,
+                    members,
+                    body,
+                    bodyLanguage,
+                    pragmas,
+                    null,
+                    span);
+        }
 
         public Pou {
             modifiers = Set.copyOf(modifiers);
@@ -68,11 +101,71 @@ public sealed interface Declaration extends Node {
         }
     }
 
-    /** One entry of a {@code TYPE … END_TYPE} block. */
+    /** One entry of a {@code TYPE … END_TYPE} block; {@code info} is the Siemens UDT header, else null. */
     record TypeDecl(
-            Identifier name, QualifiedName extendsType, TypeRef type, Initializer init, List<Pragma> pragmas, Span span)
+            Identifier name,
+            QualifiedName extendsType,
+            TypeRef type,
+            Initializer init,
+            List<Pragma> pragmas,
+            BlockInfo info,
+            Span span)
             implements Declaration {
         public TypeDecl {
+            pragmas = List.copyOf(pragmas);
+        }
+
+        public TypeDecl(
+                Identifier name,
+                QualifiedName extendsType,
+                TypeRef type,
+                Initializer init,
+                List<Pragma> pragmas,
+                Span span) {
+            this(name, extendsType, type, init, pragmas, null, span);
+        }
+    }
+
+    /**
+     * The header of a Siemens block (TIA "Structure of an external source file"). Absent attributes are null.
+     * {@code retention} is the DB-level {@code RETAIN}/{@code NON_RETAIN}.
+     */
+    record BlockInfo(
+            String title,
+            String author,
+            String family,
+            String name,
+            String version,
+            boolean knowHowProtected,
+            Retention retention,
+            Span span)
+            implements Node {
+
+        public enum Retention {
+            UNSPECIFIED,
+            RETAIN,
+            NON_RETAIN
+        }
+    }
+
+    /**
+     * A Siemens data block. Exactly one layout is given: its own {@code STRUCT} ({@code layout}), its own VAR sections
+     * ({@code varBlocks}), or {@code basedOn} — an FB (instance DB) or a UDT (typed DB), which only the semantic model
+     * can tell apart. {@code initialValues} are the assignments after {@code BEGIN}.
+     */
+    record DataBlock(
+            Identifier name,
+            TypeRef layout,
+            List<VarBlock> varBlocks,
+            QualifiedName basedOn,
+            List<Statement> initialValues,
+            List<Pragma> pragmas,
+            BlockInfo info,
+            Span span)
+            implements Declaration {
+        public DataBlock {
+            varBlocks = List.copyOf(varBlocks);
+            initialValues = List.copyOf(initialValues);
             pragmas = List.copyOf(pragmas);
         }
     }

@@ -7,6 +7,7 @@ import java.util.List;
  * One declared variable. {@code a, b : INT;} yields two {@code VarDecl}s sharing type and span. {@code address} is the
  * {@code AT %…} location (null when absent); {@code accessPath} is the instance path of VAR_CONFIG / VAR_ACCESS
  * entries. {@code init} may be null; {@code referenceInit} marks CODESYS {@code r : REFERENCE TO T REF= x;}.
+ * {@code overlay} is the variable an SCL {@code name AT other : T;} declaration views (null when absent).
  */
 public record VarDecl(
         Identifier name,
@@ -16,10 +17,23 @@ public record VarDecl(
         Initializer init,
         boolean referenceInit,
         List<Pragma> pragmas,
+        Identifier overlay,
         Span span)
         implements Node {
 
     public VarDecl {
         pragmas = List.copyOf(pragmas);
+    }
+
+    public VarDecl(
+            Identifier name,
+            QualifiedName accessPath,
+            String address,
+            TypeRef type,
+            Initializer init,
+            boolean referenceInit,
+            List<Pragma> pragmas,
+            Span span) {
+        this(name, accessPath, address, type, init, referenceInit, pragmas, null, span);
     }
 }
