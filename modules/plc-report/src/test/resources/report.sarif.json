@@ -492,7 +492,7 @@
       "toolExecutionNotifications" : [ {
         "level" : "error",
         "message" : {
-          "text" : "unexpected ';'"
+          "text" : "expected an expression after '+', found ';'"
         },
         "descriptor" : {
           "id" : "PLC-SYN-001"
@@ -505,9 +505,9 @@
             },
             "region" : {
               "startLine" : 2,
-              "startColumn" : 16,
+              "startColumn" : 15,
               "endLine" : 2,
-              "endColumn" : 17
+              "endColumn" : 16
             }
           }
         } ]

@@ -316,13 +316,13 @@
   "diagnostics" : [ {
     "code" : "PLC-SYN-001",
     "severity" : "error",
-    "message" : "unexpected ';'",
+    "message" : "expected an expression after '+', found ';'",
     "location" : {
       "path" : "with space.st",
       "startLine" : 2,
-      "startColumn" : 16,
+      "startColumn" : 15,
       "endLine" : 2,
-      "endColumn" : 17
+      "endColumn" : 16
     }
   } ],
   "stats" : {

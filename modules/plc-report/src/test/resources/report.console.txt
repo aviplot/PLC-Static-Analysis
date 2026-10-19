@@ -1,6 +1,6 @@
-with space.st:2:16: error: PLC-SYN-001 unexpected ';'
+with space.st:2:15: error: PLC-SYN-001 expected an expression after '+', found ';'
     2 | F_Broken := 1 +;
-      |                ^
+      |               ^
 
 FB_Valve.TcPOU:13:2: warning: PLCA-P001 'bIsOpen' is written unconditionally more than once in FB_Valve; only the last write takes effect (double coil)
    13 | 	bIsOpen := NOT bOpen;

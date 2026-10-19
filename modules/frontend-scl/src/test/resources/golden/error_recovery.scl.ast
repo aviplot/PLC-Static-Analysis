@@ -61,7 +61,7 @@ SourceUnit dialect=SIEMENS
 diagnostics:
   ERROR PLC-SYN-001 @7:11 unexpected ';'
   ERROR PLC-SYN-001 @11:2 missing ';' before '#'
-  ERROR PLC-SYN-001 @12:10 unexpected 'THEN'
+  ERROR PLC-SYN-001 @12:8 expected an expression after '>', found 'THEN'
   WARNING PLC-SCL-004 @11:8 '#' must be written directly before the local name 'a'
   WARNING PLC-SYN-006 @15:2 statement has no effect: '#a' is neither assigned nor called
   WARNING PLC-SCL-001 @10:2 missing BEGIN between the declarations and the statements of 'FB_Broken'

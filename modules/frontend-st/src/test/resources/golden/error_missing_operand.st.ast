@@ -1,0 +1,91 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_Template bodyLanguage="ST" @1:1-23:19
+    varBlocks:
+      VarBlock section=VAR @2:1-6:8
+        variables:
+          VarDecl name=eState referenceInit=false @3:5-3:25
+            type:
+              Named name=E_PROGRESS @3:14-3:24
+          VarDecl name=nErrorId referenceInit=false @4:5-4:22
+            type:
+              Named name=UDINT @4:16-4:21
+          VarDecl name=fbMove referenceInit=false @5:5-5:22
+            type:
+              Named name=FB_Move @5:14-5:21
+    body:
+      If @8:1-16:7
+        branches:
+          Branch @8:1-8:21
+            condition:
+              MemberAccess member=Error @8:4-8:16
+                target:
+                  NameRef name=fbMove globalScope=false @8:4-8:10
+            body:
+              Assignment op=ASSIGN @9:5-9:41
+                target:
+                  NameRef name=eState globalScope=false @9:5-9:11
+                value:
+                  MemberAccess member=PROGRESS_ERROR @9:15-9:40
+                    target:
+                      NameRef name=E_PROGRESS globalScope=false @9:15-9:25
+              Assignment op=ASSIGN @10:5-10:16
+                target:
+                  NameRef name=nErrorId globalScope=false @10:5-10:13
+                value:
+                  Invalid @10:14-10:16
+          Branch @13:1-14:27
+            condition:
+              MemberAccess member=Done @13:7-13:18
+                target:
+                  NameRef name=fbMove globalScope=false @13:7-13:13
+            body:
+              Assignment op=ASSIGN @14:5-14:14
+                target:
+                  NameRef name=eState globalScope=false @14:5-14:11
+                value:
+                  Invalid @14:12-14:14
+              CallStatement @14:15-14:27
+                call:
+                  Invalid @14:15-14:26
+      Case @17:1-20:9
+        selector:
+          NameRef name=eState globalScope=false @17:6-17:12
+        branches:
+          CaseBranch @18:5-19:32
+            labels:
+              CaseLabel @18:5-18:29
+                low:
+                  MemberAccess member=PROGRESS_BUSY @18:5-18:29
+                    target:
+                      NameRef name=E_PROGRESS globalScope=false @18:5-18:15
+            body:
+              Assignment op=ASSIGN @19:9-19:32
+                target:
+                  NameRef name=nErrorId globalScope=false @19:9-19:17
+                value:
+                  Binary op=MUL @19:21-19:31
+                    left:
+                      NameRef name=nErrorId globalScope=false @19:21-19:29
+                    right:
+                      Invalid @19:31-19:31
+      Assignment op=ASSIGN @21:1-21:12
+        target:
+          NameRef name=nErrorId globalScope=false @21:1-21:9
+        value:
+          Invalid @21:10-21:12
+      CallStatement @21:13-21:21
+        call:
+          Invalid @21:13-21:20
+      Assignment op=ASSIGN @22:1-22:36
+        target:
+          NameRef name=eState globalScope=false @22:1-22:7
+        value:
+          MemberAccess member=PROGRESS_INIT @22:11-22:35
+            target:
+              NameRef name=E_PROGRESS globalScope=false @22:11-22:21
+  comments: 1
+diagnostics:
+  ERROR PLC-SYN-001 @10:14 expected an expression after ':=', found 'ELSIF'
+  ERROR PLC-SYN-001 @14:25 expected a member name after '.', found ';'
+  ERROR PLC-SYN-001 @19:30 expected an expression after '*', found ';'
+  ERROR PLC-SYN-001 @21:19 expected a member name after '.', found ';'

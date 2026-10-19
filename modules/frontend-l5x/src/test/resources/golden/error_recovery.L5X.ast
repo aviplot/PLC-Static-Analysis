@@ -92,7 +92,7 @@ diagnostics:
   ERROR PLC-SYN-001 @10:51 unexpected '('; expected ')' or ','
   ERROR PLC-SYN-001 @10:53 missing '(' before ')'
   ERROR PLC-SYN-001 @11:68 unexpected ';'; expected ']' or ','
-  ERROR PLC-SYN-001 @15:56 unexpected ','
-  ERROR PLC-SYN-001 @20:35 unexpected ';'
+  ERROR PLC-SYN-001 @15:54 expected an expression after '+', found ','
+  ERROR PLC-SYN-001 @20:34 expected an expression after '+', found ';'
   ERROR PLC-SYN-001 @23:37 missing ';' before end of input
   ERROR PLC-SYN-003 @22:32 string is not closed before the end of the text

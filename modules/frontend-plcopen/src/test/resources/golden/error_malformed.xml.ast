@@ -8,5 +8,5 @@ SourceUnit dialect=PLCOPEN
           NameRef name=xxe globalScope=false @5:126-5:129
   comments: 0
 diagnostics:
-  ERROR PLC-SYN-001 @5:125 unexpected '&'
+  ERROR PLC-SYN-001 @5:122 expected an expression after ':=', found '&'
   ERROR PLC-XML-001 @6:120 malformed XML: Undeclared general entity "xxe"; the rest of the file is not analysed

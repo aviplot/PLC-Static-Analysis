@@ -61,8 +61,8 @@ SourceUnit dialect=CODESYS
           Literal kind=STRING text="'unterminated\nEND_PROGRAM\n" @15:6-17:1
   comments: 0
 diagnostics:
-  ERROR PLC-SYN-001 @4:16 unexpected ';'
-  ERROR PLC-SYN-001 @7:9 unexpected ';'
+  ERROR PLC-SYN-001 @4:13 expected an expression after ':=', found ';'
+  ERROR PLC-SYN-001 @7:8 expected an expression after '+', found ';'
   ERROR PLC-SYN-001 @11:1 missing ';' before 'END_IF'
   ERROR PLC-SYN-001 @17:1 missing ';' before end of input
   ERROR PLC-SYN-005 @12:3 unknown assignment operator 'FOO='; expected ':=', 'S=', 'R=' or 'REF='

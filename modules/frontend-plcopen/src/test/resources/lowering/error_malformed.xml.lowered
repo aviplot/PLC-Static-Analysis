@@ -1,4 +1,4 @@
 == PROGRAM P (ST)
   x := xxe;
-! PLC-SYN-001 @5 unexpected '&'
+! PLC-SYN-001 @5 expected an expression after ':=', found '&'
 ! PLC-XML-001 @6 malformed XML: Undeclared general entity "xxe"; the rest of the file is not analysed
