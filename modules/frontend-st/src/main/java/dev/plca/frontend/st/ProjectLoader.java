@@ -7,6 +7,8 @@ import dev.plca.core.diag.Severity;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.Frontend;
+import dev.plca.frontend.st.kit.Frontends;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
@@ -25,14 +27,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * Loads every ST/TwinCAT source under a directory, parsing files in parallel (one {@link StFrontend} per thread, design
- * rule 7). Units and diagnostics come back in path order so results do not depend on scheduling.
+ * Loads every source under a directory that one of the given {@link Frontends} reads, parsing files in parallel (one
+ * frontend instance per thread, design rule 7). Units and diagnostics come back in path order so results do not depend
+ * on scheduling.
  */
 public final class ProjectLoader {
 
     /** Parsed project: units in path order, the registry their spans resolve in, and all diagnostics. */
     public record Project(
-            List<SourceUnit> units, SourceRegistry registry, List<Diagnostic> diagnostics, StFrontend.Stats stats) {}
+            List<SourceUnit> units, SourceRegistry registry, List<Diagnostic> diagnostics, Frontend.Stats stats) {}
 
     /** Directories that never contain project sources (VCS, build output, TwinCAT caches). */
     private static final Set<String> SKIP_DIRS =
@@ -40,26 +43,29 @@ public final class ProjectLoader {
 
     private ProjectLoader() {}
 
-    public static Project load(Path root, int threads) {
-        List<Path> files = sources(root);
-        return load(root, files, threads);
+    public static Project load(Path root, Frontends frontends, int threads) {
+        return load(root, sources(root, frontends), frontends, threads);
     }
 
-    public static Project load(Path root, List<Path> files, int threads) {
+    /** Loads {@code files} (files no frontend reads are skipped). */
+    public static Project load(Path root, List<Path> files, Frontends frontends, int threads) {
         SourceRegistry registry = new SourceRegistry();
-        ThreadLocal<StFrontend> frontends = ThreadLocal.withInitial(StFrontend::new);
         ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, threads), r -> {
             Thread t = new Thread(r, "plca-parse");
             t.setDaemon(true);
             return t;
         });
-        record Parsed(SourceUnit unit, DiagnosticCollector diags, StFrontend.Stats stats) {}
+        record Parsed(SourceUnit unit, DiagnosticCollector diags, Frontend.Stats stats) {}
         try {
             List<Future<Parsed>> futures = new ArrayList<>();
             for (Path f : files) {
                 futures.add(pool.submit(() -> {
                     String display = root.relativize(f).toString().replace('\\', '/');
                     DiagnosticCollector diags = new DiagnosticCollector();
+                    Frontend frontend = frontends.forPath(display);
+                    if (frontend == null) {
+                        return new Parsed(null, diags, Frontend.Stats.NONE);
+                    }
                     SourceFile sf;
                     try {
                         sf = SourceFile.fromBytes(display, Files.readAllBytes(f));
@@ -70,15 +76,15 @@ public final class ProjectLoader {
                                 Severity.ERROR,
                                 "cannot read file: " + e.getMessage(),
                                 Span.at(registry.register(empty).id(), 0)));
-                        return new Parsed(null, diags, new StFrontend.Stats(0, 0, 0, 0));
+                        return new Parsed(null, diags, Frontend.Stats.NONE);
                     }
-                    StFrontend.Result r = frontends.get().parse(sf, registry, diags);
+                    Frontend.Result r = frontend.parse(sf, registry, diags);
                     return new Parsed(r.unit(), diags, r.stats());
                 }));
             }
             List<SourceUnit> units = new ArrayList<>();
             List<Diagnostic> diagnostics = new ArrayList<>();
-            StFrontend.Stats stats = new StFrontend.Stats(0, 0, 0, 0);
+            Frontend.Stats stats = Frontend.Stats.NONE;
             for (Future<Parsed> fu : futures) {
                 Parsed p = fu.get();
                 if (p.unit() != null) {
@@ -98,8 +104,8 @@ public final class ProjectLoader {
         }
     }
 
-    /** Source files under {@code root}, sorted by path. */
-    public static List<Path> sources(Path root) {
+    /** Source files under {@code root} that one of {@code frontends} reads, sorted by path. */
+    public static List<Path> sources(Path root, Frontends frontends) {
         List<Path> out = new ArrayList<>();
         try {
             Files.walkFileTree(root, new SimpleFileVisitor<>() {
@@ -115,8 +121,7 @@ public final class ProjectLoader {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (attrs.isRegularFile()
-                            && StFrontend.EXTENSIONS.contains(StFrontend.extension(file.toString()))) {
+                    if (attrs.isRegularFile() && frontends.accepts(file.toString())) {
                         out.add(file);
                     }
                     return FileVisitResult.CONTINUE;

@@ -17,13 +17,13 @@ import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.SourceText;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.Frontend;
 import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.grammar.CodesysStParser.CompilationUnitContext;
 import dev.plca.grammar.CodesysStParser.DeclarationPartContext;
 import dev.plca.grammar.CodesysStParser.StatementsOnlyContext;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -36,20 +36,7 @@ import java.util.Set;
  *
  * <p>Not thread-safe: use one instance per thread (it reuses lexer and parser objects).
  */
-public final class StFrontend {
-
-    /** Parse statistics of one file, for the corpus check and benchmarks. */
-    public record Stats(int texts, int sllFallbacks, int cleanFallbacks, int syntaxErrors) {
-        public Stats plus(Stats o) {
-            return new Stats(
-                    texts + o.texts,
-                    sllFallbacks + o.sllFallbacks,
-                    cleanFallbacks + o.cleanFallbacks,
-                    syntaxErrors + o.syntaxErrors);
-        }
-    }
-
-    public record Result(SourceUnit unit, Stats stats) {}
+public final class StFrontend implements Frontend {
 
     private static final Set<String> TWINCAT_EXTENSIONS = Set.of(".tcpou", ".tcdut", ".tcgvl", ".tcio", ".tctto");
 
@@ -74,10 +61,16 @@ public final class StFrontend {
         this.driver = new StParserDriver(twoStage);
     }
 
+    @Override
+    public Set<String> extensions() {
+        return EXTENSIONS;
+    }
+
     public static boolean isTwinCat(String path) {
         return TWINCAT_EXTENSIONS.contains(extension(path));
     }
 
+    @Override
     public Result parse(SourceFile file, SourceRegistry registry, DiagnosticSink sink) {
         texts = 0;
         fallbacks = 0;
@@ -344,9 +337,7 @@ public final class StFrontend {
     }
 
     static String extension(String path) {
-        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-        int dot = path.lastIndexOf('.');
-        return dot > slash ? path.substring(dot).toLowerCase(Locale.ROOT) : "";
+        return Frontend.extension(path);
     }
 
     private static String baseName(String path) {

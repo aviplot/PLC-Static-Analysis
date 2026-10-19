@@ -8,6 +8,7 @@ import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.st.kit.Frontend;
 
 /**
  * Jazzer fuzz targets. In a normal {@code ./gradlew test} run they replay the seed corpus under
@@ -36,7 +37,7 @@ class StFrontendFuzzTest {
         SourceFile file = SourceFile.fromBytes(path, input);
         SourceRegistry registry = new SourceRegistry();
         DiagnosticCollector diags = new DiagnosticCollector();
-        StFrontend.Result result = new StFrontend().parse(file, registry, diags);
+        Frontend.Result result = new StFrontend().parse(file, registry, diags);
         assertThat(result.unit()).isNotNull();
         int lines = file.lineIndex().lineCount();
         for (Diagnostic d : diags.diagnostics()) {

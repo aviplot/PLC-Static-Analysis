@@ -5,6 +5,7 @@ import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontends;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -35,6 +36,8 @@ import org.openjdk.jmh.infra.Blackhole;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class ParseBenchmark {
 
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+
     @Param({"true", "false"})
     public boolean twoStage;
 
@@ -54,7 +57,7 @@ public class ParseBenchmark {
         List<SourceFile> out = new ArrayList<>();
         if (corpus != null) {
             Path root = Path.of(corpus);
-            for (Path p : ProjectLoader.sources(root)) {
+            for (Path p : ProjectLoader.sources(root, FRONTENDS)) {
                 try {
                     out.add(SourceFile.fromBytes(root.relativize(p).toString(), Files.readAllBytes(p)));
                 } catch (IOException e) {

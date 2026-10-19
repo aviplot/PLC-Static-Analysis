@@ -3,6 +3,8 @@ package dev.plca.cli;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.frontend.st.ProjectLoader;
+import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontends;
 import dev.plca.report.AnalysisResult;
 import dev.plca.rules.RuleConfig;
 import dev.plca.rules.RuleEngine;
@@ -29,6 +31,8 @@ import java.util.Set;
  */
 public final class Analyzer {
 
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+
     /** Extensions of dialects whose frontends come in M4–M6; such files are listed as skipped, not ignored silently. */
     private static final Set<String> LATER_DIALECTS = Set.of(".scl", ".udt", ".l5x", ".l5k");
 
@@ -47,11 +51,11 @@ public final class Analyzer {
     public AnalysisResult analyze(Path input, RuleConfig config, int threads) {
         Path path = input.toAbsolutePath().normalize();
         Path root = Files.isDirectory(path) ? path : path.getParent();
-        List<Path> files = Files.isDirectory(path) ? ProjectLoader.sources(root) : List.of(path);
+        List<Path> files = Files.isDirectory(path) ? ProjectLoader.sources(root, FRONTENDS) : List.of(path);
         config.resolve(registry); // fail fast on configuration errors, before parsing
 
         long t0 = System.nanoTime();
-        ProjectLoader.Project project = ProjectLoader.load(root, files, threads);
+        ProjectLoader.Project project = ProjectLoader.load(root, files, FRONTENDS, threads);
         long t1 = System.nanoTime();
         DiagnosticCollector semantic = new DiagnosticCollector();
         SemanticModel model = SemanticBuilder.build(project.units(), semantic);

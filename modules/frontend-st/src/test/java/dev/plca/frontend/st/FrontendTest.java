@@ -12,6 +12,7 @@ import dev.plca.core.diag.Severity;
 import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.st.kit.Frontend;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -20,11 +21,11 @@ class FrontendTest {
     private final SourceRegistry registry = new SourceRegistry();
     private final DiagnosticCollector diags = new DiagnosticCollector();
 
-    private StFrontend.Result parse(String path, String text) {
+    private Frontend.Result parse(String path, String text) {
         return new StFrontend().parse(SourceFile.of(path, text), registry, diags);
     }
 
-    private static Pou onlyPou(StFrontend.Result r) {
+    private static Pou onlyPou(Frontend.Result r) {
         assertThat(r.unit().declarations()).hasSize(1);
         return (Pou) r.unit().declarations().getFirst();
     }
@@ -83,7 +84,7 @@ class FrontendTest {
     void columnsCountUtf16UnitsAfterAstralCharacters() {
         // the emoji in the comment is two UTF-16 units; `x` must be found at column 16 (1 + 13 + 2)
         String text = "(* 😀 smile *) x := 1;";
-        StFrontend.Result r = parse("a.st", text);
+        Frontend.Result r = parse("a.st", text);
         Statement.Assignment a = (Statement.Assignment) onlyPou(r).body().getFirst();
         assertThat(registry.resolve(a.target().span()).startColumn()).isEqualTo(text.indexOf('x') + 1);
     }
@@ -120,9 +121,9 @@ class FrontendTest {
     @Test
     void validInputTakesTheSllPathAndErrorsFallBack() {
         StFrontend fe = new StFrontend();
-        StFrontend.Result ok = fe.parse(SourceFile.of("a.st", "PROGRAM P\na := b;\nEND_PROGRAM"), registry, diags);
+        Frontend.Result ok = fe.parse(SourceFile.of("a.st", "PROGRAM P\na := b;\nEND_PROGRAM"), registry, diags);
         assertThat(ok.stats().sllFallbacks()).isZero();
-        StFrontend.Result bad = fe.parse(SourceFile.of("b.st", "PROGRAM P\na := ;\nEND_PROGRAM"), registry, diags);
+        Frontend.Result bad = fe.parse(SourceFile.of("b.st", "PROGRAM P\na := ;\nEND_PROGRAM"), registry, diags);
         assertThat(bad.stats().sllFallbacks()).isEqualTo(1);
         assertThat(bad.stats().syntaxErrors()).isEqualTo(1);
     }
@@ -130,7 +131,7 @@ class FrontendTest {
     @Test
     void pathologicalNestingIsReportedNotThrown() {
         String deep = "PROGRAM P\nx := " + "(".repeat(200_000) + "1" + ")".repeat(200_000) + ";\nEND_PROGRAM";
-        StFrontend.Result r = parse("deep.st", deep);
+        Frontend.Result r = parse("deep.st", deep);
         assertThat(r.unit()).isNotNull();
         assertThat(diags.diagnostics()).extracting(Diagnostic::code).contains(SyntaxCodes.INTERNAL);
     }
@@ -139,7 +140,7 @@ class FrontendTest {
     void malformedXmlKeepsWhatWasRead() {
         String xml = "<TcPlcObject><DUT Name=\"T\"><Declaration><![CDATA[TYPE T : INT; END_TYPE]]></Declaration>"
                 + "</DUT><GVL Name=\"G\"><Declaration>";
-        StFrontend.Result r = parse("T.TcDUT", xml);
+        Frontend.Result r = parse("T.TcDUT", xml);
         assertThat(r.unit().declarations()).hasSize(1);
         assertThat(r.unit().declarations().getFirst()).isInstanceOf(Declaration.TypeDecl.class);
         assertThat(diags.diagnostics()).extracting(Diagnostic::code).contains(SyntaxCodes.MALFORMED_XML);

@@ -9,6 +9,7 @@ import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.testing.Golden;
+import dev.plca.frontend.st.kit.Frontend;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +43,7 @@ class GoldenAstTest {
         SourceFile file = SourceFile.fromBytes(fixture, Files.readAllBytes(DIR.resolve(fixture)));
         SourceRegistry registry = new SourceRegistry();
         DiagnosticCollector diags = new DiagnosticCollector();
-        StFrontend.Result result = new StFrontend().parse(file, registry, diags);
+        Frontend.Result result = new StFrontend().parse(file, registry, diags);
 
         StringBuilder out = new StringBuilder(AstPrinter.print(result.unit(), registry::resolve));
         out.append("diagnostics:\n");

@@ -9,6 +9,7 @@ import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontend;
 import dev.plca.rules.RuleEngine;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
@@ -52,7 +53,7 @@ public final class CorpusCheck {
             String format,
             long lines,
             boolean clean,
-            StFrontend.Stats stats,
+            Frontend.Stats stats,
             List<String> errors,
             String firstError) {}
 
@@ -176,14 +177,7 @@ public final class CorpusCheck {
                 // the frontend must never throw: record it as a failed file with the escape as its error
                 String err = "ESCAPED " + e;
                 results.add(new FileResult(
-                        r[0],
-                        r[2],
-                        r[4],
-                        parseLongOr(r[8]),
-                        false,
-                        new StFrontend.Stats(0, 0, 0, 0),
-                        List.of(err),
-                        err));
+                        r[0], r[2], r[4], parseLongOr(r[8]), false, Frontend.Stats.NONE, List.of(err), err));
             }
         }
         long t = System.nanoTime();
@@ -381,7 +375,7 @@ public final class CorpusCheck {
         }
         SourceFile sf = SourceFile.fromBytes(r[2], data);
         DiagnosticCollector diags = new DiagnosticCollector();
-        StFrontend.Result result = frontend.parse(sf, registry, diags);
+        Frontend.Result result = frontend.parse(sf, registry, diags);
         List<String> errors = new ArrayList<>();
         String first = null;
         for (Diagnostic d : diags.diagnostics()) {
@@ -407,9 +401,8 @@ public final class CorpusCheck {
             byFormat.computeIfAbsent(r.format(), k -> new ArrayList<>()).add(r);
         }
         long totalLines = results.stream().mapToLong(FileResult::lines).sum();
-        StFrontend.Stats total = results.stream()
-                .map(FileResult::stats)
-                .reduce(new StFrontend.Stats(0, 0, 0, 0), StFrontend.Stats::plus);
+        Frontend.Stats total =
+                results.stream().map(FileResult::stats).reduce(Frontend.Stats.NONE, Frontend.Stats::plus);
 
         StringBuilder md = new StringBuilder("# frontend-st corpus check\n\n");
         md.append(String.format(

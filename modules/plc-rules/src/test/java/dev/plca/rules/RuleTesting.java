@@ -8,6 +8,7 @@ import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontends;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
 import java.io.IOException;
@@ -24,6 +25,8 @@ import java.util.regex.Pattern;
 /** Shared helpers: load a project, run rules, print findings, read inline expectation markers. */
 final class RuleTesting {
 
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+
     static final RuleRegistry REGISTRY = RuleRegistry.standard();
 
     /** A model plus everything needed to resolve and print its findings. */
@@ -38,13 +41,13 @@ final class RuleTesting {
 
     /** Source files directly in {@code dir}; subdirectories are separate test projects. */
     static List<Path> directSources(Path dir) {
-        return ProjectLoader.sources(dir).stream()
+        return ProjectLoader.sources(dir, FRONTENDS).stream()
                 .filter(p -> p.getParent().equals(dir))
                 .toList();
     }
 
     static Analysis load(Path dir) {
-        ProjectLoader.Project p = ProjectLoader.load(dir, directSources(dir), 2);
+        ProjectLoader.Project p = ProjectLoader.load(dir, directSources(dir), FRONTENDS, 2);
         DiagnosticCollector sem = new DiagnosticCollector();
         SemanticModel m = SemanticBuilder.build(p.units(), sem);
         List<Diagnostic> all = new ArrayList<>(p.diagnostics());

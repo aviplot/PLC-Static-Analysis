@@ -10,6 +10,8 @@ import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.testing.Golden;
 import dev.plca.frontend.st.ProjectLoader;
+import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontends;
 import dev.plca.rules.RuleConfig;
 import dev.plca.rules.RuleEngine;
 import dev.plca.rules.RuleRegistry;
@@ -27,13 +29,15 @@ import org.junit.jupiter.api.io.TempDir;
 
 class ReportTest {
 
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+
     private static final Path RESOURCES = Path.of(System.getProperty("golden.root"));
     /** modules/plc-report/src/test/resources -> repository root */
     private static final Path REPOSITORY = RESOURCES.resolve("../../../../..").normalize();
 
     /** Runs all rules on a directory; root URI and timings fixed so goldens are machine-independent. */
     static AnalysisResult analyze(Path dir) {
-        ProjectLoader.Project p = ProjectLoader.load(dir, 2);
+        ProjectLoader.Project p = ProjectLoader.load(dir, FRONTENDS, 2);
         DiagnosticCollector sem = new DiagnosticCollector();
         SemanticModel m = SemanticBuilder.build(p.units(), sem);
         RuleRegistry registry = RuleRegistry.standard();
