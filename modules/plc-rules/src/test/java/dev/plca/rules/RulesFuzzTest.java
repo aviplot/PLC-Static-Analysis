@@ -59,7 +59,10 @@ class RulesFuzzTest {
                 .unit();
         SemanticModel m = SemanticBuilder.build(List.of(unit), diags);
         RuleEngine.Result r = ENGINE.run(m, registry, RuleConfig.only("all"), 1);
-        assertThat(r.diagnostics()).isEmpty();
+        // rule failures are bugs; other engine diagnostics (a suppression naming no rule) are valid output
+        assertThat(r.diagnostics()).noneMatch(d -> d.code().equals(RuleEngine.INTERNAL));
+        r.diagnostics().forEach(d -> registry.resolve(d.span()));
+        r.suppressed().forEach(s -> registry.resolve(s.finding().span()));
         for (Finding f : r.findings()) {
             registry.resolve(f.span());
             f.related().forEach(rel -> registry.resolve(rel.span()));

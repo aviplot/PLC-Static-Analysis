@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content S="">
+<Tags>
+</Tags>
+<Routines>
+<Routine Name="M¨ain" Type="ST">
+<STContent>
+<Line Number="5"><![CDATA[Host := '192.168.10.2$0; '/REND_CASEÝ;evType="Base" pe="Base" DataType="">
+<Tags>
+</Tines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '/"yes"?>
+pe="ST">
+<STContent>
+<Line Number="5"><![CDtokenATA[Host := '192.168.10.2$0; '/REND_CASE;evType="Base" pe="Base" DataType="">
+<Tags>
+</Tines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATMOV(A[Host := '192.168..$0201; '/ion="1.0" encodinntÿ8>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '// PLCA-S001]]..$0dalone="yes"?>
+<RSLogix5000Content S="">
+5000Content S="">
+<Tags>
+</Tags>
+<Routines>
+<Routine Name="M¨ain" Type="ST">
+<STContent>
+<Line Number="5"><![CDATA[Host := '192.168.10.2$0; '/REND_CASEÝ;evType="Base" pe="Base" DataType="">
+<Tags>
+</Tines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '/"yes"?>
+pe="ST">
+<STContent>
+<Line Number="5"><![CDATA[Host := '192.168.10.2$0; '/REND_CASE;evType="Base" pe="Base" DataType="">
+<Tags>
+</Tines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '/ion="1.0" encodinntÿ8>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '// PLCA-S001]]..$0dalone="yes"?>
+<RSLo#ix5000Content S="">
+<Tags>
+</Tags>
+<Routines>
+<Routine Name="M¨ain" Type="ST">
+<STContent>
+<Line Number="5"><![CDATA[Host := '192.168.10.2$0; '- PLCA-Q00 -->
+<Rung Type="N"><Rung Number="1" Type="N"><Text/REND_CASEÝ;evXIO(="Base" pe="Base" DataType="">
+<Tags>
+</Tines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '/"yes"?>
+pe="ST">
+<STContent>
+<Line Number="5"><![CDATA[Host :=H '192.168.10.2$0; '/REND_CASE;evType="Base" pe="Base" DataType="">
+<Tags>
+</Tines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[Host := '192.168..$0201; '/ion="1.0" encodinntÿ8>
+<Line Number="0"><![CDATA[Host := '192.168..$0201;ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff '// PLCA-disable-next-line]]></Line>
+<Line Number="1">umber="1"><r>
+</RSLogix5000Cont/ PLCA-S001]]></Line>
+<Line Nu201; '// PLCA-S001]]></Line>
+<Line Number=÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷"1">umber="1"n><r>
+</RS+ogix5000Cont/ PLCA-S001]]></Line>
+<Line Nu201; '// PLCA-S001]]></Line>
+<Line Number="1">umber="1"><r>
+</RSLogix5000Cont/ PLCA-S001]]></Line>
+<Line Number="1">umber="1"><r>
+</RSLogix5000Content>
