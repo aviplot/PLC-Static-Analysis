@@ -353,6 +353,7 @@ public final class L5xFrontend implements Frontend {
             StringBuilder text = new StringBuilder();
             SourceMap.Builder map = SourceMap.builder();
             int[] starts = new int[rungs.size()];
+            Comment[] rungComments = new Comment[rungs.size()];
             String fileText = file.text();
             for (int k = 0; k < rungs.size(); k++) {
                 RungDef d = rungs.get(k);
@@ -374,8 +375,9 @@ public final class L5xFrontend implements Frontend {
                 }
                 if (d.comment.present()) {
                     SourceText c = registry.registerXmlContent(file, d.comment.start(), d.comment.end());
-                    comments.add(
-                            new Comment(Comment.Kind.BLOCK, c.span(0, c.text().length())));
+                    rungComments[k] =
+                            new Comment(Comment.Kind.BLOCK, c.span(0, c.text().length()));
+                    comments.add(rungComments[k]);
                 }
             }
             Ladder[] ladders = new Ladder[rungs.size()];
@@ -416,13 +418,13 @@ public final class L5xFrontend implements Frontend {
                 RungDef d = rungs.get(k);
                 Ladder l = ladders[k];
                 if (l != null) {
-                    body.add(new Statement.Rung(d.number, d.type, l, lowering.lower(l), l.span()));
+                    body.add(new Statement.Rung(d.number, d.type, rungComments[k], l, lowering.lower(l), l.span()));
                 } else {
                     Span at = elementSpan(d.offset);
                     // no text: an empty rung; text that did not parse: a diagnostic was reported
                     List<Statement> lowered =
                             d.text.present() && !blank(d.text) ? List.of(new Statement.Invalid(at)) : List.of();
-                    body.add(new Statement.Rung(d.number, d.type, null, lowered, at));
+                    body.add(new Statement.Rung(d.number, d.type, rungComments[k], null, lowered, at));
                 }
             }
             return body;

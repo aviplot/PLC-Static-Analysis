@@ -70,17 +70,18 @@ final class NetworkBuilder {
         String instance = null;
         boolean negated = n.flag("negated");
         switch (kind) {
-            case LEFT_RAIL -> outputs.add(new Pin(null, false, List.of()));
+            case LEFT_RAIL -> outputs.add(out(null, false, n.child("connectionPointOut")));
             case RIGHT_RAIL -> {
                 List<Link> links = new ArrayList<>();
                 for (XNode in : n.children("connectionPointIn")) {
                     links.addAll(links(in));
                 }
-                inputs.add(new Pin(null, false, links));
+                XNode first = n.child("connectionPointIn");
+                inputs.add(new Pin(null, false, links, first == null ? null : at(first)));
             }
             case CONTACT, COIL -> {
-                inputs.add(new Pin(null, false, links(n.child("connectionPointIn"))));
-                outputs.add(new Pin(null, false, List.of()));
+                inputs.add(in(null, false, n.child("connectionPointIn")));
+                outputs.add(out(null, false, n.child("connectionPointOut")));
                 XNode v = n.child("variable");
                 value = v == null ? new Expression.Invalid(run.elementSpan(n)) : run.expressions.content(v);
             }
@@ -91,22 +92,20 @@ final class NetworkBuilder {
                 XNode ins = n.child("inputVariables");
                 if (ins != null) {
                     for (XNode v : ins.children("variable")) {
-                        inputs.add(new Pin(
-                                v.attr("formalParameter"), v.flag("negated"), links(v.child("connectionPointIn"))));
+                        inputs.add(in(v.attr("formalParameter"), v.flag("negated"), v.child("connectionPointIn")));
                     }
                 }
                 XNode inouts = n.child("inOutVariables");
                 if (inouts != null) {
                     for (XNode v : inouts.children("variable")) {
-                        inputs.add(new Pin(
-                                v.attr("formalParameter"), v.flag("negated"), links(v.child("connectionPointIn"))));
-                        outputs.add(new Pin(v.attr("formalParameter"), false, List.of()));
+                        inputs.add(in(v.attr("formalParameter"), v.flag("negated"), v.child("connectionPointIn")));
+                        outputs.add(out(v.attr("formalParameter"), false, v.child("connectionPointOut")));
                     }
                 }
                 XNode outs = n.child("outputVariables");
                 if (outs != null) {
                     for (XNode v : outs.children("variable")) {
-                        outputs.add(new Pin(v.attr("formalParameter"), v.flag("negated"), List.of()));
+                        outputs.add(out(v.attr("formalParameter"), v.flag("negated"), v.child("connectionPointOut")));
                     }
                 }
                 if (instance != null) {
@@ -118,24 +117,24 @@ final class NetworkBuilder {
                 value = ex == null ? new Expression.Invalid(run.elementSpan(n)) : run.expressions.content(ex);
                 if (kind != Kind.IN_VARIABLE) {
                     boolean neg = kind == Kind.OUT_VARIABLE ? negated : n.flag("negatedIn");
-                    inputs.add(new Pin(null, neg, links(n.child("connectionPointIn"))));
+                    inputs.add(in(null, neg, n.child("connectionPointIn")));
                 }
                 if (kind != Kind.OUT_VARIABLE) {
                     boolean neg = kind == Kind.IN_VARIABLE ? negated : n.flag("negatedOut");
-                    outputs.add(new Pin(null, neg, List.of()));
+                    outputs.add(out(null, neg, n.child("connectionPointOut")));
                 }
             }
             case CONNECTOR -> {
                 name = n.attr("name");
-                inputs.add(new Pin(null, false, links(n.child("connectionPointIn"))));
+                inputs.add(in(null, false, n.child("connectionPointIn")));
             }
             case CONTINUATION -> {
                 name = n.attr("name");
-                outputs.add(new Pin(null, false, List.of()));
+                outputs.add(out(null, false, n.child("connectionPointOut")));
             }
             case JUMP, RETURN -> {
                 name = n.attr("label");
-                inputs.add(new Pin(null, false, links(n.child("connectionPointIn"))));
+                inputs.add(in(null, false, n.child("connectionPointIn")));
             }
             case LABEL -> name = n.attr("label");
         }
@@ -151,9 +150,35 @@ final class NetworkBuilder {
                 order,
                 n.x == Integer.MIN_VALUE ? 0 : n.x,
                 n.y == Integer.MIN_VALUE ? 0 : n.y,
+                size(n, "width"),
+                size(n, "height"),
                 inputs,
                 outputs,
                 run.elementSpan(n));
+    }
+
+    private static Pin in(String name, boolean negated, XNode connectionPointIn) {
+        return new Pin(name, negated, links(connectionPointIn), at(connectionPointIn));
+    }
+
+    private static Pin out(String name, boolean negated, XNode connectionPointOut) {
+        return new Pin(name, negated, List.of(), at(connectionPointOut));
+    }
+
+    /** A connection point's {@code relPosition}, null when absent. */
+    private static Network.Point at(XNode connectionPoint) {
+        return connectionPoint == null || connectionPoint.x == Integer.MIN_VALUE
+                ? null
+                : new Network.Point(connectionPoint.x, connectionPoint.y);
+    }
+
+    private static int size(XNode n, String name) {
+        String v = n.attr(name);
+        try {
+            return v == null ? 0 : Math.max(0, (int) Math.round(Double.parseDouble(v.strip())));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private static List<Link> links(XNode connectionPointIn) {
@@ -165,7 +190,11 @@ final class NetworkBuilder {
             int ref = intAttr(c, "refLocalId", Integer.MIN_VALUE);
             if (ref != Integer.MIN_VALUE) {
                 String p = c.attr("formalParameter");
-                out.add(new Link(ref, p == null || p.isBlank() || p.equalsIgnoreCase("none") ? null : p));
+                List<Network.Point> route = new ArrayList<>(c.routeLength / 2);
+                for (int i = 0; i + 1 < c.routeLength; i += 2) {
+                    route.add(new Network.Point(c.route[i], c.route[i + 1]));
+                }
+                out.add(new Link(ref, p == null || p.isBlank() || p.equalsIgnoreCase("none") ? null : p, route));
             }
         }
         return out;

@@ -128,9 +128,11 @@ public sealed interface Statement extends Node {
      * A ladder rung: its drawing ({@code ladder}, null when the rung text did not parse) and its lowering to statements
      * ({@code body}, design rule 4), which is what the semantic model and rules see. {@code number} is the rung number
      * the engineer sees; {@code type} the L5X rung type ({@code N}, or a pending-edit marker such as
-     * {@code I}/{@code R}).
+     * {@code I}/{@code R}). {@code comment}: the rung comment (L5X {@code <Comment>}), or null; it is also among the
+     * unit's comments.
      */
-    record Rung(int number, String type, Ladder ladder, List<Statement> body, Span span) implements Statement {
+    record Rung(int number, String type, Comment comment, Ladder ladder, List<Statement> body, Span span)
+            implements Statement {
         public Rung {
             body = List.copyOf(body);
         }

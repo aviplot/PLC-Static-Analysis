@@ -166,6 +166,8 @@ SourceUnit dialect=ROCKWELL
       Pou kind=ROUTINE name=MainRoutine bodyLanguage="RLL" @68:1-68:40
         body:
           Rung number=0 type="N" ladder="[XIC(StartPB),XIC(Seal)]XIO(Motor1.Fault)OTE(Seal);" @75:10-75:63
+            comment:
+              Comment kind=BLOCK @71:10-73:1
             body:
               Assignment op=ASSIGN @75:53-75:62
                 target:

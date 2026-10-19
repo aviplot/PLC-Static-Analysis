@@ -28,10 +28,24 @@ final class XNode {
     int x = Integer.MIN_VALUE;
 
     int y = Integer.MIN_VALUE;
+    /** Points of a {@code connection}'s {@code position} children (x, y pairs), or null. */
+    int[] route;
+
+    int routeLength;
 
     XNode(String tag, int offset) {
         this.tag = tag;
         this.offset = offset;
+    }
+
+    void addRoutePoint(int px, int py) {
+        if (route == null) {
+            route = new int[8];
+        } else if (routeLength + 2 > route.length) {
+            route = java.util.Arrays.copyOf(route, route.length * 2);
+        }
+        route[routeLength++] = px;
+        route[routeLength++] = py;
     }
 
     String attr(String name) {

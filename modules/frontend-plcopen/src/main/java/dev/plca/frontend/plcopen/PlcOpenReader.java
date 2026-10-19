@@ -34,7 +34,7 @@ final class PlcOpenReader {
             "globalvars",
             "accessmodifiers");
 
-    private static final Set<String> SKIPPED = Set.of("documentation", "relPosition", "comment", "vendorElement");
+    private static final Set<String> SKIPPED = Set.of("documentation", "comment", "vendorElement");
 
     /** Result: the first well-formedness error, if any (units read before it were delivered). */
     record Result(String error, int errorOffset) {}
@@ -107,9 +107,11 @@ final class PlcOpenReader {
                 skipDepth = 1;
                 return;
             }
-            if (tag.equals("position")) {
-                // the position of an element itself; those of connection points and wires are not needed
-                if (!parent.tag.equals("connection")) {
+            if (tag.equals("position") || tag.equals("relPosition")) {
+                // an element's position, a connection point's relative position, or a point of a wire
+                if (parent.tag.equals("connection")) {
+                    parent.addRoutePoint(intAttr("x"), intAttr("y"));
+                } else {
                     parent.x = intAttr("x");
                     parent.y = intAttr("y");
                 }
