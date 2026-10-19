@@ -40,8 +40,8 @@ public final class HardCodedSecret implements ProjectRule {
 
     /** Version numbers look like IPv4 addresses ({@code sVersion := '1.0.0.0'}). */
     private static final Pattern VERSION_NAME = Pattern.compile("(?i)(vers|revision|release|build|firmware)");
-    /** HMI masks ({@code '*****'}) are not secrets. */
-    private static final Pattern MASK = Pattern.compile("^[*#\u2022]+$");
+    /** HMI masks and separators, never secrets: {@code '****'}, {@code '_'}, {@code ';'}. */
+    private static final Pattern MASK = Pattern.compile("^[^\\p{L}\\p{N}]+$");
 
     private static final Pattern IPV4 =
             Pattern.compile("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?::\\d{1,5})?$");

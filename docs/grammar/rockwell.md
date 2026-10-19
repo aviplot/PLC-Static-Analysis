@@ -73,7 +73,8 @@ operand   : expression | '?' | /* empty */  // GSV(ControllerDevice,,DeviceName,
 | `?` | Operand not set: preset/accum display values (`TON(t,?,?)`), or unconfigured operands | 6% |
 | Empty operand | `GSV(ControllerDevice,,DeviceName,x)`: the instance name of a class without instances | |
 | Tag path | `name`, `a.b.c`, `a[3]`, `a[i,j]`, `a[b.c]` (index expressions), `a.5` (bit), `a.[i]` (indirect bit), `Local:1:I.Data.5` and `Rack:I`, `S:FS` (module/status tags: the root has `:` parts), `\Program.Tag` (another program's parameter) | `.N` 26%, variable index 13%, module 7%, `\` 1% |
-| Numbers | `123`, `-128`, `1.5`, `.6`, `1.17549435e-038`, `16#0FF0`, `2#…`, `8#…` (underscores allowed) | |
+| Numbers | `123`, `-128`, `1.5`, `.6`, `1.17549435e-038`, `16#0FF0`, `2#…`, `8#…`, `10#1` (decimal radix written out; 1 repo with Decimal display style), underscores allowed | |
+| Setting words | Safety and motion instructions take settings as words: `DCS(…,EMERGENCY STOP,EQUIVALENT - ACTIVE HIGH,…)`, `MCS(…,Units per sec2,…)`, `% of Maximum`. Rule `settingText`: at least two **adjacent** words (with optional `-` between others), so `A - B` stays a subtraction; built as an ENUM literal. Single-word settings (`Trapezoidal`, `Yes`, `Disabled`) parse as names; the semantic model treats an instruction operand made only of names that are no tag as a setting, not an unresolved name | 11 repos |
 | Strings | `'LWO_3072'` (single quotes, `$` escapes as in ST) | 4 repos |
 | Expressions | CPT/CMP/FAL/FSC operands and calculated indexes: `+ - * / MOD ** AND OR XOR NOT`, comparisons `= <> < <= > >=`, parentheses, function calls (`ABS(x)`, `SQR(x)`, `TRN(x)`…). Word operators are case-insensitive. **The rung grammar has its own small expression rules** (not a second parse with the ST grammar): one parse per routine keeps the rung path fast (§8). The rules mirror the ST precedence | 3% |
 | Keywords | None at the lexer level that would stop a tag name. `AND`, `OR`, `XOR`, `NOT` and `MOD` are both instructions (`AND(a,b,dest)`) and expression operators; they are tokens and the `mnemonic` rule accepts them | |
@@ -103,6 +104,13 @@ Each rung is lowered from left to right with a *rung condition* (power flow) tha
   | `JSR(r, n, in…, ret…)` | `IF cond THEN JSR(r, n, in…, ret…); END_IF` |
   | anything else | `IF cond THEN MNEM(operands…); END_IF` (effects from the instruction table) |
 
+- **Unknown instructions** (neither in the table nor an AOI of the export) are lowered as a condition term with side
+  effects: what follows stays conditional, so no unconditional write is invented, and the call is still evaluated with
+  possibly-written operands (a tool-generated `GE(a,b)OTU(x)` was otherwise lowered to an unconditional `x := FALSE`).
+- Consecutive conditional outputs on the same condition share one `IF`: the rung condition is computed once
+  (`XIC(R)MOV(0,R)MOV(5,X)` must still execute the second MOV). A trivial condition is stored in `$rcN` when an output of
+  the rung writes the tag it reads (`XIC(A)OTU(A)OTE(B)`).
+- A branch is built relative to its root (`A AND (B OR NOT C)`) unless an output inside a leg uses a leg's condition.
 - **Each instruction appears exactly once** in the lowered statements. A condition used by more than one consumer is
   stored in a synthetic power-flow variable first (`$rc1 := …;`, `Identifier.Form.SYNTHETIC`), unless it is TRUE, a
   single name, `NOT name` or already synthetic. So rules never see an instruction twice (no duplicate findings), and
@@ -138,10 +146,13 @@ invented nor hidden by a guess.
 | Item | Rule | Evidence (routines / repos) |
 |---|---|---|
 | Entry | `statementsOnly`: no POU header or VAR sections; declarations are the tags in the XML | |
-| Comments | `//`, `(* *)`, `/* */` (core tokens) | 481/41, 176/19, 715/11 |
+| Comments | `//`, `(* *)`, `/* */`. They do **not nest** (unlike the core): a Festo library opens `(*` and puts `(*…*)` lines inside, relying on the first `*)` to close; with nesting the rest of the routine became a comment. The Rockwell lexer replaces the core's comment rules | 481/41, 176/19, 715/11 |
+| `#region` | `#region text` / `#endregion` lines (ST editor folding) go to the pragma channel as REGION pragmas | 2 repos |
+| Setting words | `%ofMaximum` etc. in motion instruction calls: one token, an identifier for the parser | 1 repo |
+| Empty arguments | `GSV(WallClockTime, , CurrentValue, TNow)`: an argument may be left out, as in rungs | 3 repos |
 | Statements | core IF/ELSIF/ELSE, CASE (numeric labels, ELSE), FOR…BY, WHILE, REPEAT, EXIT, RETURN | CASE 61/16, FOR 179/22, WHILE 115/7, REPEAT 3/3, EXIT 76/12, RETURN 1/1 |
 | Non-retentive assignment | `a [:=] b;` (resets `a` at prescan/power-up). Token `NONRETENTIVE_ASSIGN`, `AssignOp.NON_RETENTIVE`; same effects as `:=` | 3/3 |
-| Names | core names plus the module/status roots (`Local:1:I.Data`, `S:FS`) and `\Prog.Tag` as in §3. A `:` belongs to a module path only when no whitespace surrounds it (CASE labels like `1:` are unaffected). Core keywords used as tag names in the corpus are soft identifiers | module tags 14/6, `\` 5/3 |
+| Names | core names plus the module/status roots (`Local:1:I.Data`, `S:FS`) and `\Prog.Tag` as in §3. A `:` belongs to a module path only when no whitespace surrounds it (CASE labels like `1:` are unaffected). Routine bodies contain no declarations, so all declaration keywords of the core are soft identifiers (`Ref_Instance.Type`, a tag `Var`), and so are `THIS`, `SUPER`, `TRUE` and `FALSE` (one project defines `TRUE := 1;`; in an expression the literal wins) | module tags 14/6, `\` 5/3 |
 | Indirect bit | `x.[i]` | 14/6 |
 | Calls | instructions as calls: `TONR(t)`, `JSR(r, n, …)`, `COP(a, b, n)`, `SIZE(a, 0, n)`, `GSV(…)`, `MSG(m)`, AOIs `Name(tag, args…)` | TONR 19 repos, COP 11, SIZE 10, GSV 9, JSR 7 |
 | Operators | core: `**`, `NOT`, `* / MOD`, `+ -`, comparisons, `AND`/`&`, `XOR`, `OR`; `16#`, `2#`, `8#` | |
@@ -153,7 +164,9 @@ physical L5X line plus the logical location `Program:P/Routine:R/Line:n` with `n
 ## 7. Error recovery
 - XML: a well-formedness error ends reading. Everything read before it is analysed, plus one error diagnostic.
 - Rungs: recovery syncs on `;` (and stops at `,`, `]`, `)` inside a rung), so one bad rung costs one diagnostic. A
-  rung that does not parse gets an `Invalid` lowered statement and keeps its number.
+  rung with a syntax error anywhere in its text keeps its number but no drawing, and its lowering is one `Invalid`
+  statement (a half-recovered drawing would be lowered into nonsense). A rung text without its closing `;` is closed by
+  the frontend with a warning (`PLC-L5X-004`), so it cannot swallow the next rung.
 - ST: the core recovery strategy with the usual `;`/`END_*` sync set.
 - Never throws (design rule 2): reader, parsers, lowering and semantic mapping report internal failures as
   `PLC-SYN-999`-style diagnostics and continue with the next routine.
@@ -168,6 +181,9 @@ would put millions of entries into the source registry. One parse per routine, t
 3. Tag-name case rules and whether AOIs may reference controller-scope tags (assumed: no, except via parameters).
 4. Module tag naming (`Local:1:I`, `Adapter:2:I`, `Name:I1`): treated generically as "root with `:` parts".
 5. `[:=]` effects at prescan: modelled as a plain assignment.
+8. `=>` inside a CMP expression (`CMP(a => (b - c))`, 3 rungs in one customer export): accepted by Logix? Reported as a
+   syntax error until confirmed.
+9. TRUE/FALSE: tag names or boolean literals in Logix ST? Both are accepted (a project assigns `TRUE := 1;`).
 6. Operand roles of the instruction table entries marked `?` in `instructions.txt`.
 7. AOI call operands: **verified from the corpus**: backing tag, then the `Required` parameters in definition order
    (EnableIn/EnableOut excluded): 11,437 of 11,452 rung calls of AOIs defined in the same file match; the 15 others
