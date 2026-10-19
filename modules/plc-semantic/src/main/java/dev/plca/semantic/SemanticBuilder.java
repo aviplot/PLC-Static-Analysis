@@ -62,12 +62,23 @@ public final class SemanticBuilder {
         return new PendingType(target, ref, context, rockwell);
     }
 
+    private SemanticModel previous;
+
     private SemanticBuilder(DiagnosticSink sink) {
         this.sink = sink;
     }
 
     public static SemanticModel build(List<SourceUnit> units, DiagnosticSink sink) {
+        return build(units, sink, null);
+    }
+
+    /**
+     * As {@link #build(List, DiagnosticSink)}; {@code previous} (a model of an earlier version of the same project, or
+     * null) only sizes the new model's tables.
+     */
+    public static SemanticModel build(List<SourceUnit> units, DiagnosticSink sink, SemanticModel previous) {
         SemanticBuilder b = new SemanticBuilder(sink);
+        b.previous = previous;
         try {
             return b.run(units);
         } catch (StackOverflowError | RuntimeException e) {
@@ -80,7 +91,7 @@ public final class SemanticBuilder {
 
     private SemanticModel run(List<SourceUnit> units) {
         global = new GlobalScope();
-        model = new SemanticModel(units, global);
+        model = new SemanticModel(units, global, previous);
         model.constants = new ConstantEvaluator(model.symbols::get);
 
         for (SourceUnit u : units) {

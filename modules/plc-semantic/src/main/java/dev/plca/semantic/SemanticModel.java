@@ -38,11 +38,11 @@ public final class SemanticModel {
     final List<SourceUnit> units;
     final GlobalScope global;
     final List<PouSymbol> pous = new ArrayList<>();
-    final Map<Expression, Symbol> symbols = new IdentityHashMap<>();
-    final Map<Expression, Type> types = new IdentityHashMap<>();
-    final Map<Expression.Argument, VariableSymbol> parameters = new IdentityHashMap<>();
-    final Map<Statement, Effects> effects = new IdentityHashMap<>();
-    final Map<Statement, PouSymbol> owners = new IdentityHashMap<>();
+    final Map<Expression, Symbol> symbols;
+    final Map<Expression, Type> types;
+    final Map<Expression.Argument, VariableSymbol> parameters;
+    final Map<Statement, Effects> effects;
+    final Map<Statement, PouSymbol> owners;
     final List<Expression> unresolved = new ArrayList<>();
     final CallGraph callGraph = new CallGraph();
     InstanceGraph instanceGraph = new InstanceGraph();
@@ -51,8 +51,21 @@ public final class SemanticModel {
     ConstantEvaluator constants;
 
     SemanticModel(List<SourceUnit> units, GlobalScope global) {
+        this(units, global, null);
+    }
+
+    /**
+     * Side tables pre-sized from {@code like} (a model of nearly the same units, e.g. before an edit): growing identity
+     * maps by rehashing is a large part of the build time of big models.
+     */
+    SemanticModel(List<SourceUnit> units, GlobalScope global, SemanticModel like) {
         this.units = List.copyOf(units);
         this.global = global;
+        this.symbols = new IdentityHashMap<>(like == null ? 32 : like.symbols.size());
+        this.types = new IdentityHashMap<>(like == null ? 32 : like.types.size());
+        this.parameters = new IdentityHashMap<>(like == null ? 32 : like.parameters.size());
+        this.effects = new IdentityHashMap<>(like == null ? 32 : like.effects.size());
+        this.owners = new IdentityHashMap<>(like == null ? 32 : like.owners.size());
     }
 
     public List<SourceUnit> units() {

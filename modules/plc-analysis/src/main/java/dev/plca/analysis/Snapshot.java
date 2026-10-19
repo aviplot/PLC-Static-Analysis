@@ -152,6 +152,22 @@ public final class Snapshot {
         return new Analysis(findings, diagnostics, paths == null ? files.keySet() : paths);
     }
 
+    /** The model of this snapshot's group that shares the most units with {@code units} (sizes a rebuild), or null. */
+    SemanticModel similarGroup(List<SourceUnit> units) {
+        java.util.Set<SourceUnit> wanted = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        wanted.addAll(units);
+        Group best = null;
+        long bestShared = 0;
+        for (Group g : groups) {
+            long shared = g.units().stream().filter(wanted::contains).count();
+            if (shared > bestShared) {
+                best = g;
+                bestShared = shared;
+            }
+        }
+        return best == null ? null : best.model();
+    }
+
     /** This snapshot's group with exactly these units (same objects, same order), or null. */
     Group sameGroup(List<SourceUnit> units) {
         for (Group g : groups) {

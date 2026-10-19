@@ -186,7 +186,7 @@ public final class Workspace {
                 groups.add(reused);
             } else {
                 DiagnosticCollector d = new DiagnosticCollector();
-                SemanticModel model = SemanticBuilder.build(g, d);
+                SemanticModel model = SemanticBuilder.build(g, d, last == null ? null : last.similarGroup(g));
                 groups.add(new Snapshot.Group(g, model, d.diagnostics()));
             }
         }

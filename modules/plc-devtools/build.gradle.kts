@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":frontend-plcopen"))
     implementation(project(":plc-semantic"))
     implementation(project(":plc-rules"))
+    implementation(project(":plc-analysis"))
 }
 
 val corpusDir =
