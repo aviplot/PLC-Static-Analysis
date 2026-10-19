@@ -1,2 +1,2 @@
-compare.L5X:16:42-16:56 PLCA-Q003 warning: Exact floating-point comparison with '='; compare the difference against a tolerance, e.g. ABS(a - b) < eps [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
-compare.L5X:24:30-24:42 PLCA-Q003 warning: Exact floating-point comparison with '<>'; compare the difference against a tolerance, e.g. ABS(a - b) < eps [MainProgram.Calc] {Program:MainProgram/Routine:Calc/Line:1}
+compare.L5X:16:42-16:56 PLCA-Q003 info: Exact floating-point comparison with '='; compare the difference against a tolerance, e.g. ABS(a - b) < eps [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+compare.L5X:24:30-24:42 PLCA-Q003 info: Exact floating-point comparison with '<>'; compare the difference against a tolerance, e.g. ABS(a - b) < eps [MainProgram.Calc] {Program:MainProgram/Routine:Calc/Line:1}

@@ -4,6 +4,7 @@ title: Equality comparison of floating-point values
 severity: warning
 category: quality
 dialects: all
+dialectSeverity: rockwell=info
 tags: [reliability, numerics]
 plcopen: CP8
 cwe: CWE-1077
@@ -26,6 +27,9 @@ exactly), nor is `x = x`, the usual test for NaN.
 A value compared with its own copy (`IF a <> last THEN last := a;`, ladder `NEQ(a,last) MOV(a,last)`) is change
 detection, exact by construction, and not reported. Rockwell (L5X): comparing two tags that no code of the program
 or AOI writes (`EQU(Cfg_InpMax,Cfg_InpMin)` to flag an empty range) compares settings and is not reported either.
+
+Ladder (Rockwell) findings are `info` by default: in ladder, exact REAL comparisons are mostly sentinel and
+configuration checks. Raise them with `dialects: {rockwell: {severity: {PLCA-Q003: warning}}}` in `plca.yaml`.
 
 ## Noncompliant
 

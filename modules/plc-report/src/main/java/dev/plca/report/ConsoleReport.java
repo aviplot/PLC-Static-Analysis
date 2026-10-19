@@ -25,9 +25,16 @@ public final class ConsoleReport {
     static final int MAX_DIAGNOSTICS = 20;
 
     private final boolean color;
+    private final boolean showSuppressed;
 
     public ConsoleReport(boolean color) {
+        this(color, false);
+    }
+
+    /** @param showSuppressed also list suppressed and baselined findings, marked as such */
+    public ConsoleReport(boolean color, boolean showSuppressed) {
         this.color = color;
+        this.showSuppressed = showSuppressed;
     }
 
     public void write(AnalysisResult r, Writer out) throws IOException {
@@ -44,22 +51,38 @@ public final class ConsoleReport {
             sb.append('\n');
         }
         for (Finding f : r.findings()) {
-            entry(sb, r, f.span(), f.severity(), f.ruleId(), f.message());
-            if (f.place() != null) {
-                sb.append("      ").append(dim("in " + f.place())).append('\n');
+            finding(sb, r, f, null);
+        }
+        if (showSuppressed) {
+            for (AnalysisResult.Suppressed s : r.suppressed()) {
+                String why = s.kind().name().toLowerCase(Locale.ROOT)
+                        + (s.reason() == null || s.reason().isEmpty() ? "" : ": " + s.reason());
+                finding(sb, r, s.finding(), why);
             }
-            for (Diagnostic.Related rel : f.related()) {
-                sb.append("      ")
-                        .append(dim(r.sources().resolve(rel.span()).path() + ":" + lineCol(r, rel.span())))
-                        .append(' ')
-                        .append(rel.message())
-                        .append('\n');
-            }
-            sb.append('\n');
         }
         summary(sb, r);
         out.write(sb.toString());
         out.flush();
+    }
+
+    private void finding(StringBuilder sb, AnalysisResult r, Finding f, String suppressedWhy) {
+        entry(sb, r, f.span(), f.severity(), f.ruleId(), f.message());
+        if (suppressedWhy != null) {
+            sb.append("      ")
+                    .append(dim("suppressed (" + suppressedWhy + ")"))
+                    .append('\n');
+        }
+        if (f.place() != null) {
+            sb.append("      ").append(dim("in " + f.place())).append('\n');
+        }
+        for (Diagnostic.Related rel : f.related()) {
+            sb.append("      ")
+                    .append(dim(r.sources().resolve(rel.span()).path() + ":" + lineCol(r, rel.span())))
+                    .append(' ')
+                    .append(rel.message())
+                    .append('\n');
+        }
+        sb.append('\n');
     }
 
     private void entry(StringBuilder sb, AnalysisResult r, Span span, Severity s, String code, String message) {
@@ -129,6 +152,26 @@ public final class ConsoleReport {
             if (n > 0) {
                 sb.append(String.format(Locale.ROOT, "  %-10s %-45s %5d%n", d.id(), d.title(), n));
             }
+        }
+        int inline = r.suppressed(AnalysisResult.SuppressionKind.INLINE).size();
+        int config = r.suppressed(AnalysisResult.SuppressionKind.CONFIG).size();
+        if (inline + config > 0) {
+            sb.append(inline + config)
+                    .append(" suppressed (")
+                    .append(inline)
+                    .append(" in the source, ")
+                    .append(config)
+                    .append(" by plca.yaml)")
+                    .append(showSuppressed ? "" : "; --show-suppressed lists them")
+                    .append('\n');
+        }
+        if (r.baseline() != null) {
+            sb.append(r.baseline().unchanged())
+                    .append(" in the baseline ")
+                    .append(r.baseline().file())
+                    .append(", ")
+                    .append(r.baseline().fixed())
+                    .append(" fixed since\n");
         }
         if (!r.diagnostics().isEmpty()) {
             sb.append(r.diagnostics().size())

@@ -11,7 +11,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -61,41 +60,65 @@ public final class SarifReport {
             n.putArray("locations").add(location(r.sources().resolve(d.span()), null));
         }
 
-        List<String> fingerprints = Fingerprints.of(r);
         ArrayNode results = run.putArray("results");
-        for (int i = 0; i < r.findings().size(); i++) {
-            Finding f = r.findings().get(i);
-            ObjectNode res = results.addObject();
-            res.put("ruleId", f.ruleId());
-            Integer idx = ruleIndex.get(f.ruleId());
-            if (idx != null) {
-                res.put("ruleIndex", idx);
+        for (Finding f : r.findings()) {
+            ObjectNode res = result(r, f, ruleIndex);
+            if (r.baseline() != null) {
+                res.put("baselineState", "new");
             }
-            res.put("level", level(f.severity()));
-            res.putObject("message").put("text", f.message());
-            ObjectNode loc = location(r.sources().resolve(f.span()), null);
-            if (f.place() != null || f.pou() != null) {
-                // Rockwell: program → routine → rung, as Studio 5000 shows it; else the POU
-                ObjectNode logical = loc.putArray("logicalLocations").addObject();
-                logical.put("fullyQualifiedName", f.place() != null ? f.place() : f.pou());
-                logical.put("kind", "function");
-            }
-            res.putArray("locations").add(loc);
-            if (!f.related().isEmpty()) {
-                ArrayNode related = res.putArray("relatedLocations");
-                int id = 1;
-                for (Diagnostic.Related rel : f.related()) {
-                    ObjectNode rl = location(r.sources().resolve(rel.span()), rel.message());
-                    rl.put("id", id++);
-                    related.add(rl);
+            results.add(res);
+        }
+        for (AnalysisResult.Suppressed sup : r.suppressed()) {
+            ObjectNode res = result(r, sup.finding(), ruleIndex);
+            if (sup.kind() == AnalysisResult.SuppressionKind.BASELINE) {
+                // SARIF 2.1.0 §3.27.24: existing findings stay in the log, marked as known
+                res.put("baselineState", "unchanged");
+            } else {
+                ObjectNode s = res.putArray("suppressions").addObject();
+                s.put("kind", sup.kind() == AnalysisResult.SuppressionKind.INLINE ? "inSource" : "external");
+                if (sup.reason() != null && !sup.reason().isEmpty()) {
+                    s.put("justification", sup.reason());
+                }
+                if (r.baseline() != null) {
+                    res.put("baselineState", "new");
                 }
             }
-            res.putObject("partialFingerprints").put(Fingerprints.KEY, fingerprints.get(i));
+            results.add(res);
         }
 
         Json.write(root, out);
         out.write('\n');
         out.flush();
+    }
+
+    private static ObjectNode result(AnalysisResult r, Finding f, Map<String, Integer> ruleIndex) {
+        ObjectNode res = Json.object();
+        res.put("ruleId", f.ruleId());
+        Integer idx = ruleIndex.get(f.ruleId());
+        if (idx != null) {
+            res.put("ruleIndex", idx);
+        }
+        res.put("level", level(f.severity()));
+        res.putObject("message").put("text", f.message());
+        ObjectNode loc = location(r.sources().resolve(f.span()), null);
+        if (f.place() != null || f.pou() != null) {
+            // Rockwell: program → routine → rung, as Studio 5000 shows it; else the POU
+            ObjectNode logical = loc.putArray("logicalLocations").addObject();
+            logical.put("fullyQualifiedName", f.place() != null ? f.place() : f.pou());
+            logical.put("kind", "function");
+        }
+        res.putArray("locations").add(loc);
+        if (!f.related().isEmpty()) {
+            ArrayNode related = res.putArray("relatedLocations");
+            int id = 1;
+            for (Diagnostic.Related rel : f.related()) {
+                ObjectNode rl = location(r.sources().resolve(rel.span()), rel.message());
+                rl.put("id", id++);
+                related.add(rl);
+            }
+        }
+        res.putObject("partialFingerprints").put(Fingerprints.KEY, r.fingerprint(f));
+        return res;
     }
 
     private static ObjectNode rule(RuleDescriptor d) {

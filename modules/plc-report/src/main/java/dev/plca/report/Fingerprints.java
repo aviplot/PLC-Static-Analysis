@@ -1,7 +1,9 @@
 package dev.plca.report;
 
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.SourceText;
 import dev.plca.core.source.Span;
+import dev.plca.rules.Finding;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -23,12 +25,20 @@ public final class Fingerprints {
 
     private Fingerprints() {}
 
-    /** One fingerprint per finding, in the same order. */
+    /** One fingerprint per reported finding, in the same order. */
     public static List<String> of(AnalysisResult r) {
+        return r.findings().stream().map(r::fingerprint).toList();
+    }
+
+    /**
+     * One fingerprint per finding, in the same order. The occurrence counter runs over {@code findings} in order, so
+     * pass all findings of a run in report order to get the fingerprints a baseline records.
+     */
+    public static List<String> of(List<Finding> findings, SourceRegistry sources) {
         Map<String, Integer> seen = new HashMap<>();
-        return r.findings().stream()
+        return findings.stream()
                 .map(f -> {
-                    SourceText t = r.sources().text(f.span().textId());
+                    SourceText t = sources.text(f.span().textId());
                     String scope = f.pou() != null ? f.pou() : t.file().path();
                     String base = f.ruleId() + "\n" + scope + "\n" + normalisedLines(t, f.span());
                     int n = seen.merge(base, 1, Integer::sum);

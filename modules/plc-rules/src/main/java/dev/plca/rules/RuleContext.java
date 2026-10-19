@@ -1,6 +1,7 @@
 package dev.plca.rules;
 
 import dev.plca.ast.Node;
+import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
@@ -18,14 +19,20 @@ public abstract sealed class RuleContext permits PouContext, ProjectContext {
     private final SourceRegistry sources;
     private final RuleDescriptor descriptor;
     private final Map<String, String> parameters;
+    private final RuleEngine.Settings settings;
     final List<Finding> findings = new ArrayList<>();
 
     RuleContext(
-            SemanticModel model, SourceRegistry sources, RuleDescriptor descriptor, Map<String, String> parameters) {
+            SemanticModel model,
+            SourceRegistry sources,
+            RuleDescriptor descriptor,
+            Map<String, String> parameters,
+            RuleEngine.Settings settings) {
         this.model = model;
         this.sources = sources;
         this.descriptor = descriptor;
         this.parameters = parameters;
+        this.settings = settings;
     }
 
     public SemanticModel model() {
@@ -42,16 +49,26 @@ public abstract sealed class RuleContext permits PouContext, ProjectContext {
         return descriptor;
     }
 
-    /** Reports a finding with the rule's configured severity; {@code pou} as in {@link Finding#pou()}. */
+    /**
+     * Reports a finding with the rule's configured severity for the dialect of the span's file; {@code pou} as in
+     * {@link Finding#pou()}. Dropped when the configuration disables the rule for that dialect.
+     */
     public void report(String pou, Span span, String message, List<Diagnostic.Related> related) {
-        findings.add(new Finding(descriptor.id(), descriptor.severity(), message, span, related, pou));
+        Dialect d = settings.dialectOf(span);
+        if (settings.enabled(d)) {
+            findings.add(new Finding(descriptor.id(), settings.severity(d), message, span, related, pou));
+        }
     }
 
     /** Reports a finding in {@code pou} (null outside POUs), with its IDE location where the dialect has one. */
     void report(PouSymbol pou, Span span, String message, List<Diagnostic.Related> related, boolean unused) {
+        Dialect d = pou != null && pou.dialect() != null ? pou.dialect() : settings.dialectOf(span);
+        if (!settings.enabled(d)) {
+            return;
+        }
         findings.add(new Finding(
                 descriptor.id(),
-                descriptor.severity(),
+                settings.severity(d),
                 message,
                 span,
                 related,

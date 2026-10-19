@@ -178,7 +178,9 @@ public final class UnusedVariable implements ProjectRule {
                 && !v.isResult()
                 && !used.contains(v)
                 && v.address() == null
-                && (vendorAttributes || v.pragmas().stream().noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE))
+                && (vendorAttributes
+                        || v.pragmas().stream()
+                                .noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE && !p.isAttribute("plca-disable")))
                 && !namesInDeclarations.contains(v.name().toLowerCase(Locale.ROOT))
                 && !spare.matcher(v.name()).find();
     }

@@ -36,19 +36,33 @@ final class RulesCommand implements Callable<Integer> {
             out.println(d.id() + " " + d.title());
             out.println("severity: " + d.severity().name().toLowerCase(Locale.ROOT) + ", category: "
                     + d.category().key() + (d.plcopen() == null ? "" : ", PLCopen " + d.plcopen())
-                    + (d.cwe() == null ? "" : ", " + d.cwe()));
+                    + (d.cwe() == null ? "" : ", " + d.cwe())
+                    + (d.enabledByDefault() ? "" : ", off by default (select it to run it)"));
+            d.dialectSeverity()
+                    .forEach((dialect, sev) ->
+                            out.println("severity for " + dialect.name().toLowerCase(Locale.ROOT) + ": "
+                                    + sev.name().toLowerCase(Locale.ROOT)));
             params(out, d);
             out.println();
             out.print(d.markdown());
             out.flush();
             return 0;
         }
-        out.printf(Locale.ROOT, "%-10s %-8s %-9s %-7s %s%n", "ID", "SEVERITY", "CATEGORY", "PLCOPEN", "TITLE");
+        out.printf(
+                Locale.ROOT,
+                "%-10s %-7s %-8s %-9s %-7s %s%n",
+                "ID",
+                "DEFAULT",
+                "SEVERITY",
+                "CATEGORY",
+                "PLCOPEN",
+                "TITLE");
         for (RuleDescriptor d : registry.descriptors()) {
             out.printf(
                     Locale.ROOT,
-                    "%-10s %-8s %-9s %-7s %s%n",
+                    "%-10s %-7s %-8s %-9s %-7s %s%n",
                     d.id(),
+                    d.enabledByDefault() ? "on" : "off",
                     d.severity().name().toLowerCase(Locale.ROOT),
                     d.category().key(),
                     d.plcopen() == null ? "-" : d.plcopen(),

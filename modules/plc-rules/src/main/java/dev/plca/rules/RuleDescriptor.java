@@ -4,6 +4,7 @@ import dev.plca.core.Dialect;
 import dev.plca.core.diag.Severity;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -16,6 +17,9 @@ import java.util.regex.PatternSyntaxException;
  * @param cwe CWE id (e.g. {@code CWE-798}), or null
  * @param description the first paragraph of the {@code ## Description} section
  * @param markdown the documentation body after the front matter
+ * @param enabledByDefault false for opt-in rules (front matter {@code enabled: false}), which run only when selected
+ * @param dialectSeverity shipped severity per dialect where it differs from {@code severity} (front matter
+ *     {@code dialectSeverity: rockwell=info})
  */
 public record RuleDescriptor(
         String id,
@@ -29,7 +33,9 @@ public record RuleDescriptor(
         List<Parameter> parameters,
         String description,
         String markdown,
-        List<Example> examples) {
+        List<Example> examples,
+        boolean enabledByDefault,
+        Map<Dialect, Severity> dialectSeverity) {
 
     public enum Category {
         QUALITY,
@@ -86,6 +92,7 @@ public record RuleDescriptor(
         tags = List.copyOf(tags);
         parameters = List.copyOf(parameters);
         examples = List.copyOf(examples);
+        dialectSeverity = Map.copyOf(dialectSeverity);
     }
 
     public Parameter parameter(String name) {

@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":frontend-scl"))
     implementation(project(":frontend-l5x"))
     implementation(project(":frontend-plcopen"))
+    implementation(libs.jackson.yaml)
     testImplementation(libs.jackson.databind)
 }
 

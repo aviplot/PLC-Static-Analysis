@@ -7,7 +7,7 @@ import dev.plca.rules.RuleDescriptor;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.EnumMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -47,30 +47,26 @@ public final class JsonReport {
             d.tags().forEach(tags::add);
         }
 
-        List<String> fingerprints = Fingerprints.of(r);
         ArrayNode findings = root.putArray("findings");
         Map<Severity, Integer> bySeverity = new EnumMap<>(Severity.class);
-        for (int i = 0; i < r.findings().size(); i++) {
-            Finding f = r.findings().get(i);
+        for (Finding f : r.findings()) {
             bySeverity.merge(f.severity(), 1, Integer::sum);
-            ObjectNode n = findings.addObject();
-            n.put("ruleId", f.ruleId());
-            n.put("severity", Json.severity(f.severity()));
-            n.put("message", f.message());
-            if (f.place() != null) {
-                n.put("place", f.place());
+            findings.add(finding(r, f));
+        }
+        ArrayNode suppressed = root.putArray("suppressed");
+        for (AnalysisResult.Suppressed s : r.suppressed()) {
+            ObjectNode n = finding(r, s.finding());
+            n.put("suppression", s.kind().name().toLowerCase(Locale.ROOT));
+            if (s.reason() != null && !s.reason().isEmpty()) {
+                n.put("reason", s.reason());
             }
-            if (f.pou() != null) {
-                n.put("pou", f.pou());
-            }
-            n.set("location", Json.location(r.sources().resolve(f.span())));
-            ArrayNode related = n.putArray("related");
-            for (Diagnostic.Related rel : f.related()) {
-                ObjectNode x = related.addObject();
-                x.put("message", rel.message());
-                x.set("location", Json.location(r.sources().resolve(rel.span())));
-            }
-            n.put("fingerprint", fingerprints.get(i));
+            suppressed.add(n);
+        }
+        if (r.baseline() != null) {
+            ObjectNode b = root.putObject("baseline");
+            b.put("file", r.baseline().file());
+            b.put("unchanged", r.baseline().unchanged());
+            b.put("fixed", r.baseline().fixed());
         }
 
         ArrayNode diagnostics = root.putArray("diagnostics");
@@ -88,6 +84,10 @@ public final class JsonReport {
         stats.put("lines", s.lines());
         stats.put("pous", s.pous());
         stats.put("findings", r.findings().size());
+        ObjectNode sup = stats.putObject("suppressed");
+        for (AnalysisResult.SuppressionKind k : AnalysisResult.SuppressionKind.values()) {
+            sup.put(k.name().toLowerCase(Locale.ROOT), r.suppressed(k).size());
+        }
         ObjectNode sev = stats.putObject("findingsBySeverity");
         for (Severity v : Severity.values()) {
             sev.put(Json.severity(v), bySeverity.getOrDefault(v, 0));
@@ -103,5 +103,27 @@ public final class JsonReport {
         Json.write(root, out);
         out.write('\n');
         out.flush();
+    }
+
+    private static ObjectNode finding(AnalysisResult r, Finding f) {
+        ObjectNode n = Json.object();
+        n.put("ruleId", f.ruleId());
+        n.put("severity", Json.severity(f.severity()));
+        n.put("message", f.message());
+        if (f.place() != null) {
+            n.put("place", f.place());
+        }
+        if (f.pou() != null) {
+            n.put("pou", f.pou());
+        }
+        n.set("location", Json.location(r.sources().resolve(f.span())));
+        ArrayNode related = n.putArray("related");
+        for (Diagnostic.Related rel : f.related()) {
+            ObjectNode x = related.addObject();
+            x.put("message", rel.message());
+            x.set("location", Json.location(r.sources().resolve(rel.span())));
+        }
+        n.put("fingerprint", r.fingerprint(f));
+        return n;
     }
 }

@@ -1,5 +1,6 @@
 package dev.plca.rules;
 
+import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.Severity;
 import dev.plca.core.source.SourceRegistry;
@@ -9,6 +10,8 @@ import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +33,57 @@ public final class RuleEngine {
     /** A rule failed on a POU (or on the project); the rule's results there are missing. */
     public static final String INTERNAL = "PLC-INT-002";
 
-    /** Findings, engine diagnostics, and time spent per rule id (nanoseconds, summed over threads). */
-    public record Result(List<Finding> findings, List<Diagnostic> diagnostics, Map<String, Long> nanosPerRule) {
+    /**
+     * Findings, suppressed findings, engine diagnostics, and time spent per rule id (nanoseconds, summed over threads).
+     */
+    public record Result(
+            List<Finding> findings,
+            List<Suppressions.Suppressed> suppressed,
+            List<Diagnostic> diagnostics,
+            Map<String, Long> nanosPerRule) {
         public Result {
             findings = List.copyOf(findings);
+            suppressed = List.copyOf(suppressed);
             diagnostics = List.copyOf(diagnostics);
             nanosPerRule = Map.copyOf(nanosPerRule);
+        }
+    }
+
+    /** A rule's resolved settings per dialect, and the dialect of a span's file. */
+    static final class Settings {
+        private final Map<Dialect, Boolean> enabled = new EnumMap<>(Dialect.class);
+        private final Map<Dialect, Severity> severity = new EnumMap<>(Dialect.class);
+        private final boolean globalEnabled;
+        private final Severity globalSeverity;
+        private final SourceRegistry sources;
+        private final Map<String, Dialect> fileDialects;
+
+        Settings(
+                RuleRegistry registry,
+                RuleConfig config,
+                RuleDescriptor d,
+                SourceRegistry sources,
+                Map<String, Dialect> fileDialects) {
+            for (Dialect dialect : Dialect.values()) {
+                enabled.put(dialect, d.appliesTo(dialect) && config.enabled(registry, d.id(), dialect));
+                severity.put(dialect, config.severity(d, dialect));
+            }
+            this.globalEnabled = config.enabled(registry, d.id(), null);
+            this.globalSeverity = config.severity(d, null);
+            this.sources = sources;
+            this.fileDialects = fileDialects;
+        }
+
+        boolean enabled(Dialect d) {
+            return d == null ? globalEnabled : enabled.get(d);
+        }
+
+        Severity severity(Dialect d) {
+            return d == null ? globalSeverity : severity.get(d);
+        }
+
+        Dialect dialectOf(Span span) {
+            return fileDialects.get(sources.text(span.textId()).file().path());
         }
     }
 
@@ -61,16 +109,24 @@ public final class RuleEngine {
             }
         }
 
+        Map<String, Dialect> fileDialects = new HashMap<>();
+        model.units().forEach(u -> fileDialects.putIfAbsent(u.path(), u.dialect()));
+        Map<String, Settings> settings = new HashMap<>();
+        for (String id : enabled) {
+            settings.put(
+                    id, new Settings(registry, config, registry.descriptor(id).orElseThrow(), sources, fileDialects));
+        }
+
         List<Callable<Partial>> tasks = new ArrayList<>();
         if (!pouRules.isEmpty()) {
             for (PouSymbol p : model.pous()) {
                 if (!p.isBuiltin() && p.declaration() != null && p.declaration().body() != null) {
-                    tasks.add(() -> runPou(model, sources, config, pouRules, p));
+                    tasks.add(() -> runPou(model, sources, config, settings, pouRules, p));
                 }
             }
         }
         for (ProjectRule r : projectRules) {
-            tasks.add(() -> runProject(model, sources, config, r));
+            tasks.add(() -> runProject(model, sources, config, settings.get(r.id()), r));
         }
 
         List<Partial> parts = execute(tasks, threads);
@@ -84,7 +140,19 @@ public final class RuleEngine {
             p.nanos.forEach((k, v) -> nanos.merge(k, v, Long::sum));
         }
         findings.sort(order(sources));
-        return new Result(findings, diagnostics, nanos);
+        Suppressions suppressions = new Suppressions(registry, model, sources, config);
+        diagnostics.addAll(suppressions.diagnostics());
+        List<Finding> kept = new ArrayList<>(findings.size());
+        List<Suppressions.Suppressed> suppressed = new ArrayList<>();
+        for (Finding f : findings) {
+            Suppressions.Suppressed s = suppressions.check(f);
+            if (s == null) {
+                kept.add(f);
+            } else {
+                suppressed.add(s);
+            }
+        }
+        return new Result(kept, suppressed, diagnostics, nanos);
     }
 
     private static final class Partial {
@@ -94,14 +162,20 @@ public final class RuleEngine {
     }
 
     private Partial runPou(
-            SemanticModel model, SourceRegistry sources, RuleConfig config, List<PouRule> rules, PouSymbol pou) {
+            SemanticModel model,
+            SourceRegistry sources,
+            RuleConfig config,
+            Map<String, Settings> settings,
+            List<PouRule> rules,
+            PouSymbol pou) {
         Partial out = new Partial();
         for (PouRule r : rules) {
             RuleDescriptor d = registry.descriptor(r.id()).orElseThrow();
-            if (!d.appliesTo(pou.dialect())) {
+            Settings s = settings.get(r.id());
+            if (!d.appliesTo(pou.dialect()) || !s.enabled(pou.dialect())) {
                 continue;
             }
-            PouContext ctx = new PouContext(model, sources, d, params(config, d), pou);
+            PouContext ctx = new PouContext(model, sources, d, config.parameters(d.id(), pou.dialect()), s, pou);
             long t0 = System.nanoTime();
             try {
                 r.check(ctx);
@@ -118,10 +192,11 @@ public final class RuleEngine {
         return out;
     }
 
-    private Partial runProject(SemanticModel model, SourceRegistry sources, RuleConfig config, ProjectRule r) {
+    private Partial runProject(
+            SemanticModel model, SourceRegistry sources, RuleConfig config, Settings settings, ProjectRule r) {
         Partial out = new Partial();
         RuleDescriptor d = registry.descriptor(r.id()).orElseThrow();
-        ProjectContext ctx = new ProjectContext(model, sources, d, params(config, d));
+        ProjectContext ctx = new ProjectContext(model, sources, d, config.parameters(d.id(), null), settings);
         long t0 = System.nanoTime();
         try {
             r.check(ctx);
@@ -138,11 +213,6 @@ public final class RuleEngine {
         }
         out.nanos.merge(r.id(), System.nanoTime() - t0, Long::sum);
         return out;
-    }
-
-    private static Map<String, String> params(RuleConfig config, RuleDescriptor d) {
-        Map<String, String> p = config.parameters().get(d.id());
-        return p == null ? Map.of() : p;
     }
 
     private static Diagnostic failure(RuleDescriptor d, String where, Throwable e, Span span) {

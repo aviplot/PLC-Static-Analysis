@@ -12,8 +12,12 @@ import java.util.Map;
 public final class ProjectContext extends RuleContext {
 
     ProjectContext(
-            SemanticModel model, SourceRegistry sources, RuleDescriptor descriptor, Map<String, String> parameters) {
-        super(model, sources, descriptor, parameters);
+            SemanticModel model,
+            SourceRegistry sources,
+            RuleDescriptor descriptor,
+            Map<String, String> parameters,
+            RuleEngine.Settings settings) {
+        super(model, sources, descriptor, parameters, settings);
     }
 
     /** Reports a finding in {@code pou} (null for findings outside POUs). */

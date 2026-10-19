@@ -22,8 +22,9 @@ public final class PouContext extends RuleContext {
             SourceRegistry sources,
             RuleDescriptor descriptor,
             Map<String, String> parameters,
+            RuleEngine.Settings settings,
             PouSymbol pou) {
-        super(model, sources, descriptor, parameters);
+        super(model, sources, descriptor, parameters, settings);
         this.pou = pou;
     }
 

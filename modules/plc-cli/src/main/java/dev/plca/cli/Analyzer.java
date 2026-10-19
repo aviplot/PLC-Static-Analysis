@@ -9,9 +9,13 @@ import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontends;
 import dev.plca.report.AnalysisResult;
+import dev.plca.report.Baseline;
+import dev.plca.report.Fingerprints;
+import dev.plca.rules.Finding;
 import dev.plca.rules.RuleConfig;
 import dev.plca.rules.RuleEngine;
 import dev.plca.rules.RuleRegistry;
+import dev.plca.rules.Suppressions;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
 import java.io.IOException;
@@ -22,8 +26,11 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -51,6 +58,14 @@ public final class Analyzer {
      * @throws IllegalArgumentException for an invalid rule configuration
      */
     public AnalysisResult analyze(Path input, RuleConfig config, int threads) {
+        return analyze(input, config, threads, null, null);
+    }
+
+    /**
+     * As {@link #analyze(Path, RuleConfig, int)}, reporting only findings not in {@code baseline} (null: no baseline;
+     * {@code baselineName} is how reports name it).
+     */
+    public AnalysisResult analyze(Path input, RuleConfig config, int threads, Baseline baseline, String baselineName) {
         Path path = input.toAbsolutePath().normalize();
         Path root = Files.isDirectory(path) ? path : path.getParent();
         List<Path> files = Files.isDirectory(path) ? ProjectLoader.sources(root, FRONTENDS) : List.of(path);
@@ -81,15 +96,53 @@ public final class Analyzer {
                 model.resolutionStats().rate(),
                 Files.isDirectory(path) ? skipped(root) : List.of());
         String rootUri = root.toUri().toString();
+
+        // fingerprints over every unsuppressed finding in report order: the recipe a baseline records
+        Map<Finding, String> fingerprints = new IdentityHashMap<>();
+        List<String> fps = Fingerprints.of(rules.findings(), project.registry());
+        List<Finding> reported = new ArrayList<>();
+        List<AnalysisResult.Suppressed> suppressed = new ArrayList<>();
+        Set<String> matched = new HashSet<>();
+        for (int i = 0; i < fps.size(); i++) {
+            Finding f = rules.findings().get(i);
+            fingerprints.put(f, fps.get(i));
+            if (baseline != null && baseline.contains(fps.get(i))) {
+                matched.add(fps.get(i));
+                suppressed.add(new AnalysisResult.Suppressed(f, AnalysisResult.SuppressionKind.BASELINE, ""));
+            } else {
+                reported.add(f);
+            }
+        }
+        List<Finding> quiet = rules.suppressed().stream()
+                .map(Suppressions.Suppressed::finding)
+                .toList();
+        List<String> quietFps = Fingerprints.of(quiet, project.registry());
+        for (int i = 0; i < quiet.size(); i++) {
+            Suppressions.Suppressed s = rules.suppressed().get(i);
+            fingerprints.put(s.finding(), quietFps.get(i));
+            suppressed.add(new AnalysisResult.Suppressed(
+                    s.finding(),
+                    s.kind().equals("config")
+                            ? AnalysisResult.SuppressionKind.CONFIG
+                            : AnalysisResult.SuppressionKind.INLINE,
+                    s.reason()));
+        }
+        AnalysisResult.BaselineSummary summary = baseline == null
+                ? null
+                : new AnalysisResult.BaselineSummary(
+                        baselineName, suppressed.size() - quiet.size(), baseline.size() - matched.size());
         return new AnalysisResult(
                 rootUri.endsWith("/") ? rootUri : rootUri + "/",
                 config.resolve(registry).stream()
                         .map(id -> registry.descriptor(id).orElseThrow())
                         .toList(),
-                rules.findings(),
+                reported,
                 diagnostics,
                 project.registry(),
-                stats);
+                stats,
+                suppressed,
+                summary,
+                fingerprints);
     }
 
     /** Files we cannot analyse yet: L5K (Rockwell's text export). */

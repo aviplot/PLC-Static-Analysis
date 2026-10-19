@@ -31,25 +31,31 @@
     },
     "findings": {
       "type": "array",
+      "description": "findings to act on: not suppressed and not in the baseline",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "suppressed": {
+      "type": "array",
+      "description": "findings left out of findings (added in M7)",
       "items": {
-        "type": "object",
-        "required": ["ruleId", "severity", "message", "location", "related", "fingerprint"],
-        "properties": {
-          "ruleId": { "type": "string" },
-          "severity": { "$ref": "#/$defs/severity" },
-          "message": { "type": "string" },
-          "pou": { "type": "string", "description": "qualified name of the POU, absent outside POUs" },
-          "location": { "$ref": "#/$defs/location" },
-          "related": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["message", "location"],
-              "properties": { "message": { "type": "string" }, "location": { "$ref": "#/$defs/location" } }
-            }
-          },
-          "fingerprint": { "type": "string", "description": "line-independent identity, for baselines" }
-        }
+        "allOf": [
+          { "$ref": "#/$defs/finding" },
+          {
+            "type": "object",
+            "required": ["suppression"],
+            "properties": { "suppression": { "enum": ["inline", "config", "baseline"] }, "reason": { "type": "string" } }
+          }
+        ]
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "description": "present when a baseline was given (added in M7)",
+      "required": ["file", "unchanged", "fixed"],
+      "properties": {
+        "file": { "type": "string" },
+        "unchanged": { "type": "integer", "minimum": 0 },
+        "fixed": { "type": "integer", "minimum": 0 }
       }
     },
     "diagnostics": {
@@ -74,17 +80,19 @@
         "lines": { "type": "integer" },
         "pous": { "type": "integer" },
         "findings": { "type": "integer" },
-        "findingsBySeverity": {
-          "type": "object",
-          "additionalProperties": { "type": "integer" }
-        },
-        "timeMillis": {
-          "type": "object",
-          "required": ["parse", "model", "rules"],
-          "additionalProperties": { "type": "integer" }
-        },
+        "findingsBySeverity": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "timeMillis": { "type": "object", "required": ["parse", "model", "rules"], "additionalProperties": { "type": "integer" } },
         "resolutionRate": { "type": "number", "minimum": 0, "maximum": 1 },
-        "skippedFiles": { "type": "array", "items": { "type": "string" } }
+        "skippedFiles": { "type": "array", "items": { "type": "string" } },
+        "suppressed": {
+          "type": "object",
+          "required": ["inline", "config", "baseline"],
+          "properties": {
+            "inline": { "type": "integer", "minimum": 0 },
+            "config": { "type": "integer", "minimum": 0 },
+            "baseline": { "type": "integer", "minimum": 0 }
+          }
+        }
       }
     }
   },
@@ -100,6 +108,30 @@
         "startColumn": { "type": "integer", "minimum": 1 },
         "endLine": { "type": "integer", "minimum": 1 },
         "endColumn": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["ruleId", "severity", "message", "location", "related", "fingerprint"],
+      "properties": {
+        "ruleId": { "type": "string" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "message": { "type": "string" },
+        "pou": { "type": "string", "description": "qualified name of the POU, absent outside POUs" },
+        "location": { "$ref": "#/$defs/location" },
+        "related": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["message", "location"],
+            "properties": { "message": { "type": "string" }, "location": { "$ref": "#/$defs/location" } }
+          }
+        },
+        "fingerprint": { "type": "string", "description": "line-independent identity, for baselines" },
+        "place": {
+          "type": "string",
+          "description": "where the IDE shows it when not a file line, e.g. Program:Main/Routine:Fill/Rung:14"
+        }
       }
     }
   }

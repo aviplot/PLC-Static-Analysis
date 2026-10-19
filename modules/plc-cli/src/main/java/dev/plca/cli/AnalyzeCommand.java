@@ -2,6 +2,7 @@ package dev.plca.cli;
 
 import dev.plca.core.diag.Severity;
 import dev.plca.report.AnalysisResult;
+import dev.plca.report.Baseline;
 import dev.plca.report.ConsoleReport;
 import dev.plca.report.ReportFormat;
 import dev.plca.rules.Finding;
@@ -79,12 +80,41 @@ final class AnalyzeCommand implements Callable<Integer> {
     @Option(
             names = "--rules",
             split = ",",
-            defaultValue = "all",
-            description = "Rules to run: ids, categories (quality, plc, security) or all (default).")
+            description = "Rules to run: ids, categories (quality, plc, security), default (the rules on by default;"
+                    + " the default) or all. Replaces rules.select and rules.disable of plca.yaml.")
     List<String> rules;
 
-    @Option(names = "--disable", split = ",", description = "Rule ids or categories to leave out.")
+    @Option(
+            names = "--disable",
+            split = ",",
+            description = "Rule ids or categories to leave out (added to rules.disable of plca.yaml).")
     List<String> disable = new ArrayList<>();
+
+    @Option(
+            names = "--config",
+            paramLabel = "FILE",
+            description = "Configuration file (default: plca.yaml in the analysed directory, if present).")
+    Path config;
+
+    @Option(names = "--no-config", description = "Ignore plca.yaml in the analysed directory.")
+    boolean noConfig;
+
+    @Option(
+            names = "--baseline",
+            paramLabel = "FILE",
+            description = "Report only findings not in this baseline (replaces baseline: of plca.yaml).")
+    Path baseline;
+
+    @Option(
+            names = "--write-baseline",
+            paramLabel = "FILE",
+            description = "Write the fingerprints of all current (unsuppressed) findings to FILE as a new baseline.")
+    Path writeBaseline;
+
+    @Option(
+            names = "--show-suppressed",
+            description = "Also list suppressed and baselined findings in the console report.")
+    boolean showSuppressed;
 
     @Option(
             names = "--param",
@@ -94,9 +124,8 @@ final class AnalyzeCommand implements Callable<Integer> {
 
     @Option(
             names = "--fail-on",
-            defaultValue = "error",
-            description =
-                    "Lowest severity that gives exit code 1: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).")
+            description = "Lowest severity that gives exit code 1: ${COMPLETION-CANDIDATES} (default: fail-on of"
+                    + " plca.yaml, else error).")
     FailOn failOn;
 
     @Option(names = "--threads", description = "Worker threads (default: available processors).")
@@ -115,19 +144,47 @@ final class AnalyzeCommand implements Callable<Integer> {
             err.println("plca: no such file or directory: " + path);
             return USAGE;
         }
-        RuleConfig config;
+        ConfigFile file;
+        RuleConfig ruleConfig;
+        Baseline base = null;
+        String baseName = null;
         try {
-            config = new RuleConfig(rules, disable, parameters());
+            file = configFile();
+            ruleConfig = ruleConfig(file);
+            Path b = baseline != null ? baseline : file == null ? null : file.baseline();
+            if (b != null) {
+                base = Baseline.read(b);
+                baseName = b.toString();
+            }
+        } catch (ConfigFile.ConfigException | Baseline.BaselineException | IllegalArgumentException e) {
+            err.println("plca: " + e.getMessage());
+            return USAGE;
+        } catch (IOException e) {
+            err.println("plca: cannot read " + e.getMessage());
+            return USAGE;
+        }
+        FailOn threshold = failOn != null
+                ? failOn
+                : file != null && file.failOn() != null
+                        ? FailOn.valueOf(file.failOn().toUpperCase(Locale.ROOT))
+                        : FailOn.ERROR;
+        AnalysisResult result;
+        try {
+            result = new Analyzer(RuleRegistry.standard())
+                    .analyze(path, ruleConfig, Math.max(1, threads), base, baseName);
         } catch (IllegalArgumentException e) {
             err.println("plca: " + e.getMessage());
             return USAGE;
         }
-        AnalysisResult result;
-        try {
-            result = new Analyzer(RuleRegistry.standard()).analyze(path, config, Math.max(1, threads));
-        } catch (IllegalArgumentException e) {
-            err.println("plca: " + e.getMessage());
-            return USAGE;
+        if (writeBaseline != null) {
+            List<Finding> all = new ArrayList<>(result.findings());
+            result.suppressed(AnalysisResult.SuppressionKind.BASELINE).forEach(s -> all.add(s.finding()));
+            all.sort(java.util.Comparator.comparing(f -> result.fingerprint(f)));
+            try (Writer w = Files.newBufferedWriter(writeBaseline, StandardCharsets.UTF_8)) {
+                Baseline.write(all, all.stream().map(result::fingerprint).toList(), result.sources(), w);
+            }
+            err.println("plca: wrote " + all.size() + " finding" + (all.size() == 1 ? "" : "s") + " to baseline "
+                    + writeBaseline);
         }
 
         if (output != null) {
@@ -139,12 +196,54 @@ final class AnalyzeCommand implements Callable<Integer> {
             write(result, w, useColor());
             w.flush();
         }
-        return failing(result) ? FINDINGS : 0;
+        return failing(result, threshold) ? FINDINGS : 0;
+    }
+
+    /** {@code --config}, else {@code plca.yaml} in the analysed directory (for a file: its directory), else null. */
+    private ConfigFile configFile() throws ConfigFile.ConfigException, IOException {
+        if (config != null) {
+            if (!Files.isRegularFile(config)) {
+                throw new ConfigFile.ConfigException("no such configuration file: " + config);
+            }
+            return ConfigFile.read(config);
+        }
+        if (noConfig) {
+            return null;
+        }
+        Path dir = Files.isDirectory(path) ? path : path.toAbsolutePath().getParent();
+        Path found = dir == null ? null : dir.resolve(ConfigFile.NAME);
+        return found != null && Files.isRegularFile(found) ? ConfigFile.read(found) : null;
+    }
+
+    /**
+     * The file's settings with the command line on top: --rules replaces the selection (and the file's disable list),
+     * --disable adds, --param overrides.
+     */
+    private RuleConfig ruleConfig(ConfigFile file) {
+        ConfigFile.Rules r = file == null ? null : file.rules();
+        List<String> select = rules != null ? rules : r != null && r.select() != null ? r.select() : List.of("default");
+        // an explicit --rules is the whole selection: the file's disable list does not apply to it
+        List<String> off = new ArrayList<>(rules == null && r != null && r.disable() != null ? r.disable() : List.of());
+        off.addAll(disable);
+        Map<String, Map<String, String>> params = new LinkedHashMap<>();
+        if (r != null) {
+            r.parameters().forEach((k, v) -> params.put(k, new LinkedHashMap<>(v)));
+        }
+        parameters()
+                .forEach((k, v) ->
+                        params.computeIfAbsent(k, x -> new LinkedHashMap<>()).putAll(v));
+        return new RuleConfig(
+                select,
+                off,
+                params,
+                r == null ? Map.of() : r.severity(),
+                r == null ? Map.of() : r.dialects(),
+                file == null ? List.of() : file.suppressions());
     }
 
     private void write(AnalysisResult result, Writer w, boolean colored) throws IOException {
         if (format == ReportFormat.CONSOLE) {
-            new ConsoleReport(colored).write(result, w);
+            new ConsoleReport(colored, showSuppressed).write(result, w);
         } else {
             format.write(result, w);
         }
@@ -159,7 +258,7 @@ final class AnalyzeCommand implements Callable<Integer> {
         };
     }
 
-    private boolean failing(AnalysisResult result) {
+    private static boolean failing(AnalysisResult result, FailOn failOn) {
         if (failOn == FailOn.NEVER) {
             return false;
         }

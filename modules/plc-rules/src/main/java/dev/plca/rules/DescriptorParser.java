@@ -101,7 +101,9 @@ public final class DescriptorParser {
                 parameters,
                 firstParagraph(section(markdown, "Description")),
                 markdown,
-                examples(markdown));
+                examples(markdown),
+                !fields.getOrDefault("enabled", "true").equalsIgnoreCase("false"),
+                dialectSeverity(fields.getOrDefault("dialectSeverity", "")));
     }
 
     private static String required(Map<String, String> fields, String key) {
@@ -120,6 +122,21 @@ public final class DescriptorParser {
             case "hint" -> Severity.HINT;
             default -> throw new IllegalArgumentException("unknown severity " + s);
         };
+    }
+
+    /** {@code rockwell=info, siemens=warning}. */
+    private static Map<Dialect, Severity> dialectSeverity(String s) {
+        Map<Dialect, Severity> r = new java.util.EnumMap<>(Dialect.class);
+        for (String pair : list(s)) {
+            int eq = pair.indexOf('=');
+            if (eq < 0) {
+                throw new IllegalArgumentException("dialectSeverity expects dialect=severity, got " + pair);
+            }
+            r.put(
+                    Dialect.valueOf(pair.substring(0, eq).strip().toUpperCase(Locale.ROOT)),
+                    severity(pair.substring(eq + 1).strip()));
+        }
+        return r;
     }
 
     private static Set<Dialect> dialects(String s) {
