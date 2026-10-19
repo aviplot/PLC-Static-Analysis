@@ -14,4 +14,5 @@ dependencies {
 
 dependencies {
     testImplementation(testFixtures(project(":plc-core")))
+    testImplementation(libs.jazzer.junit)
 }

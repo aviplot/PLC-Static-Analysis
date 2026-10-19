@@ -40,6 +40,16 @@ tasks.register<JavaExec>("corpusCheck") {
     providers.gradleProperty("only").orNull?.let { args("--only=$it") }
 }
 
+// ./gradlew :plc-devtools:navigationCheck --args="<project dir> ..." queries every file as the language server would.
+tasks.register<JavaExec>("navigationCheck") {
+    group = "verification"
+    description = "Runs editor queries (definition, references, hover, outline) on the given projects (--args)."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "dev.plca.devtools.NavigationCheck"
+    maxHeapSize = "6g"
+    workingDir = rootProject.projectDir
+}
+
 // ./gradlew :plc-devtools:parseDebug --args="<file> ... | @listfile" prints diagnostics with source lines.
 tasks.register<JavaExec>("parseDebug") {
     group = "verification"

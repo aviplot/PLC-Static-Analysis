@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -172,19 +171,29 @@ public final class Navigator {
      * accesses, named arguments, and type names in declarations ({@code fb : FB_Motor}, {@code EXTENDS FB_Base}).
      */
     public List<Span> references(Target target, boolean includeDeclaration) {
-        Set<Span> out = new HashSet<>(referenceMap(target.model()).getOrDefault(target.symbol(), List.of()));
-        if (includeDeclaration) {
-            definition(target.symbol()).ifPresent(out::add);
-        } else {
-            definition(target.symbol()).ifPresent(out::remove);
+        List<Span> uses = referenceMap(target.model()).getOrDefault(target.symbol(), List.of());
+        Optional<Span> declaration = definition(target.symbol());
+        if (declaration.isEmpty()) {
+            return uses;
         }
+        List<Span> out = new ArrayList<>(uses.size() + 1);
+        for (Span s : uses) {
+            if (!s.equals(declaration.get())) {
+                out.add(s);
+            }
+        }
+        if (includeDeclaration) {
+            out.add(declaration.get());
+            out.sort(fileOrder());
+        }
+        return out;
+    }
+
+    /** By file, then by offset in the file. Keys are computed per comparison: sort small lists only. */
+    private Comparator<Span> fileOrder() {
         SourceRegistry r = snapshot.registry();
-        return out.stream()
-                .filter(s -> isLive(r, s))
-                .sorted(Comparator.<Span, String>comparing(
-                                s -> r.text(s.textId()).file().path())
-                        .thenComparingInt(s -> r.text(s.textId()).map().toFileStart(s.start())))
-                .toList();
+        return Comparator.<Span, String>comparing(s -> r.text(s.textId()).file().path())
+                .thenComparingInt(s -> r.text(s.textId()).map().toFileStart(s.start()));
     }
 
     /** The hover at a position: the symbol's declaration, owner and comment, or the type of an expression. */
@@ -541,6 +550,18 @@ public final class Navigator {
                     }
                 });
             }
+            // once per model, deduplicated and in file order: a common name has tens of thousands of uses
+            SourceRegistry r = snapshot.registry();
+            map.replaceAll((symbol, spans) -> {
+                record Keyed(Span span, String path, int offset) {}
+                List<Keyed> keyed = new ArrayList<>(spans.size());
+                for (Span sp : new HashSet<>(spans)) {
+                    var t = r.text(sp.textId());
+                    keyed.add(new Keyed(sp, t.file().path(), t.map().toFileStart(sp.start())));
+                }
+                keyed.sort(Comparator.comparing(Keyed::path).thenComparingInt(Keyed::offset));
+                return keyed.stream().map(Keyed::span).toList();
+            });
             return map;
         });
     }
@@ -548,14 +569,5 @@ public final class Navigator {
     private SourceUnit unitOf(Span span) {
         String path = snapshot.pathOf(span);
         return snapshot.file(path).map(f -> f.unit()).orElse(null);
-    }
-
-    private static boolean isLive(SourceRegistry r, Span s) {
-        try {
-            r.text(s.textId());
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
     }
 }
