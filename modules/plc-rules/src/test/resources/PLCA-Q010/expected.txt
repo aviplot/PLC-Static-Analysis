@@ -1,0 +1,6 @@
+noncompliant.st:14:13-14:17 PLCA-Q010 warning: 'nSum' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [F_Sum]
+noncompliant.st:19:10-19:15 PLCA-Q010 warning: 'nPick' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [F_Sum]
+noncompliant.st:20:18-20:23 PLCA-Q010 warning: 'nLast' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [F_Sum]
+noncompliant.st:25:18-25:23 PLCA-Q010 warning: 'nOnce' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [F_Sum]
+noncompliant.st:35:22-35:26 PLCA-Q010 warning: 'nTmp' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [FB_Temp]
+noncompliant.st:39:13-39:21 PLCA-Q010 warning: Function result 'F_Result' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [F_Result]

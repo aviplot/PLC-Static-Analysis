@@ -1,0 +1,12 @@
+FUNCTION_BLOCK "FB_Scale"
+VERSION : 0.1
+   VAR_INPUT 
+      Raw : DInt;
+   END_VAR
+   VAR 
+      Scaled : Int;
+   END_VAR
+BEGIN
+	#Scaled := #Raw; // PLCA-Q011
+	#Scaled := DINT_TO_INT(#Raw);
+END_FUNCTION_BLOCK

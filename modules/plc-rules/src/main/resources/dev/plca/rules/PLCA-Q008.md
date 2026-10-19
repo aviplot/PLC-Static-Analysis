@@ -19,11 +19,16 @@ Code that never runs still has to be read, reviewed and maintained, and a routin
 called (a missing `JSR`, a program left out of the task) is a bug that testing on site may not reveal. PLCopen Coding
 Guidelines rule CP2 *All code shall be used in the application*.
 
-Reachability starts at the entry points: the programs of the configured tasks (or every PROGRAM when the project has no
-task configuration), Siemens organisation blocks and Rockwell programs. From there it follows calls, `JSR`s, instance
-declarations (anywhere, including global variable lists and structures), `EXTENDS`/`IMPLEMENTS` and references to
-POUs in expressions. Methods, actions and properties are not reported on their own. A dialect whose code in the
-project has no entry point — a folder of library blocks — is not checked.
+Reachability starts at the entry points: the programs of the configured tasks and Siemens organisation blocks. From
+there it follows calls, `JSR`s, instance declarations (anywhere, including global variable lists and structures),
+`EXTENDS`/`IMPLEMENTS` and references to POUs in expressions. Methods, actions and properties are not reported on their
+own.
+
+The rule needs a complete export to be right, so it stays silent when it cannot see every caller: code without a task
+configuration (or, for Siemens, without an OB), a dialect with bodies in a language that is not parsed (LD, FBD, CFC;
+Rockwell FBD and SFC routines silence their program), and Siemens code that calls instance data blocks the export does
+not contain. Names declared twice, the CODESYS implicit check functions (`CheckBounds`, `CheckPointer`, …) and a dialect
+in which most POUs are unused — a library bundled with a small test program — are not reported either.
 
 ## Noncompliant
 
@@ -48,6 +53,13 @@ VAR_INPUT
 END_VAR
 F_Forgotten := n - 1;
 END_FUNCTION
+
+CONFIGURATION Cfg
+    RESOURCE Res ON PLC
+        TASK tMain(INTERVAL := T#10MS, PRIORITY := 1);
+        PROGRAM iMain WITH tMain : P_Main;
+    END_RESOURCE
+END_CONFIGURATION
 ```
 
 ## Compliant
@@ -66,4 +78,11 @@ VAR_INPUT
 END_VAR
 F_Used := n + 1;
 END_FUNCTION
+
+CONFIGURATION Cfg
+    RESOURCE Res ON PLC
+        TASK tMain(INTERVAL := T#10MS, PRIORITY := 1);
+        PROGRAM iMain WITH tMain : P_Main;
+    END_RESOURCE
+END_CONFIGURATION
 ```

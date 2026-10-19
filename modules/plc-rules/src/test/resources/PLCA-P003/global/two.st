@@ -7,5 +7,5 @@ gfbPulse(IN := TRUE, PT := T#1S);
 END_PROGRAM
 
 PROGRAM P_B
-gfbPulse(IN := FALSE, PT := T#1S); // PLCA-P003
+gfbPulse(IN := TRUE, PT := T#2S); // PLCA-P003
 END_PROGRAM

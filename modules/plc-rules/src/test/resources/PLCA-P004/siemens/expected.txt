@@ -1,0 +1,2 @@
+obs.scl:27:2-27:17 PLCA-P004 warning: Global 'DB_Line.Count' is written from task Cyclic interrupt (Cyclic interrupt) and from task Main (Main); one task can interrupt the other mid-update (CP10) [Cyclic interrupt]
+    obs.scl:21:2-21:17 write in task Main

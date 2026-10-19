@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cell" TargetType="Controller" ContainsContext="false">
+<Controller Use="Target" Name="Cell">
+<Tags>
+<Tag Name="Wide" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Narrow" TagType="Base" DataType="INT" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs>
+<Program Name="MainProgram" MainRoutineName="Main" Disabled="false">
+<Routines>
+<Routine Name="Main" Type="ST">
+<STContent>
+<Line Number="0"><![CDATA[Narrow := Wide;]]></Line> <!-- PLCA-Q011 -->
+<Line Number="1"><![CDATA[Wide := Narrow;]]></Line>
+</STContent>
+</Routine>
+<Routine Name="Ladder" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[MOV(Wide,Narrow);]]></Text></Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+</Controller>
+</RSLogix5000Content>

@@ -33,7 +33,8 @@ import java.util.Set;
  *   <li>Siemens {@code "T_DB".TON(…)} calls on an IEC_TIMER count as calls of that timer.
  *   <li>Rockwell: the same TIMER tag in two TON/TOF/RTO instructions, or the same COUNTER in two CTU (or two CTD)
  *       instructions — CTU with CTD on one counter is the up/down counter idiom. Ladder instructions run every scan
- *       whatever the rung condition, so rungs are never alternatives.
+ *       whatever the rung condition, so rungs are never alternatives. Add-On Instructions are not compared: Logix has
+ *       no functions, so stateless AOIs are routinely called several times.
  *   <li>Across POUs: a global instance (or Rockwell controller/program tag) called from two programs, function blocks
  *       or routines.
  * </ul>
@@ -179,7 +180,11 @@ public final class MultipleInstanceCalls implements ProjectRule {
                     instance = call.arguments().getFirst().value();
                     kind = TIMERS.contains(name) ? "timer" : name;
                 }
-            } else if (m.type(callee).resolved() instanceof Type.Instance) {
+            } else if (m.type(callee).resolved() instanceof Type.Instance i && pou.dialect() != Dialect.ROCKWELL) {
+                // Rockwell AOIs are often stateless helpers (Logix has no functions): only timers and counters
+                if (resetCall(m, call)) {
+                    return;
+                }
                 instance = callee;
             } else if (callee instanceof Expression.MemberAccess ma
                     && pou.dialect() == Dialect.SIEMENS
@@ -203,6 +208,20 @@ public final class MultipleInstanceCalls implements ProjectRule {
             String key = (shared ? "g:" : "l:") + System.identityHashCode(root0) + rest;
             out.add(new Call(pou, key, ctx.text(instance).strip(), kind, call, List.copyOf(path)));
         });
+    }
+
+    /** {@code tmr(IN := FALSE)}: the usual way to reset a timer in a state machine, not a second evaluation. */
+    private static boolean resetCall(SemanticModel m, Expression.Call call) {
+        for (Expression.Argument a : call.arguments()) {
+            if (a.name() != null
+                    && a.name().is("IN")
+                    && a.value() != null
+                    && m.constant(a.value()).orElse(null) instanceof dev.plca.semantic.Constant.Bool b
+                    && !b.value()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String what(Call c) {

@@ -22,9 +22,10 @@ counter counts twice. In ladder the second timer instruction runs even when its 
 PLCopen Coding Guidelines rule CP20 *Function block instances should be called only once*. Call the instance once and
 use its outputs where needed.
 
-Not compared: calls inside loops, calls through a variable array index (`afbAxis[i]()`), and calls in SFC actions,
-where the active step decides what runs. CTU and CTD on the same Rockwell counter form an up/down counter and are not
-reported.
+Not compared: calls inside loops, calls through a variable array index (`afbAxis[i]()`), calls in SFC actions, where
+the active step decides what runs, and `tmr(IN := FALSE)`, the usual way to reset a timer when a state machine changes
+step. CTU and CTD on the same Rockwell counter form an up/down counter and are not reported. Rockwell Add-On
+Instructions are not compared: Logix has no functions, so stateless AOIs are routinely called several times.
 
 ## Noncompliant
 

@@ -1,2 +1,2 @@
-two.st:10:1-10:34 PLCA-P003 warning: 'gfbPulse' is called in both P_A and P_B; each call advances its state (CP20), call it once per cycle [P_B]
+two.st:10:1-10:33 PLCA-P003 warning: 'gfbPulse' is called in both P_A and P_B; each call advances its state (CP20), call it once per cycle [P_B]
     two.st:6:1-6:33 call in P_A

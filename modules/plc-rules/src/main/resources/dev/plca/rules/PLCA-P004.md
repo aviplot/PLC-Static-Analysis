@@ -9,6 +9,7 @@ plcopen: CP10
 cwe: CWE-362
 parameters:
   ignorePattern: regex =  | Names of globals that are written from several tasks by design (e.g. diagnostics counters); never reported
+  startupTaskPattern: regex = (?i)^(startup|(complete|warm|cold)[ _]?restart|ob10[0-2])$ | Names of startup tasks (Siemens OB100–OB102), which finish before cyclic tasks start and so do not count
 ---
 ## Description
 
@@ -23,7 +24,9 @@ Guidelines rule CP10 *Avoid multiple writes from multiple tasks*. Let one task o
 through separate variables, or use the runtime's synchronisation (CODESYS `SysSem`, TwinCAT `TestAndSet`).
 
 The rule needs a task configuration with at least two tasks; without one it is silent. A POU runs in every task whose
-programs call it, directly or indirectly. One finding per variable.
+programs call it, directly or indirectly; Siemens organisation blocks are tasks. Startup tasks (`startupTaskPattern`,
+by default the TIA names of OB100–OB102) do not count, since they finish before the cyclic tasks start. One finding per
+variable.
 
 ## Noncompliant
 

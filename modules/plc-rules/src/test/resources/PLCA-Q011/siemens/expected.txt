@@ -1,0 +1,1 @@
+blocks.scl:10:13-10:17 PLCA-Q011 warning: Implicit conversion from DINT to INT may lose data; convert explicitly (DINT_TO_INT or TO_INT) [FB_Scale]

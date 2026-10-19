@@ -1,0 +1,15 @@
+FUNCTION "FC_Avg" : Real
+VERSION : 0.1
+   VAR_INPUT 
+      a : Real;
+      b : Real;
+   END_VAR
+   VAR_TEMP 
+      sum : Real;
+      ok : Real;
+   END_VAR
+BEGIN
+	#sum := #sum + #a; // PLCA-Q010
+	#ok := #a + #b;
+	#FC_Avg := (#sum + #ok) / 2.0;
+END_FUNCTION

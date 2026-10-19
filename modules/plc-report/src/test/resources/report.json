@@ -130,6 +130,29 @@
     "plcopen" : "CP10",
     "cwe" : "CWE-362",
     "tags" : [ "reliability", "concurrency" ]
+  }, {
+    "id" : "PLCA-Q010",
+    "title" : "Temporary variable read before assignment",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP3",
+    "cwe" : "CWE-457",
+    "tags" : [ "reliability", "initialisation" ]
+  }, {
+    "id" : "PLCA-Q011",
+    "title" : "Implicit narrowing conversion",
+    "severity" : "warning",
+    "category" : "quality",
+    "plcopen" : "CP25",
+    "cwe" : "CWE-197",
+    "tags" : [ "reliability", "numerics", "types" ]
+  }, {
+    "id" : "PLCA-P005",
+    "title" : "Pointer dereference without a check",
+    "severity" : "warning",
+    "category" : "plc",
+    "cwe" : "CWE-476",
+    "tags" : [ "reliability", "pointers" ]
   } ],
   "findings" : [ {
     "ruleId" : "PLCA-P001",
@@ -261,20 +284,6 @@
     },
     "related" : [ ],
     "fingerprint" : "ca7fe972b9b614d523b7a0a29f6960c0"
-  }, {
-    "ruleId" : "PLCA-Q008",
-    "severity" : "warning",
-    "message" : "FUNCTION F_Broken is never called",
-    "pou" : "F_Broken",
-    "location" : {
-      "path" : "with space.st",
-      "startLine" : 1,
-      "startColumn" : 10,
-      "endLine" : 1,
-      "endColumn" : 18
-    },
-    "related" : [ ],
-    "fingerprint" : "df13267bf55b304ea570a593fe4cfd5f"
   } ],
   "suppressed" : [ ],
   "diagnostics" : [ {
@@ -293,7 +302,7 @@
     "files" : 3,
     "lines" : 37,
     "pous" : 3,
-    "findings" : 9,
+    "findings" : 8,
     "suppressed" : {
       "inline" : 0,
       "config" : 0,
@@ -301,7 +310,7 @@
     },
     "findingsBySeverity" : {
       "error" : 0,
-      "warning" : 8,
+      "warning" : 7,
       "info" : 1,
       "hint" : 0
     },

@@ -15,11 +15,16 @@ import dev.plca.semantic.Type;
 import dev.plca.semantic.TypeSymbol;
 import dev.plca.semantic.VariableSymbol;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,9 +32,12 @@ import java.util.Set;
  * referenced. Programs, function blocks, functions, classes and Rockwell routines are checked; methods, actions and
  * properties are not (they belong to their owner's interface).
  *
- * <p>Only dialects whose code in the project has an entry point are checked: a task, a PROGRAM (when no task
- * configuration is known), a Siemens OB or a Rockwell program. A folder of library blocks has none and stays silent.
- * Entry points are the programs of the tasks when tasks are known, else every program; OBs always.
+ * <p>Unused code can only be told from code whose callers are missing when the export is complete, so a dialect is
+ * checked only when the project shows its entry points: a task configuration with programs of that dialect, or Siemens
+ * organisation blocks. It is skipped when calls may be hidden: POUs of the dialect with bodies we do not parse (LD,
+ * FBD, CFC; for Rockwell, the routines of a program with an FBD or SFC routine), or Siemens calls through instance data
+ * blocks the export lacks. Names declared twice (duplicate copies), the CODESYS implicit check functions and a dialect
+ * where most POUs are unused (a library bundled with a small test program) are not reported.
  */
 public final class UnusedPou implements ProjectRule {
 
@@ -37,6 +45,20 @@ public final class UnusedPou implements ProjectRule {
     public String id() {
         return "PLCA-Q008";
     }
+
+    /** CODESYS calls these implicitly when they exist (bounds, range, division and pointer checks). */
+    private static final Set<String> IMPLICIT = Set.of(
+            "checkbounds",
+            "checkpointer",
+            "checkrangesigned",
+            "checkrangeunsigned",
+            "checklrangesigned",
+            "checklrangeunsigned",
+            "checkdivdint",
+            "checkdivlint",
+            "checkdivreal",
+            "checkdivlreal",
+            "checkdivint");
 
     private static final Set<PouKind> CHECKED =
             EnumSet.of(PouKind.PROGRAM, PouKind.FUNCTION, PouKind.FUNCTION_BLOCK, PouKind.CLASS, PouKind.ROUTINE);
@@ -64,13 +86,13 @@ public final class UnusedPou implements ProjectRule {
             if (p.isBuiltin()) {
                 continue;
             }
-            boolean entry = p.kind() == PouKind.ORGANIZATION_BLOCK
-                    || p.kind() == PouKind.PROGRAM && (!tasksKnown || !withEntry.contains(p.dialect()));
-            if (entry) {
+            if (p.kind() == PouKind.ORGANIZATION_BLOCK) {
                 todo.add(p);
                 if (p.dialect() != null) {
                     withEntry.add(p.dialect());
                 }
+            } else if (p.kind() == PouKind.PROGRAM && !tasksKnown) {
+                todo.add(p); // reachability still starts here, but the dialect is not checked
             }
         }
         // instances declared anywhere (globals, data blocks, struct members) keep their FB
@@ -120,18 +142,84 @@ public final class UnusedPou implements ProjectRule {
             }
         }
 
+        Map<String, Integer> declared = new HashMap<>();
+        Set<Dialect> hidden = EnumSet.noneOf(Dialect.class);
+        Set<PouSymbol> hiddenPrograms = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (PouSymbol p : m.pous()) {
+            declared.merge(p.qualifiedName().toLowerCase(Locale.ROOT), 1, Integer::sum);
+            if (p.declaration() != null
+                    && p.declaration().body() == null
+                    && p.declaration().bodyLanguage() != null) {
+                if (p.dialect() == Dialect.ROCKWELL && p.kind() == PouKind.ROUTINE && p.owner() != null) {
+                    hiddenPrograms.add(p.owner());
+                } else if (p.dialect() != null) {
+                    hidden.add(p.dialect());
+                }
+            }
+        }
+        if (unresolvedCalls(m, used, Dialect.SIEMENS)) {
+            hidden.add(Dialect.SIEMENS);
+        }
+        List<PouSymbol> unused = new ArrayList<>();
+        Map<Dialect, Integer> checked = new EnumMap<>(Dialect.class);
         for (PouSymbol p : m.pous()) {
             if (p.isBuiltin()
-                    || used.contains(p)
                     || !CHECKED.contains(p.kind())
                     || p.declaration() == null
                     || p.dialect() == null
                     || !withEntry.contains(p.dialect())
-                    || p.kind() == PouKind.ROUTINE && (p.owner() == null || !used.contains(p.owner()))) {
+                    || hidden.contains(p.dialect())) {
                 continue;
+            }
+            checked.merge(p.dialect(), 1, Integer::sum);
+            if (used.contains(p)
+                    || declared.get(p.qualifiedName().toLowerCase(Locale.ROOT)) > 1
+                    || IMPLICIT.contains(p.name().toLowerCase(Locale.ROOT))
+                    || p.kind() == PouKind.ROUTINE
+                            && (p.owner() == null || !used.contains(p.owner()) || hiddenPrograms.contains(p.owner()))
+                    || !hiddenPrograms.isEmpty() && p.dialect() == Dialect.ROCKWELL && p.kind() != PouKind.ROUTINE) {
+                continue;
+            }
+            unused.add(p);
+        }
+        Map<Dialect, Integer> unusedPerDialect = new EnumMap<>(Dialect.class);
+        unused.forEach(p -> unusedPerDialect.merge(p.dialect(), 1, Integer::sum));
+        for (PouSymbol p : unused) {
+            int n = unusedPerDialect.get(p.dialect());
+            if (n > LIBRARY_MIN && n * 2 > checked.get(p.dialect())) {
+                continue; // most of the dialect's code is unused: a library with a test program
             }
             ctx.report(p, p.declaration().name().span(), message(p, tasksKnown), List.of());
         }
+    }
+
+    /** Below this many unused POUs a dialect is never treated as a library. */
+    private static final int LIBRARY_MIN = 10;
+
+    /** A call in reachable code whose callee is not in the project (an instance DB the export lacks). */
+    private static boolean unresolvedCalls(SemanticModel m, Set<PouSymbol> used, Dialect dialect) {
+        Set<Expression> unresolved = Collections.newSetFromMap(new IdentityHashMap<>());
+        unresolved.addAll(m.unresolved());
+        if (unresolved.isEmpty()) {
+            return false;
+        }
+        boolean[] found = {false};
+        for (PouSymbol p : used) {
+            if (p.dialect() != dialect
+                    || p.declaration() == null
+                    || p.declaration().body() == null) {
+                continue;
+            }
+            Walk.expressions(p.declaration().body(), e -> {
+                if (e instanceof Expression.Call c && unresolved.contains(c.callee())) {
+                    found[0] = true;
+                }
+            });
+            if (found[0]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String message(PouSymbol p, boolean tasksKnown) {

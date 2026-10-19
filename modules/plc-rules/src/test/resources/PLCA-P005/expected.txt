@@ -1,0 +1,2 @@
+noncompliant.st:6:11-6:18 PLCA-P005 warning: Pointer 'pValue' is dereferenced without a check that it is not 0; test it (pValue <> 0) first [F_Read]
+noncompliant.st:9:15-9:22 PLCA-P005 warning: Pointer 'pOther' is dereferenced without a check that it is not 0; test it (pOther <> 0) first [F_Read]

@@ -1,0 +1,1 @@
+F_Copy.TcPOU:11:5-11:10 PLCA-P005 warning: Pointer 'pDst' is dereferenced without a check that it is not 0; test it (pDst <> 0) first [F_Copy]

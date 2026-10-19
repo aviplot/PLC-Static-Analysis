@@ -1,0 +1,28 @@
+DATA_BLOCK "DB_Line"
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Count : Int;
+      State : Int;
+   END_VAR
+BEGIN
+END_DATA_BLOCK
+
+ORGANIZATION_BLOCK "Startup"
+VERSION : 0.1
+BEGIN
+	"DB_Line".State := 0;
+END_ORGANIZATION_BLOCK
+
+ORGANIZATION_BLOCK "Main"
+VERSION : 0.1
+BEGIN
+	"DB_Line".State := 1;
+	"DB_Line".Count := "DB_Line".Count + 1;
+END_ORGANIZATION_BLOCK
+
+ORGANIZATION_BLOCK "Cyclic interrupt"
+VERSION : 0.1
+BEGIN
+	"DB_Line".Count := 0; // PLCA-P004
+END_ORGANIZATION_BLOCK

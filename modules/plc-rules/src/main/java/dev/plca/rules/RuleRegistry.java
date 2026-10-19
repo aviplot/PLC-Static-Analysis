@@ -5,13 +5,16 @@ import dev.plca.rules.plc.DirectAddressing;
 import dev.plca.rules.plc.DoubleCoil;
 import dev.plca.rules.plc.JumpUsage;
 import dev.plca.rules.plc.MultipleInstanceCalls;
+import dev.plca.rules.plc.UncheckedDereference;
 import dev.plca.rules.quality.CaseWithoutElse;
 import dev.plca.rules.quality.Complexity;
 import dev.plca.rules.quality.DivisionByZero;
 import dev.plca.rules.quality.FloatEquality;
 import dev.plca.rules.quality.ForVariableModified;
+import dev.plca.rules.quality.ImplicitNarrowing;
 import dev.plca.rules.quality.InputWrite;
 import dev.plca.rules.quality.LoopWithoutExit;
+import dev.plca.rules.quality.ReadBeforeAssignment;
 import dev.plca.rules.quality.Recursion;
 import dev.plca.rules.quality.UnreachableCode;
 import dev.plca.rules.quality.UnusedPou;
@@ -62,7 +65,10 @@ public final class RuleRegistry {
                 new JumpUsage(),
                 new UnusedPou(),
                 new MultipleInstanceCalls(),
-                new CrossTaskWrite()));
+                new CrossTaskWrite(),
+                new ReadBeforeAssignment(),
+                new ImplicitNarrowing(),
+                new UncheckedDereference()));
     }
 
     public List<RuleDescriptor> descriptors() {

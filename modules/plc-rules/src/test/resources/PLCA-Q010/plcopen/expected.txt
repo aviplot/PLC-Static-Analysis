@@ -1,0 +1,1 @@
+temps.xml:6:36-6:39 PLCA-Q010 warning: 'acc' is read before it is assigned on some path; it starts from its default value on every call, not from the last value [F_Acc] {POU:F_Acc/Line:1}
