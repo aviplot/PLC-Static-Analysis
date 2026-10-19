@@ -23,6 +23,10 @@ instead. PLCopen Coding Guidelines rule CP8 *Floating point comparison shall not
 Comparisons with zero are not reported by default (CP8 lists them as its exception: a value set to 0.0 compares
 exactly), nor is `x = x`, the usual test for NaN.
 
+A value compared with its own copy (`IF a <> last THEN last := a;`, ladder `NEQ(a,last) MOV(a,last)`) is change
+detection, exact by construction, and not reported. Rockwell (L5X): comparing two tags that no code of the program
+or AOI writes (`EQU(Cfg_InpMax,Cfg_InpMin)` to flag an empty range) compares settings and is not reported either.
+
 ## Noncompliant
 
 ```st

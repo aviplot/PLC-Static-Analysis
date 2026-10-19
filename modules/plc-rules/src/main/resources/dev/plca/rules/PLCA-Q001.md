@@ -30,6 +30,9 @@ Not reported, because something outside the parsed code may use the variable: va
 variable of a POU with a graphical or unparsable body. Inputs and outputs are interface, not locals, and are not
 checked here.
 
+Rockwell (L5X): every tag carries `ExternalAccess`. Tags an HMI can read or write (`Read/Write`, `Read Only`) are
+not reported; tags with `None` are. A base tag used only through an alias tag counts as used.
+
 ## Noncompliant
 
 ```st

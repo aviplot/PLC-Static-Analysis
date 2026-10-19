@@ -9,7 +9,10 @@ import dev.plca.core.Dialect;
 import dev.plca.rules.PouContext;
 import dev.plca.rules.PouRule;
 import dev.plca.semantic.IoTagSymbol;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 /**
  * PLCA-P002 (PLCopen N1): a direct address ({@code %IX0.1}, {@code %QW4}, {@code %MD10}) used in code. Mapping a
@@ -19,8 +22,9 @@ import java.util.List;
  *
  * <p>Rockwell has no direct addresses; the equivalent is logic on raw module tags ({@code Local:1:I.Data.5}) instead of
  * alias or mapped tags. Those are reported, except in routines that only map I/O (every rung a contact driving a coil,
- * a MOV/COP, or every ST statement a plain assignment): the usual "map I/O in one place" convention. Controller status
- * flags ({@code S:FS}) are no I/O.
+ * a MOV/COP, or every ST statement a plain assignment): the usual "map I/O in one place" convention. A whole module tag
+ * passed to a call ({@code PF755_Drive(Pump, Pump:I, Pump:O, …)}) is the device-object form Rockwell recommends and is
+ * not reported either. Controller status flags ({@code S:FS}) are no I/O.
  */
 public final class DirectAddressing implements PouRule {
 
@@ -55,8 +59,20 @@ public final class DirectAddressing implements PouRule {
         if (d == null || d.body() == null || mappingOnly(d.body())) {
             return;
         }
+        // whole module tags handed to a device AOI or instruction: the recommended device-object form
+        Set<Expression> wholeArguments = Collections.newSetFromMap(new IdentityHashMap<>());
+        ctx.forEachExpression(e -> {
+            if (e instanceof Expression.Call c) {
+                c.arguments().forEach(a -> {
+                    if (a.value() instanceof Expression.NameRef) {
+                        wholeArguments.add(a.value());
+                    }
+                });
+            }
+        });
         ctx.forEachExpression(e -> {
             if (e instanceof Expression.NameRef n
+                    && !wholeArguments.contains(e)
                     && n.name().form() == Identifier.Form.PLAIN
                     && ctx.model().symbol(e).orElse(null) instanceof IoTagSymbol io
                     && !io.status()) {

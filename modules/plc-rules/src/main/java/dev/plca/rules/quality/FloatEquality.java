@@ -6,11 +6,19 @@ import dev.plca.ast.StText;
 import dev.plca.ast.Statement;
 import dev.plca.rules.PouContext;
 import dev.plca.rules.PouRule;
+import dev.plca.semantic.Access;
 import dev.plca.semantic.Constant;
 import dev.plca.semantic.ElementaryKind;
+import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
+import dev.plca.semantic.Statements;
 import dev.plca.semantic.Type;
+import dev.plca.semantic.VariableSymbol;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -18,7 +26,8 @@ import java.util.Set;
  * PLCA-Q003 (PLCopen CP8): {@code =} or {@code <>} with a REAL/LREAL operand. Comparisons with zero are CP8's own
  * exception ({@code allowZero}); {@code x = x} (the NaN check) is not reported, and neither is comparing a value with
  * its own copy — change detection such as {@code IF a <> last THEN last := a;} or ladder {@code NEQ(a,last)
- * MOV(a,last)}, which is exact by construction.
+ * MOV(a,last)}, which is exact by construction. Rockwell: comparing two variables that no code of the POU writes (two
+ * settings: {@code EQU(Cfg_InpMax, Cfg_InpMin)} to flag an empty range) is exact by intent and not reported either.
  */
 public final class FloatEquality implements PouRule {
 
@@ -37,6 +46,8 @@ public final class FloatEquality implements PouRule {
                 copies.add(key(a.target(), a.value()));
             }
         });
+        boolean rockwell = ctx.pou().dialect() == dev.plca.core.Dialect.ROCKWELL;
+        Set<VariableSymbol> written = rockwell ? written(ctx) : Set.of();
         ctx.forEachExpression(e -> {
             if (!(e instanceof Expression.Binary b) || b.op() != BinaryOp.EQ && b.op() != BinaryOp.NE) {
                 return;
@@ -56,11 +67,47 @@ public final class FloatEquality implements PouRule {
             if (copies.contains(key(b.left(), b.right()))) {
                 return; // compared with its own copy: change detection
             }
+            if (rockwell && setting(m, b.left(), written) && setting(m, b.right(), written)) {
+                return; // two settings: nothing computed, exact by intent
+            }
             ctx.report(
                     b.span(),
                     "Exact floating-point comparison with '" + (b.op() == BinaryOp.EQ ? "=" : "<>")
                             + "'; compare the difference against a tolerance, e.g. ABS(a - b) < eps");
         });
+    }
+
+    /** Variables written anywhere in the POU's instance (the FB/program and its members: methods, routines). */
+    private static Set<VariableSymbol> written(PouContext ctx) {
+        Set<VariableSymbol> out = Collections.newSetFromMap(new IdentityHashMap<>());
+        PouSymbol owner = ctx.pou().instanceOwner() != null ? ctx.pou().instanceOwner() : ctx.pou();
+        List<PouSymbol> scope = new ArrayList<>(owner.members().values());
+        scope.add(owner);
+        for (PouSymbol p : scope) {
+            if (p.declaration() == null || p.declaration().body() == null) {
+                continue;
+            }
+            Statements.forEachDeep(p.declaration().body(), s -> {
+                for (Access a : ctx.model().effects(s).accesses()) {
+                    if (a.isWrite()) {
+                        out.add(a.variable());
+                    }
+                }
+            });
+        }
+        return out;
+    }
+
+    /** A variable (or member of one) that no code of the POU writes. */
+    private static boolean setting(SemanticModel m, Expression e, Set<VariableSymbol> written) {
+        Expression root = e;
+        while (root instanceof Expression.MemberAccess || root instanceof Expression.Index) {
+            root = root instanceof Expression.MemberAccess ma ? ma.target() : ((Expression.Index) root).target();
+        }
+        return designator(e)
+                && m.symbol(root).orElse(null) instanceof VariableSymbol v
+                && !written.contains(v)
+                && (v.overlayOf() == null || !written.contains(v.overlayOf()));
     }
 
     /** Order-independent key of two designators, by their normalised text. */

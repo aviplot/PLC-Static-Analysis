@@ -19,6 +19,10 @@ read back from outside. Copy the input to a local variable and change that. PLCo
 *Usage of parameters shall match their declaration mode* ("each input parameter should not be written"). Writes
 through a POINTER or REFERENCE input change the caller's data and are not reported.
 
+Rockwell (L5X) Add-On Instructions: writing a constant to an input is a documented idiom — clearing a command an HMI
+or program set (`OTU(PCmd_Start)`), or replacing an invalid setting by a default (`LEQ(Rate,0) MOV(1000,Rate)`) — and
+is not reported; other writes are.
+
 ## Noncompliant
 
 ```st

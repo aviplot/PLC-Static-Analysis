@@ -20,6 +20,12 @@ N1 *Avoid physical addresses*.
 Siemens SCL: absolute operands (`%I0.0`, `%DB1.DBX0.0`, classic `DB10.DBW2`) and ANY pointers (`P#DB1.DBX0.0 BYTE
 10`) are reported; use a PLC tag (`"Start_Button"`) or a data block member (`"DB_IO".Valve`) instead.
 
+Rockwell (L5X) has no direct addresses; the equivalent is logic on raw module tags (`Local:1:I.Data.5`,
+`Rack1:2:O.Data[0]`). They are reported except in routines that only map I/O (every rung a contact driving a coil, a
+`MOV`/`COP`, or every ST statement a plain assignment) and when a whole module tag is handed to a device AOI
+(`PF755_Drive(Pump, Pump:I, Pump:O, …)`), the device-object form Rockwell recommends. Alias tags of module points are
+the compliant form. Controller status flags (`S:FS`) are not I/O.
+
 ## Noncompliant
 
 ```st
