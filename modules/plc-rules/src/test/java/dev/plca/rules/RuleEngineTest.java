@@ -40,6 +40,7 @@ class RuleEngineTest {
                 .isEqualTo(RuleTesting.print(a.sources(), seq.findings()));
         assertThat(seq.nanosPerRule())
                 .containsOnlyKeys(RuleTesting.REGISTRY.descriptors().stream()
+                        .filter(RuleDescriptor::enabledByDefault)
                         .map(RuleDescriptor::id)
                         .toList());
     }

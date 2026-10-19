@@ -439,6 +439,45 @@
           "properties" : {
             "tags" : [ "security", "logic-bomb", "review", "external/cwe/cwe-511" ]
           }
+        }, {
+          "id" : "PLCA-Q014",
+          "name" : "MagicNumber",
+          "shortDescription" : {
+            "text" : "Magic number"
+          },
+          "fullDescription" : {
+            "text" : "A decimal number in logic other than 0, 1, -1 and the `allowed` values. Off by default; select `PLCA-Q014` (or `all`) to run it."
+          },
+          "help" : {
+            "text" : "A decimal number in logic other than 0, 1, -1 and the `allowed` values. Off by default; select `PLCA-Q014` (or `all`) to run it.",
+            "markdown" : "## Description\n\nA decimal number in logic other than 0, 1, -1 and the `allowed` values. Off by default; select `PLCA-Q014` (or `all`)\nto run it.\n\n## Rationale\n\nA bare number says nothing about what it is: is 4500 a speed, a limit or an error code? Naming it as a constant or a\nparameter documents it, and changing it later means changing one place. Not reported: CASE labels, array indexes, FOR\nbounds, initial values, typed and based literals (`T#5S`, `16#FF`, `INT#3`), and code generated from ladder, FBD and\nSFC.\n\n## Noncompliant\n\n```st\nFUNCTION_BLOCK FB_Tank\nVAR_INPUT\n    rLevel : REAL;\nEND_VAR\nVAR_OUTPUT\n    bHigh : BOOL;\nEND_VAR\nbHigh := rLevel > 87.5;\nEND_FUNCTION_BLOCK\n```\n\n## Compliant\n\n```st\nFUNCTION_BLOCK FB_Tank\nVAR_INPUT\n    rLevel : REAL;\nEND_VAR\nVAR_OUTPUT\n    bHigh : BOOL;\nEND_VAR\nVAR CONSTANT\n    cHighLevel : REAL := 87.5;\nEND_VAR\nbHigh := rLevel > cHighLevel;\nEND_FUNCTION_BLOCK\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "style" ]
+          }
+        }, {
+          "id" : "PLCA-Q015",
+          "name" : "NamingConvention",
+          "shortDescription" : {
+            "text" : "Naming convention"
+          },
+          "fullDescription" : {
+            "text" : "A variable whose name does not start with the prefix for its type (`bStart` for a BOOL, `fbTimer` for an instance), or a function block, function, interface or user type whose name does not start with its kind's prefix (`FB_`, `F_`, `I_`, `ST_`, `E_`). Off by default; select `PLCA-Q015` to run it, and set the prefixes to your team's convention."
+          },
+          "help" : {
+            "text" : "A variable whose name does not start with the prefix for its type (`bStart` for a BOOL, `fbTimer` for an instance), or a function block, function, interface or user type whose name does not start with its kind's prefix (`FB_`, `F_`, `I_`, `ST_`, `E_`). Off by default; select `PLCA-Q015` to run it, and set the prefixes to your team's convention.",
+            "markdown" : "## Description\n\nA variable whose name does not start with the prefix for its type (`bStart` for a BOOL, `fbTimer` for an instance), or\na function block, function, interface or user type whose name does not start with its kind's prefix (`FB_`, `F_`,\n`I_`, `ST_`, `E_`). Off by default; select `PLCA-Q015` to run it, and set the prefixes to your team's convention.\n\n## Rationale\n\nType prefixes let a reader see what a name holds without looking up its declaration, and a consistent style makes\ncode from different engineers read alike. PLCopen Coding Guidelines rules N2 *Define type prefixes for variables* and\nN10 *Define prefixes for user defined types*. The defaults follow the widespread CODESYS/Beckhoff style; every prefix is\na regular expression parameter. A scope prefix (`scopePrefix`, e.g. `g_` for globals) may come first, and the type\nprefix must be followed by an upper-case letter, a digit or `_`.\n\n## Noncompliant\n\n```st\nFUNCTION_BLOCK Motor\nVAR_INPUT\n    Start : BOOL;\n    speed : REAL;\nEND_VAR\nEND_FUNCTION_BLOCK\n```\n\n## Compliant\n\n```st\nFUNCTION_BLOCK FB_Motor\nVAR_INPUT\n    bStart : BOOL;\n    rSpeed : REAL;\nEND_VAR\nEND_FUNCTION_BLOCK\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "quality", "maintainability", "style", "naming" ],
+            "plcopen" : "N2"
+          }
         } ]
       }
     },

@@ -1,0 +1,12 @@
+FUNCTION_BLOCK FB_Named
+VAR_INPUT
+    rLevel : REAL;
+END_VAR
+VAR
+    bHigh : BOOL;
+END_VAR
+VAR CONSTANT
+    cHigh : REAL := 87.5;
+END_VAR
+bHigh := rLevel > cHigh;
+END_FUNCTION_BLOCK

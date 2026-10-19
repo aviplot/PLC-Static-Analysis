@@ -167,6 +167,19 @@
     "category" : "security",
     "cwe" : "CWE-511",
     "tags" : [ "security", "logic-bomb", "review" ]
+  }, {
+    "id" : "PLCA-Q014",
+    "title" : "Magic number",
+    "severity" : "info",
+    "category" : "quality",
+    "tags" : [ "maintainability", "style" ]
+  }, {
+    "id" : "PLCA-Q015",
+    "title" : "Naming convention",
+    "severity" : "info",
+    "category" : "quality",
+    "plcopen" : "N2",
+    "tags" : [ "maintainability", "style", "naming" ]
   } ],
   "findings" : [ {
     "ruleId" : "PLCA-P001",

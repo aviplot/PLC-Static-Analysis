@@ -1,0 +1,3 @@
+noncompliant.st:12:19-12:23 PLCA-Q014 info: Magic number 87.5; give it a name (a VAR CONSTANT or a parameter) that says what it means [FB_Tank]
+noncompliant.st:13:20-13:21 PLCA-Q014 info: Magic number 7; give it a name (a VAR CONSTANT or a parameter) that says what it means [FB_Tank]
+noncompliant.st:14:11-14:14 PLCA-Q014 info: Magic number -42; give it a name (a VAR CONSTANT or a parameter) that says what it means [FB_Tank]

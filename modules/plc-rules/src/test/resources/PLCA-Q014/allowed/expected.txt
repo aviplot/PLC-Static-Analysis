@@ -1,0 +1,1 @@
+a.st:5:22-5:28 PLCA-Q014 info: Magic number 273.15; give it a name (a VAR CONSTANT or a parameter) that says what it means [F_Scale]

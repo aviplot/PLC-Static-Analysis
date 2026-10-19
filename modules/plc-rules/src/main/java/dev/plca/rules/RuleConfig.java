@@ -18,8 +18,8 @@ import java.util.Set;
  * severity. Parameters are the descriptor defaults, overridden by {@code parameters}, then by
  * {@code dialects[d].parameters}.
  *
- * @param select rule ids, categories ({@code quality}, {@code plc}, {@code security}), {@code default} (the rules on by
- *     default) or {@code all}
+ * @param select rule ids, categories ({@code quality}, {@code plc}, {@code security}: their rules that are on by
+ *     default), {@code default} (all rules on by default) or {@code all}
  * @param disable rule ids or categories removed from the selection
  * @param parameters per rule id: parameter name to value
  * @param severity per rule id: severity override
@@ -215,7 +215,10 @@ public record RuleConfig(
             boolean category = false;
             for (RuleDescriptor d : registry.descriptors()) {
                 if (d.category().key().equalsIgnoreCase(key)) {
-                    r.add(d.id());
+                    // a category means its regular rules; opt-in rules are selected by id (or all)
+                    if (d.enabledByDefault()) {
+                        r.add(d.id());
+                    }
                     category = true;
                 }
             }

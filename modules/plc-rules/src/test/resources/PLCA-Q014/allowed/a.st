@@ -1,0 +1,6 @@
+FUNCTION F_Scale : REAL
+VAR_INPUT
+    r : REAL;
+END_VAR
+F_Scale := r * 3.6 + 273.15; // PLCA-Q014
+END_FUNCTION

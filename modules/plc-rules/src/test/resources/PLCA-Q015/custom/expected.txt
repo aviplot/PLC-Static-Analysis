@@ -1,0 +1,1 @@
+c.st:4:5-4:11 PLCA-Q015 info: BOOL variable 'bClose' does not start with the prefix x (boolPrefix) [FB_Valve]

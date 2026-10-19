@@ -1,0 +1,7 @@
+noncompliant.st:1:16-1:21 PLCA-Q015 info: Name 'Motor' does not start with the prefix FB_|fb_ (functionBlockPrefix) [Motor]
+noncompliant.st:3:5-3:10 PLCA-Q015 info: BOOL variable 'Start' does not start with the prefix b|x (boolPrefix) [Motor]
+noncompliant.st:4:5-4:10 PLCA-Q015 info: REAL variable 'speed' does not start with the prefix r|lr|f (realPrefix) [Motor]
+noncompliant.st:6:5-6:14 PLCA-Q015 info: DINT variable 'bigNumber' does not start with the prefix n|i|u?[sdl]?i|by|w|dw|lw|di|udi|li|uli|si|usi|ui (integerPrefix) [Motor]
+noncompliant.st:9:5-9:10 PLCA-Q015 info: TON variable 'timer' does not start with the prefix fb|inst|o|i (instancePrefix) [Motor]
+noncompliant.st:15:6-15:15 PLCA-Q015 info: Name 'MotorData' does not start with the prefix ST_|T_|UDT_|typ (structPrefix)
+noncompliant.st:23:5-23:11 PLCA-Q015 info: BOOL variable 'gReady' does not start with the prefix b|x (boolPrefix)

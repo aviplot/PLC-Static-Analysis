@@ -14,6 +14,8 @@ import dev.plca.rules.quality.ForVariableModified;
 import dev.plca.rules.quality.ImplicitNarrowing;
 import dev.plca.rules.quality.InputWrite;
 import dev.plca.rules.quality.LoopWithoutExit;
+import dev.plca.rules.quality.MagicNumber;
+import dev.plca.rules.quality.NamingConvention;
 import dev.plca.rules.quality.ReadBeforeAssignment;
 import dev.plca.rules.quality.Recursion;
 import dev.plca.rules.quality.UnreachableCode;
@@ -72,7 +74,9 @@ public final class RuleRegistry {
                 new ImplicitNarrowing(),
                 new UncheckedDereference(),
                 new UncheckedExternalInput(),
-                new HiddenTrigger()));
+                new HiddenTrigger(),
+                new MagicNumber(),
+                new NamingConvention()));
     }
 
     public List<RuleDescriptor> descriptors() {

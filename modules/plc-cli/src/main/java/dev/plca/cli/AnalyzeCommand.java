@@ -80,8 +80,9 @@ final class AnalyzeCommand implements Callable<Integer> {
     @Option(
             names = "--rules",
             split = ",",
-            description = "Rules to run: ids, categories (quality, plc, security), default (the rules on by default;"
-                    + " the default) or all. Replaces rules.select and rules.disable of plca.yaml.")
+            description = "Rules to run: ids, categories (quality, plc, security; their rules that are on by default),"
+                    + " default (all rules on by default; the default) or all. Replaces rules.select and rules.disable"
+                    + " of plca.yaml.")
     List<String> rules;
 
     @Option(
