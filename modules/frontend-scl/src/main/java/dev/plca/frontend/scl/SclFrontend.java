@@ -60,6 +60,14 @@ public final class SclFrontend implements Frontend {
         List<Pragma> pragmas = new ArrayList<>();
         Stats stats = Stats.NONE;
         SourceText text = registry.register(file);
+        if (!looksLikeScl(file)) {
+            sink.report(Diagnostic.of(
+                    SclCodes.NOT_SCL,
+                    Severity.INFO,
+                    "'" + file.path() + "' is not a Siemens data block source; skipped",
+                    Span.at(text.id(), 0)));
+            return new Result(new SourceUnit(file.path(), Dialect.SIEMENS, declarations, comments, pragmas), stats);
+        }
         try {
             Parsed p = driver.parse(text, sink);
             stats = new Stats(1, p.fallback() ? 1 : 0, p.fallback() && p.syntaxErrors() == 0 ? 1 : 0, p.syntaxErrors());
@@ -77,6 +85,20 @@ public final class SclFrontend implements Frontend {
         }
         return new Result(new SourceUnit(file.path(), Dialect.SIEMENS, declarations, comments, pragmas), stats);
     }
+
+    /**
+     * {@code .db} is also the extension of SQLite databases and Windows' {@code Thumbs.db}: such a file is parsed only
+     * if it declares a data block. {@code .scl}/{@code .udt} are always parsed.
+     */
+    private static boolean looksLikeScl(SourceFile file) {
+        if (!Frontend.extension(file.path()).equals(".db")) {
+            return true;
+        }
+        String head = file.text().substring(0, Math.min(file.text().length(), 8192));
+        return DATA_BLOCK.matcher(head).find();
+    }
+
+    private static final java.util.regex.Pattern DATA_BLOCK = java.util.regex.Pattern.compile("(?i)\\bDATA_BLOCK\\b");
 
     /** A bare statement list: a nameless body named after the file, as in the ST frontend. */
     private static Pou snippet(SourceFile file, SourceText text, List<Statement> body) {

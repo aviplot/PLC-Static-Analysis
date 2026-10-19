@@ -17,6 +17,9 @@ A bare address says nothing about what it is, makes the code depend on one hardw
 the I/O configuration changes. Declare a variable with `AT %…` once and use its name. PLCopen Coding Guidelines rule
 N1 *Avoid physical addresses*.
 
+Siemens SCL: absolute operands (`%I0.0`, `%DB1.DBX0.0`, classic `DB10.DBW2`) and ANY pointers (`P#DB1.DBX0.0 BYTE
+10`) are reported; use a PLC tag (`"Start_Button"`) or a data block member (`"DB_IO".Valve`) instead.
+
 ## Noncompliant
 
 ```st

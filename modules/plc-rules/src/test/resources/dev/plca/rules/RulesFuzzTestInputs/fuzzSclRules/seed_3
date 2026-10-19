@@ -1,0 +1,36 @@
+FUNCTION_BLOCK "FB_Pump"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Enable : Bool;
+   END_VAR
+   VAR_OUTPUT 
+      Running : Bool;
+   END_VAR
+   VAR 
+      HmiCounter : Int;   // static, HMI-accessible by default: not reported
+      Hidden { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int; // PLCA-Q001
+      Shown { ExternalAccessible := 'True'} : Int;
+      Used { ExternalAccessible := 'False'} : Bool;
+   END_VAR
+   VAR_TEMP 
+      tmpScratch : Real; // PLCA-Q001
+      tmpUsed : Bool;
+   END_VAR
+   VAR CONSTANT 
+      MAX_SPEED : Int := 100; // PLCA-Q001
+   END_VAR
+
+BEGIN
+	#tmpUsed := #Enable AND NOT #Used;
+	#Running := #tmpUsed;
+END_FUNCTION_BLOCK
+
+DATA_BLOCK "DB_Hmi"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   STRUCT 
+      NeverReadInCode : Int;   // DB members exist for HMIs: not reported
+   END_STRUCT;
+BEGIN
+END_DATA_BLOCK

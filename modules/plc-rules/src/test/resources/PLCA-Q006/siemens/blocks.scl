@@ -1,0 +1,15 @@
+FUNCTION_BLOCK "FB_Cmd"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Start : Bool;
+   END_VAR
+   VAR_OUTPUT 
+      Done : Bool;
+   END_VAR
+BEGIN
+	IF #Start THEN
+	    #Done := TRUE;
+	    #Start := FALSE; // PLCA-Q006
+	END_IF;
+END_FUNCTION_BLOCK

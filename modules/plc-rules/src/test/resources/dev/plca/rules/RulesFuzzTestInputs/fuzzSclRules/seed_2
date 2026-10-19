@@ -1,0 +1,15 @@
+FUNCTION "FC_Io" : Void
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.1
+BEGIN
+	%Q0.1 := %I0.0; // PLCA-P002 PLCA-P002
+	%DB1.DBX0.0 := TRUE; // PLCA-P002
+	"GET_DB"(REQ := TRUE, ADDR_1 := P#DB66.DBX0.0 BYTE 10); // PLCA-P002
+	"do_Motor" := "di_Start";   // symbolic PLC tags: compliant
+	"DB_Io".Valve := TRUE;
+END_FUNCTION
+
+FUNCTION_BLOCK FB10
+BEGIN
+    DB10.DBW2 := 5; // PLCA-P002
+END_FUNCTION_BLOCK

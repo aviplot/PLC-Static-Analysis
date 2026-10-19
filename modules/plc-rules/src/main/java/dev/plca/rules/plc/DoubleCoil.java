@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * PLCA-P001 (PLCopen CP12): double coil — an output-like variable driven unconditionally from more than one place, so
@@ -125,12 +126,28 @@ public final class DoubleCoil implements ProjectRule {
     }
 
     /**
-     * Bodies that run every cycle they are called: programs and FB bodies. Methods, actions, property accessors and SFC
-     * step actions run on demand, often as alternatives ({@code On}/{@code Off}), so they are only compared within
-     * their own body.
+     * Bodies that run every cycle they are called: programs, Siemens OBs and FB bodies. Methods, actions, property
+     * accessors and SFC step actions run on demand, often as alternatives ({@code On}/{@code Off}), so they are only
+     * compared within their own body. Siemens startup OBs run once before the cycle starts: their writes initialise
+     * (like a first-scan block) and are not compared with the cyclic ones.
      */
     private static boolean cyclic(PouSymbol p) {
-        return p.kind() == Declaration.PouKind.PROGRAM || p.kind() == Declaration.PouKind.FUNCTION_BLOCK;
+        return p.kind() == Declaration.PouKind.PROGRAM
+                || p.kind() == Declaration.PouKind.ORGANIZATION_BLOCK && !startupOb(p)
+                || p.kind() == Declaration.PouKind.FUNCTION_BLOCK;
+    }
+
+    /** TIA/STEP 7 default names of startup OBs; the OB's event class itself is not part of SCL exports. */
+    private static final Pattern STARTUP =
+            Pattern.compile("(?i)start[ _-]?up|restart|anlauf|neustart|\\bOB ?10[0-2]\\b");
+
+    private static boolean startupOb(PouSymbol p) {
+        Declaration.BlockInfo info =
+                p.declaration() == null ? null : p.declaration().info();
+        return STARTUP.matcher(p.name()).find()
+                || info != null
+                        && info.title() != null
+                        && STARTUP.matcher(info.title()).find();
     }
 
     /** {@code :=} targets and {@code =>} outputs of one statement; nothing for compound statements. */

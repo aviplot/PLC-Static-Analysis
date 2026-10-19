@@ -1,0 +1,14 @@
+DATA_BLOCK "DB_Recipe"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 
+UNLINKED
+NON_RETAIN
+   VAR 
+      Bytes {ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..15] of Byte;
+      Count : Int;
+   END_VAR
+
+BEGIN
+   Count := 4;
+END_DATA_BLOCK
+

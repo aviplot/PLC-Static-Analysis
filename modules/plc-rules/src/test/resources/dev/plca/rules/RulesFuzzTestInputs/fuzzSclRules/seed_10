@@ -1,0 +1,5 @@
+// generated example without a block header
+#a := #b + 1;
+IF "Tag_1" THEN
+    "Tag_2" := TRUE;
+END_IF;

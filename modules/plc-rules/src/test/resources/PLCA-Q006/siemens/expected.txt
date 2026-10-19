@@ -1,0 +1,1 @@
+blocks.scl:13:6-13:12 PLCA-Q006 warning: Input 'Start' of FB_Cmd is written inside the POU; inputs should only be read (copy it to a local) [FB_Cmd]

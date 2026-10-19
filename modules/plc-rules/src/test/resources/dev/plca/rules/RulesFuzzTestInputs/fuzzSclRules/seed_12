@@ -1,0 +1,41 @@
+FUNCTION_BLOCK "FB_LibraryForms"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      continue : Bool := FALSE;   // keyword as a declared name (LGF style)
+      value : Variant;
+   END_VAR
+   VAR 
+      classes : Array[0..3] of UInt := 0, 1, 2, 3;
+      zeros : Array[1..32] of Byte := 32(BYTE#16#00);
+      config : "UDT_Config" := ((), [()], [16#0, 8(16#0000_0214)]);
+   END_VAR
+
+BEGIN
+	REGION DESCRIPTION
+	(/*
+	   Comment section as TIA writes it.
+	*/)
+	END_REGION DESCRIPTION
+	IF TypeOf(#value) = String THEN
+	    "GET_DB"(REQ := #continue, ADDR_1 := P#DB66.DBX0.0 BYTE 10, RD_1 := P#M2.0);
+	END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK "FB_SingleInit"
+   VAR 
+      NET_CONFIG : TCON_IP_v4 := (16#64, (), 16#11, true, ([()]), (), 2000);
+      one : "UDT_One" := (());
+      paren : Int := (5);
+   END_VAR
+BEGIN
+END_FUNCTION_BLOCK
+
+FUNCTION "FC_KeywordParams" : Void
+VERSION : 0.0.1
+BEGIN
+	REGION [1] Messages 1 .. 16
+	    "MQTT_Publish"(topic := 'a/b', retain := FALSE, Function := 3, Array => #x, At => #y);
+	END_REGION
+END_FUNCTION
+

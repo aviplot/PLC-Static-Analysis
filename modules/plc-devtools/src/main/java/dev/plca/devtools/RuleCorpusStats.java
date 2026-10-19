@@ -38,15 +38,20 @@ final class RuleCorpusStats {
     /** One finding prepared for review. */
     record Sample(String ruleId, String where, String message, String line) {}
 
-    /** Rule results of one project. */
-    record Outcome(Map<String, Integer> counts, Map<String, Long> nanos, List<String> failures, List<Sample> samples) {
-        static final Outcome NONE = new Outcome(Map.of(), Map.of(), List.of(), List.of());
+    /** Rule results of one project; {@code group} is the corpus-check group (TwinCat, st, Siemens). */
+    record Outcome(
+            String group,
+            Map<String, Integer> counts,
+            Map<String, Long> nanos,
+            List<String> failures,
+            List<Sample> samples) {
+        static final Outcome NONE = new Outcome("", Map.of(), Map.of(), List.of(), List.of());
     }
 
     private RuleCorpusStats() {}
 
     /** Runs all rules single-threaded (projects already run in parallel) and samples findings. */
-    static Outcome run(String repo, String key, SemanticModel model, SourceRegistry sources) {
+    static Outcome run(String repo, String key, String group, SemanticModel model, SourceRegistry sources) {
         RuleEngine.Result r = ENGINE.run(model, sources, RuleConfig.defaults(), 1);
         Map<String, Integer> counts = new LinkedHashMap<>();
         Map<String, List<Finding>> byRule = new LinkedHashMap<>();
@@ -70,7 +75,7 @@ final class RuleCorpusStats {
                 .filter(d -> d.code().equals(RuleEngine.INTERNAL))
                 .map(Diagnostic::message)
                 .toList();
-        return new Outcome(counts, r.nanosPerRule(), failures, samples);
+        return new Outcome(group, counts, r.nanosPerRule(), failures, samples);
     }
 
     private static String line(SourceFile file, int line) {
@@ -85,11 +90,38 @@ final class RuleCorpusStats {
     }
 
     /**
-     * Appends the rules section to {@code summary.md} and writes samples.
+     * Appends the rules section to {@code summary.md} and writes samples: one table for the whole corpus, one per group
+     * with its own samples ({@code rule-samples/<group>/}), so each dialect gets its own false-positive review.
      *
      * @return the number of rule failures (must be 0)
      */
-    static int report(List<Outcome> outcomes, long totalLines, long parseAndModelNanos, PrintStream out, Path reportDir)
+    static int report(
+            List<Outcome> outcomes,
+            long totalLines,
+            Map<String, Long> linesByGroup,
+            long parseAndModelNanos,
+            PrintStream out,
+            Path reportDir)
+            throws IOException {
+        int failures = report("", outcomes, totalLines, parseAndModelNanos, out, reportDir);
+        Map<String, List<Outcome>> byGroup = new java.util.TreeMap<>();
+        outcomes.forEach(
+                o -> byGroup.computeIfAbsent(o.group(), k -> new ArrayList<>()).add(o));
+        for (var e : byGroup.entrySet()) {
+            if (!e.getKey().isEmpty()) {
+                report(e.getKey(), e.getValue(), linesByGroup.getOrDefault(e.getKey(), 0L), 0, out, reportDir);
+            }
+        }
+        return failures;
+    }
+
+    private static int report(
+            String group,
+            List<Outcome> outcomes,
+            long totalLines,
+            long parseAndModelNanos,
+            PrintStream out,
+            Path reportDir)
             throws IOException {
         Map<String, Long> counts = new HashMap<>();
         Map<String, Long> nanos = new HashMap<>();
@@ -108,7 +140,7 @@ final class RuleCorpusStats {
             failures.addAll(o.failures());
         }
         long ruleNanos = nanos.values().stream().mapToLong(Long::longValue).sum();
-        StringBuilder md = new StringBuilder("\n## Rules\n\n");
+        StringBuilder md = new StringBuilder(group.isEmpty() ? "\n## Rules\n\n" : "\n## Rules in " + group + "\n\n");
         md.append("| rule | title | findings | per 1k lines | projects | time |\n|---|---|---|---|---|---|\n");
         for (RuleDescriptor d : REGISTRY.descriptors()) {
             long n = counts.getOrDefault(d.id(), 0L);
@@ -122,16 +154,20 @@ final class RuleCorpusStats {
                     projectsWith.getOrDefault(d.id(), 0),
                     nanos.getOrDefault(d.id(), 0L) / 1e6));
         }
-        md.append(String.format(
-                Locale.ROOT,
-                "%nRule time (CPU, all threads): %,.0f ms = %.1f%% of parse + model time (%,.0f ms)%n",
-                ruleNanos / 1e6,
-                100.0 * ruleNanos / Math.max(1, parseAndModelNanos),
-                parseAndModelNanos / 1e6));
-        md.append(String.format(Locale.ROOT, "Rule failures (%s): %d%n", RuleEngine.INTERNAL, failures.size()));
-        failures.stream().limit(10).forEach(f -> md.append("- ").append(f).append('\n'));
+        if (group.isEmpty()) {
+            md.append(String.format(
+                    Locale.ROOT,
+                    "%nRule time (CPU, all threads): %,.0f ms = %.1f%% of parse + model time (%,.0f ms)%n",
+                    ruleNanos / 1e6,
+                    100.0 * ruleNanos / Math.max(1, parseAndModelNanos),
+                    parseAndModelNanos / 1e6));
+            md.append(String.format(Locale.ROOT, "Rule failures (%s): %d%n", RuleEngine.INTERNAL, failures.size()));
+            failures.stream().limit(10).forEach(f -> md.append("- ").append(f).append('\n'));
+        }
 
-        Path dir = reportDir.resolve("rule-samples");
+        Path dir = group.isEmpty()
+                ? reportDir.resolve("rule-samples")
+                : reportDir.resolve("rule-samples").resolve(group);
         Files.createDirectories(dir);
         Random random = new Random(42);
         for (RuleDescriptor d : REGISTRY.descriptors()) {

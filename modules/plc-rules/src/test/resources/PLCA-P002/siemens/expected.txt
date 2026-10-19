@@ -1,0 +1,5 @@
+blocks.scl:5:2-5:7 PLCA-P002 info: Absolute address %Q0.1 used in code; use a PLC tag or a data block member instead [FC_Io]
+blocks.scl:5:11-5:16 PLCA-P002 info: Absolute address %I0.0 used in code; use a PLC tag or a data block member instead [FC_Io]
+blocks.scl:6:2-6:13 PLCA-P002 info: Absolute address %DB1.DBX0.0 used in code; use a PLC tag or a data block member instead [FC_Io]
+blocks.scl:7:34-7:55 PLCA-P002 info: Absolute address P#DB66.DBX0.0 BYTE 10 used in code; use a PLC tag or a data block member instead [FC_Io]
+blocks.scl:14:5-14:14 PLCA-P002 info: Absolute address DB10.DBW2 used in code; use a PLC tag or a data block member instead [FB10]

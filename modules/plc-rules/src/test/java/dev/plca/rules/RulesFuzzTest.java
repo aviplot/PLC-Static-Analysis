@@ -8,7 +8,9 @@ import dev.plca.ast.SourceUnit;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontend;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
 import java.util.List;
@@ -24,10 +26,20 @@ class RulesFuzzTest {
     @FuzzTest(maxDuration = "5m")
     @DictionaryFile(resourcePath = "/st.dict")
     void fuzzRules(byte[] input) {
+        check(new StFrontend(), "fuzz.st", input);
+    }
+
+    /** The same on Siemens SCL (seeds: the SCL rule fixtures and frontend goldens). */
+    @FuzzTest(maxDuration = "5m")
+    @DictionaryFile(resourcePath = "/scl.dict")
+    void fuzzSclRules(byte[] input) {
+        check(new SclFrontend(), "fuzz.scl", input);
+    }
+
+    private static void check(Frontend frontend, String path, byte[] input) {
         SourceRegistry registry = new SourceRegistry();
         DiagnosticCollector diags = new DiagnosticCollector();
-        SourceUnit unit = new StFrontend()
-                .parse(SourceFile.fromBytes("fuzz.st", input), registry, diags)
+        SourceUnit unit = frontend.parse(SourceFile.fromBytes(path, input), registry, diags)
                 .unit();
         SemanticModel m = SemanticBuilder.build(List.of(unit), diags);
         RuleEngine.Result r = ENGINE.run(m, registry, RuleConfig.defaults(), 1);

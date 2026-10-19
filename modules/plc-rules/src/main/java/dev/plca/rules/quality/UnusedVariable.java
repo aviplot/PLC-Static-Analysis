@@ -7,6 +7,7 @@ import dev.plca.ast.Statement;
 import dev.plca.ast.TypeRef;
 import dev.plca.ast.VarBlock;
 import dev.plca.ast.VarDecl;
+import dev.plca.core.Dialect;
 import dev.plca.rules.ProjectContext;
 import dev.plca.rules.ProjectRule;
 import dev.plca.rules.Walk;
@@ -33,6 +34,11 @@ import java.util.regex.Pattern;
  * mapping) or a spare-variable name are exempt, and so is every variable of a POU whose code we could not fully read
  * (graphical bodies, syntax errors), since the missing code may use it. Names used in declarations (array bounds,
  * FB_init arguments) count as uses by name.
+ *
+ * <p>Siemens: static variables of an FB live in its instance DB, which HMIs and other PLCs can read and write unless
+ * the declaration says {@code ExternalAccessible := 'False'} (TIA writes the attribute only when it differs from the
+ * default). So statics are reported only when hidden that way; temporaries and constants always. Siemens attributes are
+ * therefore no exposure exemption, and data blocks are never reported (they exist to be accessed from outside).
  */
 public final class UnusedVariable implements ProjectRule {
 
@@ -103,8 +109,12 @@ public final class UnusedVariable implements ProjectRule {
                     || d.body() == null && p.members().isEmpty()) {
                 continue;
             }
+            boolean siemens = p.dialect() == Dialect.SIEMENS;
             for (VariableSymbol v : p.variables().values()) {
-                if (LOCAL_SECTIONS.contains(v.section()) && candidate(v, used, namesInDeclarations, spare)) {
+                if (siemens && reachableFromOutside(v)) {
+                    continue;
+                }
+                if (LOCAL_SECTIONS.contains(v.section()) && candidate(v, used, namesInDeclarations, spare, siemens)) {
                     ctx.report(
                             p,
                             v.declaration().name().span(),
@@ -116,8 +126,11 @@ public final class UnusedVariable implements ProjectRule {
 
         if (ctx.boolParam("includeGlobals") && opaque.isEmpty()) {
             for (GvlSymbol g : m.global().gvls()) {
+                if (g.isDataBlocks()) {
+                    continue;
+                }
                 for (VariableSymbol v : g.variables().values()) {
-                    if (candidate(v, used, namesInDeclarations, spare)) {
+                    if (candidate(v, used, namesInDeclarations, spare, false)) {
                         ctx.report(
                                 (PouSymbol) null,
                                 v.declaration().name().span(),
@@ -129,13 +142,28 @@ public final class UnusedVariable implements ProjectRule {
         }
     }
 
+    /**
+     * A Siemens static that an HMI or another PLC may access: not hidden with {@code ExternalAccessible := 'False'}.
+     */
+    private static boolean reachableFromOutside(VariableSymbol v) {
+        boolean isStatic = v.section() == VarBlock.Section.VAR || v.section() == VarBlock.Section.STAT;
+        return isStatic
+                && !v.isConstant()
+                && v.pragmas().stream()
+                        .noneMatch(p -> p.isAttribute("ExternalAccessible") && "false".equalsIgnoreCase(p.value()));
+    }
+
     private static boolean candidate(
-            VariableSymbol v, Set<VariableSymbol> used, Set<String> namesInDeclarations, Pattern spare) {
+            VariableSymbol v,
+            Set<VariableSymbol> used,
+            Set<String> namesInDeclarations,
+            Pattern spare,
+            boolean siemens) {
         return v.declaration() != null
                 && !v.isResult()
                 && !used.contains(v)
                 && v.address() == null
-                && v.pragmas().stream().noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE)
+                && (siemens || v.pragmas().stream().noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE))
                 && !namesInDeclarations.contains(v.name().toLowerCase(Locale.ROOT))
                 && !spare.matcher(v.name()).find();
     }
@@ -147,6 +175,11 @@ public final class UnusedVariable implements ProjectRule {
                 Walk.expressions(t.init(), e -> exprNames(e, names));
             }
             case Declaration.Namespace n -> n.members().forEach(x -> typeDeclarationNames(x, names));
+            case Declaration.DataBlock db -> {
+                typeNames(db.layout(), names);
+                db.varBlocks().forEach(b -> b.variables().forEach(v -> typeNames(v.type(), names)));
+                db.initialValues().forEach(s -> Walk.ownExpressions(s, e -> exprNames(e, names)));
+            }
             default -> {}
         }
     }

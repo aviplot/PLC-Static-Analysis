@@ -15,6 +15,8 @@ public final class SclCodes {
     public static final String MISPLACED_ATTRIBUTE = "PLC-SCL-005";
     /** Text between blocks that belongs to no block (often the rest of a block broken by a syntax error). */
     public static final String OUTSIDE_BLOCK = "PLC-SCL-006";
+    /** A {@code .db} file that is no data block source (SQLite database, {@code Thumbs.db}); not parsed. */
+    public static final String NOT_SCL = "PLC-SCL-007";
 
     private SclCodes() {}
 }

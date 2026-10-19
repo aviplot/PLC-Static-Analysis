@@ -125,8 +125,20 @@ public final class CorpusCheck {
         long parseAndModel = projectResults.stream()
                 .mapToLong(p -> p.parseNanos() + p.nanos())
                 .sum();
+        Map<String, Long> linesByGroup = new HashMap<>();
+        for (FileResult r : results) {
+            String g = r.format().matches("scl.*|db.*|udt.*")
+                    ? "Siemens"
+                    : r.format().startsWith("Tc") ? "TwinCat" : "st";
+            linesByGroup.merge(g, r.lines(), Long::sum);
+        }
         int ruleFailures = RuleCorpusStats.report(
-                projectResults.stream().map(ProjectResult::rules).toList(), lines, parseAndModel, out, reportDir);
+                projectResults.stream().map(ProjectResult::rules).toList(),
+                lines,
+                linesByGroup,
+                parseAndModel,
+                out,
+                reportDir);
         boolean ok = checkThresholds(results, rates, baseline, update, out);
         if (ruleFailures > 0) {
             out.println("FAIL: " + ruleFailures + " rule failures (" + RuleEngine.INTERNAL + ")");
@@ -218,9 +230,10 @@ public final class CorpusCheck {
             }
             modelNanos = System.nanoTime() - t;
             try {
-                rules = RuleCorpusStats.run(rows.getFirst()[0], key, model, registry);
+                rules = RuleCorpusStats.run(rows.getFirst()[0], key, group(siemens, twinCat), model, registry);
             } catch (Throwable e) {
-                rules = new RuleCorpusStats.Outcome(Map.of(), Map.of(), List.of("ESCAPED " + e), List.of());
+                rules = new RuleCorpusStats.Outcome(
+                        group(siemens, twinCat), Map.of(), Map.of(), List.of("ESCAPED " + e), List.of());
             }
         } catch (Throwable e) {
             escaped = "ESCAPED " + e;
@@ -232,7 +245,7 @@ public final class CorpusCheck {
                 new ProjectResult(
                         repo,
                         key,
-                        siemens ? "Siemens" : twinCat ? "TwinCat" : "st",
+                        group(siemens, twinCat),
                         rows.size(),
                         stats,
                         modelNanos,
@@ -240,6 +253,10 @@ public final class CorpusCheck {
                         unresolved,
                         parseNanos,
                         rules));
+    }
+
+    private static String group(boolean siemens, boolean twinCat) {
+        return siemens ? "Siemens" : twinCat ? "TwinCat" : "st";
     }
 
     private static Map<String, Double> semanticReport(List<ProjectResult> projects, PrintStream out, Path reportDir)

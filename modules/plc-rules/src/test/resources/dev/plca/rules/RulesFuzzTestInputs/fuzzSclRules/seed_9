@@ -1,0 +1,16 @@
+ORGANIZATION_BLOCK "Main"
+TITLE = "Main Program Sweep (Cycle)"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      Remanence : Bool;
+   END_VAR
+
+
+BEGIN
+	"Conveyor_DB"(Start := "di_Start", Stop := "di_Stop", Counters := "DB_Counters".Line1);
+	"do_Motor" := "Conveyor_DB".Running;
+	%Q0.1 := %I0.0 AND NOT %M10.7;
+	%DB1.DBX0.0 := TRUE;
+END_ORGANIZATION_BLOCK
+

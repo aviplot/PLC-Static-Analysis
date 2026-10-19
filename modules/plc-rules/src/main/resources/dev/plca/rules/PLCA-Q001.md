@@ -16,6 +16,10 @@ parameters:
 A local variable (VAR, VAR_TEMP, VAR_STAT, VAR_INST) is declared but never read or written by any code, initial
 value or declaration in the project.
 
+Siemens SCL: static variables live in the instance DB, which HMIs and other PLCs may access, so they are reported only
+when the declaration hides them with `{ ExternalAccessible := 'False' }`. Temporaries and constants are always
+checked; data block members are never reported.
+
 ## Rationale
 
 Unused declarations make a POU harder to read and suggest unfinished or dead logic; they also use memory. PLCopen

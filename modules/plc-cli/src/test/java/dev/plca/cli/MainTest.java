@@ -151,7 +151,32 @@ class MainTest {
     void skippedDialectsAreReported() throws IOException {
         Path p = project("P.st", WARNINGS_ONLY);
         Files.writeString(p.resolve("Motor.scl"), "FUNCTION_BLOCK \"Motor\"\nEND_FUNCTION_BLOCK\n");
+        Files.writeString(p.resolve("Line.L5X"), "<RSLogix5000Content/>");
         Files.writeString(p.resolve("other.xml"), "<root/>");
-        assertThat(Analyzer.skipped(p)).containsExactly("Motor.scl");
+        assertThat(Analyzer.skipped(p)).containsExactly("Line.L5X");
+    }
+
+    @Test
+    void analysesSiemensScl() throws IOException {
+        Path p = project("FB_Cmd.scl", """
+                FUNCTION_BLOCK "FB_Cmd"
+                VERSION : 0.1
+                   VAR_INPUT
+                      Start : Bool;
+                   END_VAR
+                BEGIN
+                	#Start := FALSE;
+                	%Q0.0 := "di_Button";
+                END_FUNCTION_BLOCK
+                """);
+        // not a data block source: skipped without syntax errors
+        Files.write(p.resolve("Thumbs.db"), new byte[] {(byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0, 0, 1, 2});
+        Path report = tmp.resolve("r.json");
+        assertThat(run("analyze", p.toString(), "--format", "json", "-o", report.toString())
+                        .exit())
+                .isZero();
+        JsonNode json = JsonMapper.builder().build().readTree(Files.readString(report));
+        assertThat(json.get("findings").findValuesAsString("ruleId")).contains("PLCA-Q006", "PLCA-P002");
+        assertThat(json.get("diagnostics").findValuesAsString("severity")).doesNotContain("error");
     }
 }

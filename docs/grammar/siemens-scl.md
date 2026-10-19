@@ -171,6 +171,28 @@ never produced by SCL code.
 | `S5T#` | parsed | 9 |
 
 ## 9. Known gaps (deliberate, M4)
-- TIA Openness XML (SimaticML: LAD/FBD/STL networks, tag tables). PLC tags stay `ExternalTag` symbols.
+- TIA Openness XML (SimaticML: LAD/FBD/STL networks, tag tables). PLC tags stay external symbols
+  (`LibrarySymbol`, counted as `external` in the resolution statistics).
 - STL/AWL, SIMATIC AX.
-- Know-how-protected sources (encrypted body): a diagnostic, no AST for the body.
+- Know-how-protected sources (encrypted body): parsed as far as possible; no special handling yet.
+- Seen in the corpus but not accepted, because I could not confirm TIA accepts them *(verify)*: `VAR_CONSTANT`
+  (12 files, one repository), `''` as a quote escape in strings, `Position[1] := x` as a named argument,
+  `FB 1234` as an initial value of `Block_FB` parameters.
+- `"T_DB".TON(IN := …)` calls are modelled as methods of the timer instance: their inputs are not recorded as writes
+  of the instance's `IN`/`PT` (M7 timer-reuse rule will need it).
+
+## 10. Corpus results (M4)
+Repo-weighted error-free rate (files in brackets), `./gradlew :plc-devtools:corpusCheck`:
+
+| format | first pass | final |
+|---|---|---|
+| `.scl` (TIA style) | 82.6% (86.4%) | 93.6% (95.7%) |
+| `.db` | 91.1% (73.9%) | 94.5% (95.7%) |
+| `.udt` | 96.1% (99.1%) | 98.2% (99.9%) |
+| classic `.scl` | 75.4% (71.5%) | 83.9% (86.3%) |
+
+Every remaining failure inspected (one example per failing repository) is outside TIA's export syntax: LLM-generated
+or template code (`ELIF`, `{{ }}`, `ORGANIZATION_BLOCK "x" : OB35`), linter negative-test fixtures, files written by
+other tools (`deep_reader`, `FRAMEWORK_PARSER` output, DB bodies without `;`), STL saved as `.scl`, and CODESYS-style
+`PROGRAM` in `.scl`. Single-file repositories weigh as much as large ones, which is why the repo-weighted rate trails
+the file rate.

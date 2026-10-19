@@ -1,0 +1,27 @@
+NAMESPACE Line.Unit2
+FUNCTION_BLOCK FB_Counter
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      "array" : Array[*] of DInt;
+      "string" : String;
+   END_VAR
+   VAR 
+      total : DInt;
+      diag { S7_SetPoint := 'False'} : "UDT_Diag" := (16#7000, (), ([1, 2], ()));
+      items : Array[0..1] of _.UDT_Item;
+   END_VAR
+
+BEGIN
+	REGION Sum up
+	    #total += #array[0];
+	    #total -= 1;
+	    #total *= 2;
+	    #total /= 2;
+	END_REGION Sum up
+	IF LEN(#string) > 0 THEN
+	    #diag.#status := 0;
+	END_IF;
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

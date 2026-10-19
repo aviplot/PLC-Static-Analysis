@@ -1,0 +1,4 @@
+blocks.scl:14:2-14:15 PLCA-P001 warning: 'DB_Out.Lamp' is written unconditionally in both Main and Cyclic interrupt; the POU that runs last wins (double coil) [Cyclic interrupt]
+    blocks.scl:5:2-5:15 also written in Main
+blocks.scl:29:2-29:10 PLCA-P001 warning: 'Running' is written unconditionally more than once in FB_Pump; only the last write takes effect (double coil) [FB_Pump]
+    blocks.scl:28:2-28:10 previous write

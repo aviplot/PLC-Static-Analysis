@@ -1,0 +1,33 @@
+DATA_BLOCK "DB_Counters"
+{ S7_Optimized_Access := 'FALSE' }
+VERSION : 0.1
+NON_RETAIN
+   STRUCT 
+      Line1 : "UDT_Counters";
+      Total : DInt := 0;   // all lines
+      Limits : Array[1..2] of Int;
+      Setup : Struct
+         Enabled : Bool;
+         Name : String[10] := 'L1';
+      END_STRUCT;
+   END_STRUCT;
+
+
+BEGIN
+   Total := 100;
+   Limits[1] := 5;
+   Setup.Enabled := TRUE;
+
+END_DATA_BLOCK
+
+DATA_BLOCK "Conveyor_DB"
+{ S7_Optimized_Access := 'TRUE' }
+AUTHOR : plca
+VERSION : '1.0'
+NON_RETAIN
+"FB_Conveyor"
+
+BEGIN
+   Speed := 2.0;
+END_DATA_BLOCK
+

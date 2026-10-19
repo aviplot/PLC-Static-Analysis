@@ -2,6 +2,7 @@ package dev.plca.cli;
 
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
+import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontends;
@@ -31,10 +32,10 @@ import java.util.Set;
  */
 public final class Analyzer {
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
 
-    /** Extensions of dialects whose frontends come in M4–M6; such files are listed as skipped, not ignored silently. */
-    private static final Set<String> LATER_DIALECTS = Set.of(".scl", ".udt", ".l5x", ".l5k");
+    /** Extensions of dialects whose frontends come in M5–M6; such files are listed as skipped, not ignored silently. */
+    private static final Set<String> LATER_DIALECTS = Set.of(".l5x", ".l5k");
 
     private final RuleRegistry registry;
 
@@ -90,7 +91,7 @@ public final class Analyzer {
                 stats);
     }
 
-    /** Files of dialects we cannot analyse yet: SCL/L5X by extension, PLCopen XML by its namespace. */
+    /** Files of dialects we cannot analyse yet: L5X/L5K by extension, PLCopen XML by its namespace. */
     static List<String> skipped(Path root) {
         List<String> out = new ArrayList<>();
         try {

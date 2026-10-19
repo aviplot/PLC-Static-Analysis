@@ -6,6 +6,7 @@ import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontends;
@@ -25,7 +26,7 @@ import java.util.regex.Pattern;
 /** Shared helpers: load a project, run rules, print findings, read inline expectation markers. */
 final class RuleTesting {
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
 
     static final RuleRegistry REGISTRY = RuleRegistry.standard();
 

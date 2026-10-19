@@ -1,0 +1,3 @@
+blocks.scl:12:7-12:13 PLCA-Q001 warning: Variable 'Hidden' is declared but never used [FB_Pump]
+blocks.scl:17:7-17:17 PLCA-Q001 warning: Variable 'tmpScratch' is declared but never used [FB_Pump]
+blocks.scl:21:7-21:16 PLCA-Q001 warning: Variable 'MAX_SPEED' is declared but never used [FB_Pump]
