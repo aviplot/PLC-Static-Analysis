@@ -20,6 +20,8 @@ public final class VariableSymbol implements Symbol {
     private final boolean result;
     private Type type = Type.UNKNOWN;
     private VariableSymbol overlayOf;
+    private String overlayPath = "";
+    private IoTagSymbol ioAlias;
 
     VariableSymbol(
             String name, VarDecl declaration, VarBlock block, VarBlock.Section section, Symbol owner, boolean result) {
@@ -99,6 +101,28 @@ public final class VariableSymbol implements Symbol {
 
     void setOverlayOf(VariableSymbol base) {
         this.overlayOf = base;
+    }
+
+    /**
+     * Inside {@link #overlayOf()}: the selector a Rockwell alias adds ({@code [3].Run}, {@code .5} for {@code AliasFor
+     * = "Arr[3].Run"}); {@code ""} for whole-variable overlays.
+     */
+    public String overlayPath() {
+        return overlayPath;
+    }
+
+    void setOverlay(VariableSymbol base, String path) {
+        this.overlayOf = base;
+        this.overlayPath = path;
+    }
+
+    /** The module I/O tag a Rockwell alias names ({@code AliasFor = "Local:2:O.Data.0"}), or null. */
+    public IoTagSymbol ioAlias() {
+        return ioAlias;
+    }
+
+    void setIoAlias(IoTagSymbol io) {
+        this.ioAlias = io;
     }
 
     @Override

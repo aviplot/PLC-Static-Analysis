@@ -1,0 +1,101 @@
+rung: XIC(A)OTE(B);
+text: XIC(A)OTE(B);
+  B := A;
+
+rung: XIO(A)OTE(B);
+text: XIO(A)OTE(B);
+  B := NOT A;
+
+rung: XIC(A)XIC(B)XIO(C)OTE(D);
+text: XIC(A)XIC(B)XIO(C)OTE(D);
+  D := A AND B AND NOT C;
+
+rung: XIC(A)[XIC(B),XIO(C)]OTE(D);
+text: XIC(A)[XIC(B),XIO(C)]OTE(D);
+  D := A AND (B OR NOT C);
+
+rung: [XIC(Start) ,XIC(Motor) ]XIO(Stop)OTE(Motor);
+text: [XIC(Start),XIC(Motor)]XIO(Stop)OTE(Motor);
+  Motor := (Start OR Motor) AND NOT Stop;
+
+rung: XIC(A)XIC(B)OTE(X)XIC(C)OTE(Y);
+text: XIC(A)XIC(B)OTE(X)XIC(C)OTE(Y);
+  $rc1 := A AND B;
+  X := $rc1;
+  Y := $rc1 AND C;
+
+rung: XIC(A)OTE(X)XIC(C)OTE(Y);
+text: XIC(A)OTE(X)XIC(C)OTE(Y);
+  X := A;
+  Y := A AND C;
+
+rung: XIC(A)[OTE(B),XIC(C)OTE(D)];
+text: XIC(A)[OTE(B),XIC(C)OTE(D)];
+  B := A;
+  D := A AND C;
+
+rung: XIC(A)[OTE(B),OTE(C)]XIC(D)OTE(E);
+text: XIC(A)[OTE(B),OTE(C)]XIC(D)OTE(E);
+  B := A;
+  C := A;
+  E := A AND D;
+
+rung: XIC(A)XIC(B)[OTE(C),OTE(D)];
+text: XIC(A)XIC(B)[OTE(C),OTE(D)];
+  $rc1 := A AND B;
+  C := $rc1;
+  D := $rc1;
+
+rung: XIC(A)[XIC(B)[XIC(C),XIC(D)],XIC(E)]OTE(F);
+text: XIC(A)[XIC(B)[XIC(C),XIC(D)],XIC(E)]OTE(F);
+  F := A AND (B AND (C OR D) OR E);
+
+rung: [XIC(A),]OTE(B);
+text: [XIC(A),]OTE(B);
+  B := TRUE;
+
+rung: OTE(Always);
+text: OTE(Always);
+  Always := TRUE;
+
+rung: ;
+text: ;
+
+rung: NOP();
+text: NOP();
+  NOP();
+
+rung: XIC(A)AFI()OTE(B);
+text: XIC(A)AFI()OTE(B);
+  B := A AND FALSE;
+
+rung: XIC(A)OTU(A)OTE(B);
+text: XIC(A)OTU(A)OTE(B);
+  $rc1 := A;
+  IF $rc1 THEN
+    A := FALSE;
+  END_IF
+  B := $rc1;
+
+rung: XIC(R)MOV(0,R)MOV(5,X);
+text: XIC(R)MOV(0,R)MOV(5,X);
+  IF R THEN
+    R := 0;
+    X := 5;
+  END_IF
+
+rung: [XIC(A)ONS(OS),]OTE(C);
+text: [XIC(A)ONS(OS),]OTE(C);
+  $rc1 := A AND ONS(OS) OR TRUE;
+  C := $rc1;
+
+rung: XIC(A)XIC(B)[XIC(C),XIC(D)]OTE(E);
+text: XIC(A)XIC(B)[XIC(C),XIC(D)]OTE(E);
+  E := A AND B AND (C OR D);
+
+rung: XIC(A)[XIC(C)OTE(D),XIC(B)]OTE(E);
+text: XIC(A)[XIC(C)OTE(D),XIC(B)]OTE(E);
+  $rc1 := A AND C;
+  D := $rc1;
+  E := $rc1 OR A AND B;
+

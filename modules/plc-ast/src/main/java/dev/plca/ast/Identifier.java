@@ -8,8 +8,9 @@ import java.util.Objects;
  * A name as written in the source. IEC names are case-insensitive: compare with {@link #is} or {@link #key}.
  *
  * <p>{@code name} never includes quotes or prefixes; {@code form} records how it was written, which decides scoping in
- * Siemens SCL ({@code #x} is a block-local, {@code "x"} a global block, DB or tag). Quoted names are case-insensitive
- * too.
+ * Siemens SCL ({@code #x} is a block-local, {@code "x"} a global block, DB or tag) and Rockwell ({@code \\Prog.Tag}).
+ * Quoted names are case-insensitive too. Rockwell module and status tags keep their colons in the name
+ * ({@code Local:1:I}, {@code S:FS}).
  */
 public record Identifier(String name, Form form, Span span) implements Node {
 
@@ -19,7 +20,11 @@ public record Identifier(String name, Form form, Span span) implements Node {
         /** SCL {@code "x"}: a global name (block, DB, UDT, PLC tag). */
         QUOTED,
         /** SCL {@code #x} or {@code #"x"}: a local of the enclosing block. */
-        LOCAL
+        LOCAL,
+        /** Rockwell {@code \\Prog}: a program, whose parameters follow as members ({@code \\Prog.Tag}). */
+        PROGRAM,
+        /** A name the frontend made up, never written in the source: ladder power-flow variables ({@code $rc1}). */
+        SYNTHETIC
     }
 
     public Identifier {
@@ -47,6 +52,8 @@ public record Identifier(String name, Form form, Span span) implements Node {
             case PLAIN -> name;
             case QUOTED -> '"' + name + '"';
             case LOCAL -> name.matches("[\\p{L}_][\\p{L}\\p{N}_]*") ? "#" + name : "#\"" + name + '"';
+            case PROGRAM -> "\\" + name;
+            case SYNTHETIC -> "$" + name;
         };
     }
 }

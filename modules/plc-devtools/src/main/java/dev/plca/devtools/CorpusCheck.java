@@ -1,13 +1,16 @@
 package dev.plca.devtools;
 
+import dev.plca.ast.Declaration;
 import dev.plca.ast.Expression;
 import dev.plca.ast.SourceUnit;
+import dev.plca.ast.Statement;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.diag.Severity;
 import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontend;
@@ -39,7 +42,9 @@ import java.util.regex.Pattern;
  * semantic model per project (a TwinCAT {@code .plcproj} directory, else the repository; Siemens files of a repository
  * form their own project) and reports how much real-world code the frontends accept, how many names the model resolves,
  * and what the rules report (see {@link RuleCorpusStats}). Siemens files are reported per format, with classic STEP 7
- * sources (unquoted block names) as {@code <format>-classic}. Run with {@code ./gradlew :plc-devtools:corpusCheck}.
+ * sources (unquoted block names) as {@code <format>-classic}. Rockwell L5X files are also reported per rung
+ * ({@code L5X-rungs}) and per ST routine ({@code L5X-st}), since one broken rung should not hide a 40 MB export. Run
+ * with {@code ./gradlew :plc-devtools:corpusCheck}.
  *
  * <p>Fails (exit 1) when a rule fails on any project, when the SLL-fallback rate on error-free texts exceeds
  * {@value #MAX_CLEAN_FALLBACK_RATE}, or when a rate drops below {@code corpus-baseline.properties}. With
@@ -53,7 +58,7 @@ public final class CorpusCheck {
     private static final Pattern CLASSIC_HEADER =
             Pattern.compile("(?im)^\\s*(FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK|DATA_BLOCK|TYPE)\\s+[A-Za-z_]");
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
 
     record FileResult(
             String repo,
@@ -63,7 +68,13 @@ public final class CorpusCheck {
             boolean clean,
             Frontend.Stats stats,
             List<String> errors,
-            String firstError) {}
+            String firstError,
+            Parts parts) {}
+
+    /** Rockwell: rungs and ST routines of a file, and how many of them failed to parse. */
+    record Parts(int rungs, int failedRungs, int stRoutines, int failedStRoutines) {
+        static final Parts NONE = new Parts(0, 0, 0, 0);
+    }
 
     /** Semantic results of one project. */
     record ProjectResult(
@@ -85,13 +96,24 @@ public final class CorpusCheck {
         Path baseline = Path.of(args[1]);
         Path reportDir = Path.of(args[2]);
         boolean update = List.of(args).contains("--update-baseline");
+        boolean partial = List.of(args).stream().anyMatch(a -> a.startsWith("--only="));
         Path manifest = corpus.resolve("MANIFEST.csv");
         PrintStream out = System.out;
         if (!Files.exists(manifest)) {
             out.println("corpusCheck: no " + manifest + " — skipped (run the corpus harvester first)");
             return;
         }
+        String only = List.of(args).stream()
+                .filter(a -> a.startsWith("--only="))
+                .map(a -> a.substring("--only=".length()))
+                .findFirst()
+                .orElse(null);
         List<String[]> rows = readManifest(manifest);
+        if (only != null) {
+            // a quick look at one dialect; baselines are neither checked nor updated
+            rows.removeIf(r -> !r[3].equalsIgnoreCase(only));
+            update = false;
+        }
         Map<String, List<String[]>> projects = groupByProject(rows);
         int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
         ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
@@ -129,7 +151,7 @@ public final class CorpusCheck {
         for (FileResult r : results) {
             String g = r.format().matches("scl.*|db.*|udt.*")
                     ? "Siemens"
-                    : r.format().startsWith("Tc") ? "TwinCat" : "st";
+                    : r.format().equals("L5X") ? "Rockwell" : r.format().startsWith("Tc") ? "TwinCat" : "st";
             linesByGroup.merge(g, r.lines(), Long::sum);
         }
         int ruleFailures = RuleCorpusStats.report(
@@ -139,7 +161,7 @@ public final class CorpusCheck {
                 parseAndModel,
                 out,
                 reportDir);
-        boolean ok = checkThresholds(results, rates, baseline, update, out);
+        boolean ok = partial || checkThresholds(results, rates, baseline, update, out);
         if (ruleFailures > 0) {
             out.println("FAIL: " + ruleFailures + " rule failures (" + RuleEngine.INTERNAL + ")");
             ok = false;
@@ -171,7 +193,8 @@ public final class CorpusCheck {
                     best = dir;
                 }
             }
-            String family = r[3].equals("Siemens") ? "|siemens" : "";
+            // an L5X export is a complete project of its own: one project per file
+            String family = r[3].equals("Siemens") ? "|siemens" : r[3].equals("Rockwell") ? "|rockwell|" + r[2] : "";
             out.computeIfAbsent(r[0] + "|" + best + family, k -> new ArrayList<>())
                     .add(r);
         }
@@ -186,10 +209,12 @@ public final class CorpusCheck {
         rows.sort(Comparator.comparing(r -> r[2]));
         boolean twinCat = false;
         boolean siemens = false;
+        boolean rockwell = false;
         long parseStart = System.nanoTime();
         for (String[] r : rows) {
             twinCat |= r[3].equals("TwinCat");
             siemens |= r[3].equals("Siemens");
+            rockwell |= r[3].equals("Rockwell");
             try {
                 var parsed = parseOne(corpus, r, registry);
                 if (parsed != null) {
@@ -200,7 +225,15 @@ public final class CorpusCheck {
                 // the frontend must never throw: record it as a failed file with the escape as its error
                 String err = "ESCAPED " + e;
                 results.add(new FileResult(
-                        r[0], r[2], r[4], parseLongOr(r[8]), false, Frontend.Stats.NONE, List.of(err), err));
+                        r[0],
+                        r[2],
+                        r[4],
+                        parseLongOr(r[8]),
+                        false,
+                        Frontend.Stats.NONE,
+                        List.of(err),
+                        err,
+                        Parts.NONE));
             }
         }
         long t = System.nanoTime();
@@ -230,10 +263,11 @@ public final class CorpusCheck {
             }
             modelNanos = System.nanoTime() - t;
             try {
-                rules = RuleCorpusStats.run(rows.getFirst()[0], key, group(siemens, twinCat), model, registry);
+                rules = RuleCorpusStats.run(
+                        rows.getFirst()[0], key, group(siemens, twinCat, rockwell), model, registry);
             } catch (Throwable e) {
                 rules = new RuleCorpusStats.Outcome(
-                        group(siemens, twinCat), Map.of(), Map.of(), List.of("ESCAPED " + e), List.of());
+                        group(siemens, twinCat, rockwell), Map.of(), Map.of(), List.of("ESCAPED " + e), List.of());
             }
         } catch (Throwable e) {
             escaped = "ESCAPED " + e;
@@ -245,7 +279,7 @@ public final class CorpusCheck {
                 new ProjectResult(
                         repo,
                         key,
-                        group(siemens, twinCat),
+                        group(siemens, twinCat, rockwell),
                         rows.size(),
                         stats,
                         modelNanos,
@@ -255,8 +289,8 @@ public final class CorpusCheck {
                         rules));
     }
 
-    private static String group(boolean siemens, boolean twinCat) {
-        return siemens ? "Siemens" : twinCat ? "TwinCat" : "st";
+    private static String group(boolean siemens, boolean twinCat, boolean rockwell) {
+        return siemens ? "Siemens" : rockwell ? "Rockwell" : twinCat ? "TwinCat" : "st";
     }
 
     private static Map<String, Double> semanticReport(List<ProjectResult> projects, PrintStream out, Path reportDir)
@@ -366,7 +400,8 @@ public final class CorpusCheck {
             if ((f[3].equals("Codesys") && format.equals("st"))
                     || (f[3].equals("TwinCat") && format.matches("TcPOU|TcDUT|TcGVL|TcIO|TcTTO|plcproj"))
                     // Siemens .st files are SIMATIC AX (IEC OOP ST), out of scope for M4
-                    || (f[3].equals("Siemens") && format.matches("scl|db|udt"))) {
+                    || (f[3].equals("Siemens") && format.matches("scl|db|udt"))
+                    || (f[3].equals("Rockwell") && format.equals("L5X"))) {
                 rows.add(f);
             }
         }
@@ -433,9 +468,49 @@ public final class CorpusCheck {
         long lines = parseLongOr(r[8]);
         String format =
                 r[3].equals("Siemens") && CLASSIC_HEADER.matcher(sf.text()).find() ? r[4] + "-classic" : r[4];
+        Parts parts = r[3].equals("Rockwell") ? parts(result.unit(), diags) : Parts.NONE;
         return Map.entry(
-                new FileResult(repoUrl, r[2], format, lines, errors.isEmpty(), result.stats(), errors, first),
+                new FileResult(repoUrl, r[2], format, lines, errors.isEmpty(), result.stats(), errors, first, parts),
                 result.unit());
+    }
+
+    /** Rungs that did not parse (no drawing, an Invalid lowering) and ST routines with a syntax error in their text. */
+    private static Parts parts(SourceUnit unit, DiagnosticCollector diags) {
+        java.util.Set<Integer> failedTexts = new java.util.HashSet<>();
+        for (Diagnostic d : diags.diagnostics()) {
+            if (d.severity() == Severity.ERROR) {
+                failedTexts.add(d.span().textId());
+            }
+        }
+        int[] n = new int[4];
+        for (Declaration d : unit.declarations()) {
+            if (d instanceof Declaration.Pou p) {
+                countParts(p, failedTexts, n);
+            }
+        }
+        return new Parts(n[0], n[1], n[2], n[3]);
+    }
+
+    private static void countParts(Declaration.Pou p, java.util.Set<Integer> failedTexts, int[] n) {
+        if (p.body() != null && "RLL".equalsIgnoreCase(p.bodyLanguage())) {
+            for (Statement s : p.body()) {
+                if (s instanceof Statement.Rung r) {
+                    n[0]++;
+                    if (r.ladder() == null && !r.body().isEmpty()) {
+                        n[1]++;
+                    }
+                }
+            }
+        } else if (p.body() != null && "ST".equalsIgnoreCase(p.bodyLanguage())) {
+            n[2]++;
+            if (!p.body().isEmpty()
+                    && failedTexts.contains(p.body().getFirst().span().textId())) {
+                n[3]++;
+            }
+        }
+        for (Declaration.Pou m : p.members()) {
+            countParts(m, failedTexts, n);
+        }
     }
 
     private static Map<String, Double> report(
@@ -483,6 +558,7 @@ public final class CorpusCheck {
                     100 * repoRate,
                     perRepo.size()));
         }
+        partsReport(results, rates, md);
         md.append(String.format(
                 Locale.ROOT,
                 "%nTexts parsed: %,d; SLL fallbacks: %,d (%.2f%%); clean fallbacks (SLL failed, LL no error): %,d (%.3f%%)%n",
@@ -529,6 +605,43 @@ public final class CorpusCheck {
         Files.writeString(reportDir.resolve("failures.tsv"), tsv);
         out.println("\nReports: " + reportDir.toAbsolutePath());
         return rates;
+    }
+
+    /** Rockwell rungs and ST routines: error-free share overall and repo-weighted. */
+    private static void partsReport(List<FileResult> results, Map<String, Double> rates, StringBuilder md) {
+        Map<String, long[]> perRepo = new HashMap<>(); // rungs, failed, st, failed
+        for (FileResult r : results) {
+            if (r.parts() != Parts.NONE) {
+                long[] a = perRepo.computeIfAbsent(r.repo(), k -> new long[4]);
+                a[0] += r.parts().rungs();
+                a[1] += r.parts().failedRungs();
+                a[2] += r.parts().stRoutines();
+                a[3] += r.parts().failedStRoutines();
+            }
+        }
+        if (perRepo.isEmpty()) {
+            return;
+        }
+        String[] names = {"L5X-rungs", "L5X-st"};
+        for (int k = 0; k < 2; k++) {
+            int i = 2 * k;
+            long total = perRepo.values().stream().mapToLong(a -> a[i]).sum();
+            long failed = perRepo.values().stream().mapToLong(a -> a[i + 1]).sum();
+            List<long[]> repos = perRepo.values().stream().filter(a -> a[i] > 0).toList();
+            double repoRate = repos.stream()
+                    .mapToDouble(a -> 1 - a[i + 1] / (double) a[i])
+                    .average()
+                    .orElse(1);
+            rates.put("errorFree.repoWeighted." + names[k], repoRate);
+            md.append(String.format(
+                    Locale.ROOT,
+                    "| %s | %,d | %.2f%% | %.2f%% | %,d |%n",
+                    names[k],
+                    total,
+                    100 * pct(total - failed, total) / 100,
+                    100 * repoRate,
+                    repos.size()));
+        }
     }
 
     private static boolean checkThresholds(

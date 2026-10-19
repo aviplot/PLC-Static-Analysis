@@ -18,6 +18,6 @@ public final class ProjectContext extends RuleContext {
 
     /** Reports a finding in {@code pou} (null for findings outside POUs). */
     public void report(PouSymbol pou, Span span, String message, List<Diagnostic.Related> related) {
-        report(pou == null ? null : pou.qualifiedName(), span, message, related);
+        report(pou, span, message, related, false);
     }
 }

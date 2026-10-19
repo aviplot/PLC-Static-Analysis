@@ -1,0 +1,368 @@
+SourceUnit dialect=ROCKWELL
+  TypeDecl name=UDT_Motor @5:1-5:59
+    type:
+      StructType @5:1-5:59
+        members:
+          VarDecl name=Speed referenceInit=false @7:1-7:110
+            type:
+              Named name=REAL @7:32-7:36
+          VarDecl name=Run referenceInit=false @9:1-9:153
+            type:
+              Named name=BOOL @9:30-9:33
+          VarDecl name=Fault referenceInit=false @10:1-10:155
+            type:
+              Named name=BOOL @10:32-10:35
+          VarDecl name=History referenceInit=false @11:1-11:114
+            type:
+              ArrayType @11:34-11:38
+                dimensions:
+                  Dimension @11:51-11:53
+                    low:
+                      Literal kind=INTEGER text="0" @11:51-11:53
+                    high:
+                      Literal kind=INTEGER text="9" @11:51-11:53
+                element:
+                  Named name=DINT @11:34-11:38
+  Pou kind=FUNCTION_BLOCK name=Valve bodyLanguage="RLL" @20:1-20:133
+    varBlocks:
+      VarBlock section=INPUT @22:1-26:146
+        variables:
+          VarDecl name=EnableIn referenceInit=false @22:1-22:150
+            type:
+              Named name=BOOL @22:53-22:57
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @22:138-22:147
+          VarDecl name=Cmd referenceInit=false @24:1-24:144
+            type:
+              Named name=BOOL @24:48-24:52
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @24:131-24:141
+          VarDecl name=Delay referenceInit=false @26:1-26:146
+            type:
+              Named name=DINT @26:50-26:54
+            init:
+              Literal kind=INTEGER text="500" @27:83-27:86
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @26:134-26:144
+      VarBlock section=OUTPUT @23:1-25:145
+        variables:
+          VarDecl name=EnableOut referenceInit=false @23:1-23:152
+            type:
+              Named name=BOOL @23:54-23:58
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @23:140-23:149
+          VarDecl name=Open referenceInit=false @25:1-25:145
+            type:
+              Named name=BOOL @25:49-25:53
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @25:133-25:142
+      VarBlock section=VAR @31:1-31:62
+        variables:
+          VarDecl name=Tmr referenceInit=false @31:1-31:62
+            type:
+              Named name=TIMER @31:32-31:37
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="None" @31:55-31:59
+    body:
+      Rung number=0 type="N" ladder="XIC(Cmd)TON(Tmr,?,?)XIC(Tmr.DN)OTE(Open);" @38:10-38:51
+        body:
+          CallStatement @38:18-38:30
+            call:
+              Call @38:18-38:30
+                callee:
+                  NameRef name=TON globalScope=false @38:18-38:21
+                arguments:
+                  Argument kind=POSITIONAL negated=false @38:22-38:25
+                    value:
+                      NameRef name=Tmr globalScope=false @38:22-38:25
+                  Argument kind=POSITIONAL negated=false @38:26-38:27
+                  Argument kind=POSITIONAL negated=false @38:28-38:29
+                  Argument kind=INPUT name=EnableIn negated=false @38:14-38:17
+                    value:
+                      NameRef name=Cmd globalScope=false @38:14-38:17
+          Assignment op=ASSIGN @38:41-38:50
+            target:
+              NameRef name=Open globalScope=false @38:45-38:49
+            value:
+              Binary op=AND @38:14-38:40
+                left:
+                  NameRef name=Cmd globalScope=false @38:14-38:17
+                right:
+                  MemberAccess member=DN @38:34-38:40
+                    target:
+                      NameRef name=Tmr globalScope=false @38:34-38:37
+  GlobalVars listName=Line1 @47:1-57:110
+    block:
+      VarBlock section=GLOBAL @47:1-57:110
+        variables:
+          VarDecl name=StartPB referenceInit=false @47:1-47:113
+            type:
+              Named name=BOOL @47:46-47:50
+            init:
+              Literal kind=BOOL text="FALSE" @48:76-48:77
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @47:101-47:111
+          VarDecl name=Motor1 referenceInit=false @50:1-50:102
+            type:
+              Named name=UDT_Motor @50:45-50:54
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @50:89-50:99
+          VarDecl name=Line_Name referenceInit=false @51:1-51:100
+            type:
+              Named name=STRING @51:48-51:54
+            init:
+              Literal kind=STRING text="'Line1'" @52:34-52:53
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @51:89-51:98
+          VarDecl name=Horn referenceInit=false overlay=IO_Rack1:2:O.Data.4 @57:1-57:110
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @57:97-57:107
+  GlobalVars listName=Line1 @54:1-54:110
+    block:
+      VarBlock section=GLOBAL qualifiers=[CONSTANT] @54:1-54:110
+        variables:
+          VarDecl name=MaxSpeed referenceInit=false @54:1-54:110
+            type:
+              Named name=REAL @54:47-54:51
+            init:
+              Literal kind=REAL text="1500.0" @55:74-55:80
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read Only" @54:99-54:108
+  Pou kind=PROGRAM name=MainProgram bodyLanguage="L5X" @60:1-60:140
+    varBlocks:
+      VarBlock section=VAR @62:1-65:118
+        variables:
+          VarDecl name=Seal referenceInit=false @62:1-62:105
+            type:
+              Named name=BOOL @62:43-62:47
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="None" @62:98-62:102
+          VarDecl name=V1 referenceInit=false @64:1-64:94
+            type:
+              Named name=Valve @64:41-64:46
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @64:81-64:91
+          VarDecl name=OS referenceInit=false @65:1-65:118
+            type:
+              ArrayType @65:41-65:45
+                dimensions:
+                  Dimension @65:59-65:60
+                    low:
+                      Literal kind=INTEGER text="0" @65:59-65:60
+                    high:
+                      Literal kind=INTEGER text="3" @65:59-65:60
+                element:
+                  Named name=BOOL @65:41-65:45
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="None" @65:111-65:115
+      VarBlock section=OUTPUT @63:1-63:127
+        variables:
+          VarDecl name=Count referenceInit=false @63:1-63:127
+            type:
+              Named name=DINT @63:44-63:48
+            pragmas:
+              Pragma kind=ATTRIBUTE name="ExternalAccess" value="Read/Write" @63:99-63:109
+    members:
+      Pou kind=ROUTINE name=MainRoutine bodyLanguage="RLL" @68:1-68:40
+        body:
+          Rung number=0 type="N" ladder="[XIC(StartPB),XIC(Seal)]XIO(Motor1.Fault)OTE(Seal);" @75:10-75:63
+            body:
+              Assignment op=ASSIGN @75:53-75:62
+                target:
+                  NameRef name=Seal globalScope=false @75:57-75:61
+                value:
+                  Binary op=AND @75:15-75:53
+                    left:
+                      Binary op=OR @75:15-75:33
+                        left:
+                          NameRef name=StartPB globalScope=false @75:15-75:22
+                        right:
+                          NameRef name=Seal globalScope=false @75:29-75:33
+                    right:
+                      Unary op=NOT @75:36-75:53
+                        operand:
+                          MemberAccess member=Fault @75:40-75:52
+                            target:
+                              NameRef name=Motor1 globalScope=false @75:40-75:46
+          Rung number=1 type="N" ladder="XIC(Seal)ONS(OS[0])ADD(Count,1,Count);" @80:10-80:48
+            body:
+              Assignment op=ASSIGN @80:14-80:29
+                target:
+                  NameRef name=$rc1 globalScope=false @80:10-80:10
+                value:
+                  Binary op=AND @80:14-80:29
+                    left:
+                      NameRef name=Seal globalScope=false @80:14-80:18
+                    right:
+                      Call @80:19-80:29
+                        callee:
+                          NameRef name=ONS globalScope=false @80:19-80:22
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @80:23-80:28
+                            value:
+                              Index @80:23-80:28
+                                target:
+                                  NameRef name=OS globalScope=false @80:23-80:25
+                                indices:
+                                  Literal kind=INTEGER text="0" @80:26-80:27
+              If @80:29-80:47
+                branches:
+                  Branch @80:29-80:47
+                    condition:
+                      NameRef name=$rc1 globalScope=false @80:10-80:10
+                    body:
+                      Assignment op=ASSIGN @80:29-80:47
+                        target:
+                          NameRef name=Count globalScope=false @80:41-80:46
+                        value:
+                          Binary op=ADD @80:29-80:47
+                            left:
+                              NameRef name=Count globalScope=false @80:33-80:38
+                            right:
+                              Literal kind=INTEGER text="1" @80:39-80:40
+          Rung number=2 type="N" ladder="Valve(V1,Seal,Motor1.Run)OTE(Horn);" @85:10-85:45
+            body:
+              CallStatement @85:10-85:35
+                call:
+                  Call @85:10-85:35
+                    callee:
+                      NameRef name=V1 globalScope=false @85:16-85:18
+                    arguments:
+                      Argument kind=INPUT name=Cmd negated=false @85:19-85:23
+                        value:
+                          NameRef name=Seal globalScope=false @85:19-85:23
+                      Argument kind=OUTPUT name=Open negated=false @85:24-85:34
+                        value:
+                          MemberAccess member=Run @85:24-85:34
+                            target:
+                              NameRef name=Motor1 globalScope=false @85:24-85:30
+                      Argument kind=INPUT name=EnableIn negated=false @85:10-85:35
+                        value:
+                          Literal kind=BOOL text="TRUE" @85:10-85:35
+              Assignment op=ASSIGN @85:35-85:44
+                target:
+                  NameRef name=Horn globalScope=false @85:39-85:43
+                value:
+                  MemberAccess member=EnableOut @85:10-85:35
+                    target:
+                      NameRef name=V1 globalScope=false @85:16-85:18
+          Rung number=3 type="N" ladder="JSR(Calc,0);" @90:10-90:22
+            body:
+              CallStatement @90:10-90:21
+                call:
+                  Call @90:10-90:21
+                    callee:
+                      NameRef name=JSR globalScope=false @90:10-90:13
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @90:14-90:18
+                        value:
+                          NameRef name=Calc globalScope=false @90:14-90:18
+                      Argument kind=POSITIONAL negated=false @90:19-90:20
+                        value:
+                          Literal kind=INTEGER text="0" @90:19-90:20
+      Pou kind=ROUTINE name=Calc bodyLanguage="ST" @95:1-95:32
+        body:
+          If @101:10-113:16
+            branches:
+              Branch @101:10-101:41
+                condition:
+                  Binary op=AND @101:13-101:36
+                    left:
+                      MemberAccess member=Run @101:13-101:23
+                        target:
+                          NameRef name=Motor1 globalScope=false @101:13-101:19
+                    right:
+                      Unary op=NOT @101:28-101:36
+                        operand:
+                          NameRef name=S:FS globalScope=false @101:32-101:36
+                body:
+                  Assignment op=ASSIGN @104:14-104:65
+                    target:
+                      MemberAccess member=Speed @104:14-104:26
+                        target:
+                          NameRef name=Motor1 globalScope=false @104:14-104:20
+                    value:
+                      Call @104:30-104:64
+                        callee:
+                          NameRef name=MIN globalScope=false @104:30-104:33
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @104:34-104:42
+                            value:
+                              NameRef name=MaxSpeed globalScope=false @104:34-104:42
+                          Argument kind=POSITIONAL negated=false @104:44-104:63
+                            value:
+                              Binary op=ADD @104:44-104:63
+                                left:
+                                  MemberAccess member=Speed @104:44-104:56
+                                    target:
+                                      NameRef name=Motor1 globalScope=false @104:44-104:50
+                                right:
+                                  Literal kind=REAL text="10.0" @104:59-104:63
+            elseBody:
+              Assignment op=NON_RETENTIVE @110:14-110:36
+                target:
+                  MemberAccess member=Speed @110:14-110:26
+                    target:
+                      NameRef name=Motor1 globalScope=false @110:14-110:20
+                value:
+                  Literal kind=REAL text="0.0" @110:32-110:35
+          Empty @113:16-113:17
+          CallStatement @116:10-116:38
+            call:
+              Call @116:10-116:37
+                callee:
+                  NameRef name=V1 globalScope=false @116:16-116:18
+                arguments:
+                  Argument kind=INPUT name=Cmd negated=false @116:20-116:24
+                    value:
+                      NameRef name=Seal globalScope=false @116:20-116:24
+                  Argument kind=OUTPUT name=Open negated=false @116:26-116:36
+                    value:
+                      MemberAccess member=Run @116:26-116:36
+                        target:
+                          NameRef name=Motor1 globalScope=false @116:26-116:32
+      Pou kind=ROUTINE name=Faults bodyLanguage="RLL" @120:1-120:35
+        body:
+          Rung number=0 type="N" ladder="OTU(Seal);" @124:10-124:20
+            body:
+              Assignment op=ASSIGN @124:10-124:19
+                target:
+                  NameRef name=Seal globalScope=false @124:14-124:18
+                value:
+                  Literal kind=BOOL text="FALSE" @124:10-124:19
+    body:
+      CallStatement @60:64-60:75
+        call:
+          Call @60:64-60:75
+            callee:
+              NameRef name=JSR globalScope=false @60:64-60:75
+            arguments:
+              Argument kind=POSITIONAL negated=false @60:64-60:75
+                value:
+                  NameRef name=MainRoutine globalScope=false @60:64-60:75
+    pragmas:
+      Pragma kind=ATTRIBUTE name="FaultRoutine" value="Faults" @60:95-60:101
+  Configuration name=Line1 @3:32-3:37
+    elements:
+      Task name=MainTask @133:1-133:119
+        settings:
+          Argument kind=INPUT name=TYPE negated=false @133:13-133:21
+            value:
+              Literal kind=STRING text="'CONTINUOUS'" @133:13-133:21
+          Argument kind=INPUT name=PRIORITY negated=false @133:51-133:53
+            value:
+              Literal kind=INTEGER text="10" @133:51-133:53
+      ProgramInstance name=MainProgram task=MainTask type=MainProgram @135:25-135:36
+      Task name=Fast @138:1-138:123
+        settings:
+          Argument kind=INPUT name=TYPE negated=false @138:13-138:17
+            value:
+              Literal kind=STRING text="'PERIODIC'" @138:13-138:17
+          Argument kind=INPUT name=PRIORITY negated=false @138:55-138:56
+            value:
+              Literal kind=INTEGER text="5" @138:55-138:56
+          Argument kind=INPUT name=INTERVAL negated=false @138:41-138:43
+            value:
+              Literal kind=TIME text="10ms" typePrefix="T" @138:41-138:43
+  comments: 2
+diagnostics:

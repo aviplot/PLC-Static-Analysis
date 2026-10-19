@@ -15,7 +15,11 @@ public record CallSite(PouSymbol caller, PouSymbol callee, Kind kind, Access ins
         METHOD,
         ACTION,
         PROPERTY_GET,
-        PROPERTY_SET
+        PROPERTY_SET,
+        /**
+         * Rockwell {@code JSR}/{@code FOR}/{@code SFR} of a routine, a program's main/fault routine, an AOI scan mode.
+         */
+        ROUTINE
     }
 
     @Override

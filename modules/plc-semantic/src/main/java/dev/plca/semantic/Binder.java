@@ -121,6 +121,7 @@ final class Binder {
                 body(t.finallyBody(), pou);
             }
             case Statement.Region r -> body(r.body(), pou);
+            case Statement.Rung r -> body(r.body(), pou);
             default -> {}
         }
     }
@@ -163,6 +164,11 @@ final class Binder {
                 expression(b.target(), pou);
                 yield Type.BOOL;
             }
+            case Expression.IndirectBit b -> {
+                expression(b.target(), pou);
+                expression(b.bit(), pou);
+                yield Type.BOOL;
+            }
             case Expression.Slice s -> {
                 expression(s.target(), pou);
                 yield switch (s.width()) {
@@ -195,18 +201,32 @@ final class Binder {
     }
 
     private Type name(Expression.NameRef n, PouSymbol pou) {
+        if (n.name().form() == Identifier.Form.SYNTHETIC) {
+            // ladder power flow ($rc1): made up by the frontend, no variable behind it and not a name of the source
+            return Type.BOOL;
+        }
         names++;
         String name = n.name().name();
         // Siemens: #x is a local of the block, "x" a global block/DB/UDT/tag; plain names follow the IEC chain
         Optional<Symbol> s = switch (n.name().form()) {
             case LOCAL -> localLookup(name, pou);
             case QUOTED -> global.lookup(name);
+            case PROGRAM ->
+                global.pou(name).filter(p -> p.kind() == PouKind.PROGRAM).map(Symbol.class::cast);
             case PLAIN -> n.globalScope() ? global.lookup(name) : lookup(name, pou);
+            case SYNTHETIC -> Optional.<Symbol>empty();
         };
         if (s.isEmpty() && n.name().form() == Identifier.Form.PLAIN && isTypeName(name)) {
             // a type used as an operand: Siemens TypeOf comparisons, TypeOf(#v) = Real
             resolved++;
             return Type.UNKNOWN;
+        }
+        if (s.isEmpty() && rockwell(pou) && name.indexOf(':') > 0) {
+            // module and status tags (Local:1:I, S:FS) come from the I/O configuration, not from the export's tags
+            external++;
+            IoTagSymbol io = IoTagSymbol.of(name);
+            model.symbols.put(n, io);
+            return io.status() && name.length() <= 4 ? Type.BOOL : new Type.Unknown(name);
         }
         if (s.isEmpty() && n.name().form() == Identifier.Form.QUOTED) {
             // a PLC tag (tag tables are not part of SCL exports) or a block outside the export: never guessed
@@ -383,7 +403,111 @@ final class Binder {
         return Type.UNKNOWN;
     }
 
+    private static boolean rockwell(PouSymbol pou) {
+        return pou != null && pou.dialect() == dev.plca.core.Dialect.ROCKWELL;
+    }
+
+    /**
+     * Rockwell: a called name that is no tag, routine or AOI of the project is an instruction ({@code TON},
+     * {@code COP}, {@code JSR}) — known from the instruction table or not — even where IEC defines a builtin of the
+     * same name ({@code TON} is a TIMER instruction here, not the IEC function block).
+     */
+    private InstructionSymbol instruction(Expression.Call c, PouSymbol pou) {
+        if (!rockwell(pou)
+                || !(c.callee() instanceof Expression.NameRef n)
+                || n.name().form() != Identifier.Form.PLAIN) {
+            return null;
+        }
+        Optional<Symbol> s = lookup(n.name().name(), pou);
+        boolean builtin = s.isPresent()
+                && (s.get() instanceof BuiltinFunction || s.get() instanceof PouSymbol p && p.isBuiltin());
+        if (s.isPresent() && !builtin) {
+            return null;
+        }
+        Optional<dev.plca.ast.ladder.InstructionSet.Instruction> def =
+                dev.plca.ast.ladder.InstructionSet.lookup(n.name().name());
+        if (def.isEmpty() && builtin) {
+            return null; // MIN, MAX, LIMIT: IEC functions Rockwell ST also offers
+        }
+        return new InstructionSymbol(n.name().name(), def.orElse(null));
+    }
+
+    private Type instructionCall(Expression.Call c, InstructionSymbol instr, PouSymbol pou) {
+        names++;
+        if (instr.isKnown()) {
+            resolved++;
+        } else {
+            library++; // an AOI or instruction outside the export: cannot know
+        }
+        model.symbols.put(c.callee(), instr);
+        model.types.put(c.callee(), Type.VOID);
+        List<Type> argTypes = new ArrayList<>();
+        int index = 0;
+        for (Argument a : c.arguments()) {
+            dev.plca.ast.ladder.InstructionSet.Role role =
+                    a.kind() == Expression.ArgumentKind.POSITIONAL && instr.isKnown()
+                            ? instr.definition().role(index)
+                            : null;
+            if (a.kind() == Expression.ArgumentKind.POSITIONAL) {
+                index++;
+            }
+            if (a.value() == null) {
+                argTypes.add(Type.UNKNOWN);
+                continue;
+            }
+            if (role == dev.plca.ast.ladder.InstructionSet.Role.ROUTINE && a.value() instanceof Expression.NameRef r) {
+                routine(r, pou);
+                argTypes.add(Type.VOID);
+            } else if (role == dev.plca.ast.ladder.InstructionSet.Role.NAME
+                    || role == dev.plca.ast.ladder.InstructionSet.Role.LABEL
+                    || role == dev.plca.ast.ladder.InstructionSet.Role.DISPLAY) {
+                argTypes.add(Type.UNKNOWN); // a word, a jump label or a display value: not a tag
+            } else {
+                argTypes.add(expression(a.value(), pou));
+            }
+        }
+        if (!instr.isKnown()) {
+            return Type.UNKNOWN;
+        }
+        dev.plca.ast.ladder.InstructionSet.Instruction d = instr.definition();
+        if (d.kind() == dev.plca.ast.ladder.InstructionSet.Kind.INPUT) {
+            return Type.BOOL;
+        }
+        // ST function form of a ladder instruction without its destination: ABS(x), SQRT(x)
+        int positional = (int) c.arguments().stream()
+                .filter(a -> a.kind() == Expression.ArgumentKind.POSITIONAL)
+                .count();
+        if (!d.repeatLast()
+                && positional == d.roles().size() - 1
+                && d.roles().getLast() == dev.plca.ast.ladder.InstructionSet.Role.WRITE
+                && !argTypes.isEmpty()) {
+            return Builtins.concrete(argTypes.getFirst());
+        }
+        return Type.VOID;
+    }
+
+    /** {@code JSR(Fill, 0)}: a routine of the program (or AOI) the calling routine belongs to. */
+    private void routine(Expression.NameRef r, PouSymbol pou) {
+        names++;
+        PouSymbol owner = pou.instanceOwner() != null ? pou.instanceOwner() : pou;
+        Optional<PouSymbol> routine = owner.member(r.name().name());
+        if (routine.isEmpty() && owner.kind() == PouKind.ROUTINE && owner.owner() != null) {
+            routine = owner.owner().member(r.name().name());
+        }
+        if (routine.isPresent()) {
+            resolved++;
+            record(r, routine.get(), Type.VOID);
+        } else {
+            library++; // a routine outside a partial export
+            record(r, new LibrarySymbol(r.name().name()), Type.VOID);
+        }
+    }
+
     private Type call(Expression.Call c, PouSymbol pou) {
+        InstructionSymbol instr = instruction(c, pou);
+        if (instr != null) {
+            return instructionCall(c, instr, pou);
+        }
         Type calleeType = expression(c.callee(), pou);
         Symbol callee = model.symbols.get(c.callee());
         // inside F, `F` is the result variable, but `F(...)` calls F (recursion)

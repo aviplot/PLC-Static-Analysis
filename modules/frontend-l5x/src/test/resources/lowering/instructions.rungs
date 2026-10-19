@@ -1,0 +1,24 @@
+# one rung per lowering form
+XIC(S)OTL(M);
+XIC(R)OTU(M);
+OTL(M);
+XIC(R)MOV(5,X)ADD(X,1,Y);
+XIC(R)SUB(A,B,C)MUL(A,2.5,C)DIV(A,0,C)MOD(A,3,C);
+XIC(R)CLR(X)NEG(A,B)NOT(W,V)AND(W,16#FF,V)OR(W,2#1010,V)XOR(W,V,V)XPY(A,2,B);
+XIC(R)CPT(Out,((In_Raw - Min)/(Max - Min))*(EUMax - EUMin) + EUMin);
+EQU(A,B)NEQ(A,B)GRT(A,B)GEQ(A,B)LES(A,B)LEQ(A,B)OTE(C);
+CMP(A + B > C * 2)LIM(0,X,100)MEQ(V,16#0F,3)OTE(Ok);
+XIC(E)TON(T1,?,?);
+XIC(E)TOF(T2,5000,0)XIC(T2.DN)OTE(Off);
+XIC(E)CTU(C1,10,0)RES(C1);
+XIC(A)ONS(OS)OTE(B);
+XIC(A)ONS(OS);
+XIC(A)OSR(Store,Pulse)OTE(B);
+XIC(G)JSR(Fill,2,In1,In2,Ret1);
+JSR(Main,0);
+XIC(Go)JMP(Skip);
+LBL(Skip)XIC(A)OTE(B);
+XIC(Init)GSV(ControllerDevice,,DeviceName,Name[0]);
+XIC(R)COP(Src[0],Dst[0],10)FLL(0,Dst[0],10)SIZE(Arr,0,Len);
+XIC(Req)MSG(Msg1);
+XIC(R)MYSTERY(A,B,C)OTE(D);

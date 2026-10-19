@@ -6,6 +6,7 @@ import dev.plca.ast.Expression.Argument;
 import dev.plca.ast.Expression.ArgumentKind;
 import dev.plca.ast.Statement;
 import dev.plca.ast.VarBlock;
+import dev.plca.ast.ladder.InstructionSet;
 import dev.plca.core.source.Span;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,8 +103,8 @@ final class EffectsBuilder {
                 if (!(model.symbols.get(n) instanceof VariableSymbol v)) {
                     yield null;
                 }
-                // an overlay view (Siemens `x AT y`) shares y's storage
-                yield new PathRef(v.overlayOf() != null ? v.overlayOf() : v, "");
+                // an overlay view (Siemens `x AT y`, a Rockwell alias) shares its base's storage
+                yield v.overlayOf() != null ? new PathRef(v.overlayOf(), v.overlayPath()) : new PathRef(v, "");
             }
             case Expression.MemberAccess m -> {
                 Symbol s = model.symbols.get(m);
@@ -140,6 +141,10 @@ final class EffectsBuilder {
             case Expression.Slice sl -> {
                 PathRef base = path(sl.target());
                 yield base == null ? null : new PathRef(base.variable(), base.path() + "." + slicePath(sl));
+            }
+            case Expression.IndirectBit b -> {
+                PathRef base = path(b.target());
+                yield base == null ? null : new PathRef(base.variable(), base.path() + ".[*]");
             }
             default -> null;
         };
@@ -182,6 +187,10 @@ final class EffectsBuilder {
             case Expression.Deref d -> readSubexpressions(d.target(), c);
             case Expression.BitAccess b -> readSubexpressions(b.target(), c);
             case Expression.Slice sl -> readSubexpressions(sl.target(), c);
+            case Expression.IndirectBit b -> {
+                readSubexpressions(b.target(), c);
+                read(b.bit(), c);
+            }
             default -> {}
         }
     }
@@ -215,6 +224,9 @@ final class EffectsBuilder {
                     read(b.target(), c);
                 } else if (e instanceof Expression.Slice sl) {
                     read(sl.target(), c);
+                } else if (e instanceof Expression.IndirectBit b) {
+                    read(b.target(), c);
+                    read(b.bit(), c);
                 }
             }
         }
@@ -263,6 +275,10 @@ final class EffectsBuilder {
         Symbol s = model.symbols.get(callee);
         Span span = call.span();
 
+        if (s instanceof InstructionSymbol instr) {
+            instruction(call, instr, c);
+            return;
+        }
         if (s instanceof BuiltinFunction f) {
             String key = f.name().toLowerCase(java.util.Locale.ROOT);
             for (Argument a : call.arguments()) {
@@ -349,6 +365,70 @@ final class EffectsBuilder {
 
         if (target != null) {
             add(c, new CallSite(c.pou, target, kind, instance, span));
+        }
+    }
+
+    /**
+     * A Rockwell instruction: what it does with each operand comes from the instruction table. JSR-style parameters:
+     * the first {@code n} (the count operand) are inputs, the rest returns. Operands of an unknown instruction may be
+     * read or written ({@link Access.Kind#UNKNOWN}). The rung condition ({@code EnableIn := …}) is read.
+     */
+    private void instruction(Expression.Call call, InstructionSymbol instr, Collector c) {
+        int index = 0;
+        long inputs = -1;
+        int parameter = 0;
+        for (Argument a : call.arguments()) {
+            if (a.kind() != ArgumentKind.POSITIONAL) {
+                read(a.value(), c);
+                continue;
+            }
+            InstructionSet.Role role = instr.isKnown() ? instr.definition().role(index) : null;
+            index++;
+            Expression v = a.value();
+            if (v == null) {
+                continue;
+            }
+            if (!instr.isKnown()) {
+                accessOrRead(v, Access.Kind.UNKNOWN, c);
+                continue;
+            }
+            if (role == null) {
+                accessOrRead(v, Access.Kind.UNKNOWN, c); // more operands than the table lists
+                continue;
+            }
+            switch (role) {
+                case READ, EXPRESSION -> read(v, c);
+                case WRITE -> write(v, c);
+                case READ_WRITE, INSTANCE -> accessOrRead(v, Access.Kind.READ_WRITE, c);
+                case COUNT -> {
+                    Constant k = model.constants.evaluate(v);
+                    inputs = k instanceof Constant.Int i ? i.value() : -1;
+                }
+                case PARAMETER -> {
+                    if (inputs < 0) {
+                        accessOrRead(v, Access.Kind.UNKNOWN, c);
+                    } else if (parameter++ < inputs) {
+                        read(v, c);
+                    } else {
+                        write(v, c);
+                    }
+                }
+                case ROUTINE -> {
+                    if (model.symbols.get(v) instanceof PouSymbol routine) {
+                        add(c, new CallSite(c.pou, routine, CallSite.Kind.ROUTINE, null, call.span()));
+                    }
+                }
+                case NAME, LABEL, DISPLAY -> {}
+            }
+        }
+    }
+
+    private void accessOrRead(Expression e, Access.Kind kind, Collector c) {
+        if (path(e) != null) {
+            access(e, kind, c);
+            readSubexpressions(e, c);
+        } else {
+            read(e, c);
         }
     }
 

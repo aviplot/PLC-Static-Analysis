@@ -1,0 +1,24 @@
+# series, branches, mid-rung outputs, power-flow variables
+XIC(A)OTE(B);
+XIO(A)OTE(B);
+XIC(A)XIC(B)XIO(C)OTE(D);
+XIC(A)[XIC(B),XIO(C)]OTE(D);
+[XIC(Start) ,XIC(Motor) ]XIO(Stop)OTE(Motor);
+XIC(A)XIC(B)OTE(X)XIC(C)OTE(Y);
+XIC(A)OTE(X)XIC(C)OTE(Y);
+XIC(A)[OTE(B),XIC(C)OTE(D)];
+XIC(A)[OTE(B),OTE(C)]XIC(D)OTE(E);
+XIC(A)XIC(B)[OTE(C),OTE(D)];
+XIC(A)[XIC(B)[XIC(C),XIC(D)],XIC(E)]OTE(F);
+[XIC(A),]OTE(B);
+OTE(Always);
+;
+NOP();
+XIC(A)AFI()OTE(B);
+# the rung condition is computed before outputs change their inputs
+XIC(A)OTU(A)OTE(B);
+XIC(R)MOV(0,R)MOV(5,X);
+# a leg's side effect stays even when another leg is a wire
+[XIC(A)ONS(OS),]OTE(C);
+XIC(A)XIC(B)[XIC(C),XIC(D)]OTE(E);
+XIC(A)[XIC(C)OTE(D),XIC(B)]OTE(E);

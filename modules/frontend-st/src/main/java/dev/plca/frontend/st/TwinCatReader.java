@@ -1,5 +1,6 @@
 package dev.plca.frontend.st;
 
+import dev.plca.frontend.st.kit.XmlInput;
 import java.io.StringReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -57,27 +58,7 @@ final class TwinCatReader {
     private static final Set<String> OBJECTS = Set.of("POU", "DUT", "GVL", "Itf");
     private static final Set<String> MEMBERS = Set.of("Method", "Property", "Get", "Set", "Action", "Transition");
 
-    static final XMLInputFactory FACTORY = createFactory();
-
-    /**
-     * Woodstox, instantiated reflectively: referencing its classes directly makes javac warn about OSGi annotations
-     * that are not on the classpath (and {@code XMLInputFactory.newFactory} takes a property name, not a class name).
-     */
-    private static XMLInputFactory createFactory() {
-        XMLInputFactory f;
-        try {
-            f = (XMLInputFactory) Class.forName("com.ctc.wstx.stax.WstxInputFactory")
-                    .getDeclaredConstructor()
-                    .newInstance();
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Woodstox StAX implementation missing from the classpath", e);
-        }
-        f.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-        f.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-        f.setProperty(XMLInputFactory.IS_COALESCING, false);
-        f.setProperty("com.ctc.wstx.maxElementDepth", 500);
-        return f;
-    }
+    static final XMLInputFactory FACTORY = XmlInput.factory();
 
     private TwinCatReader() {}
 
@@ -170,21 +151,7 @@ final class TwinCatReader {
         return tag != null && (OBJECTS.contains(tag) || MEMBERS.contains(tag));
     }
 
-    /** Offset just after the {@code >} of the start tag beginning at {@code lt}, skipping quoted attribute values. */
     static int endOfStartTag(String xml, int lt) {
-        char quote = 0;
-        for (int i = lt; i < xml.length(); i++) {
-            char c = xml.charAt(i);
-            if (quote != 0) {
-                if (c == quote) {
-                    quote = 0;
-                }
-            } else if (c == '"' || c == '\'') {
-                quote = c;
-            } else if (c == '>') {
-                return i + 1;
-            }
-        }
-        return xml.length();
+        return XmlInput.endOfStartTag(xml, lt);
     }
 }

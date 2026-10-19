@@ -44,6 +44,9 @@ public sealed interface Expression extends Node, Initializer {
     /** {@code word.3} */
     record BitAccess(Expression target, int bit, Span span) implements Expression {}
 
+    /** Rockwell indirect bit {@code word.[i]}: the bit selected by an expression. */
+    record IndirectBit(Expression target, Expression bit, Span span) implements Expression {}
+
     /** {@code p^} */
     record Deref(Expression target, Span span) implements Expression {}
 

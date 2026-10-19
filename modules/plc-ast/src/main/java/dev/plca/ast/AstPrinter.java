@@ -86,18 +86,24 @@ public final class AstPrinter {
         }
     }
 
-    /** Identifiers and qualified names print inline; other nodes are children. */
+    /** Identifiers, qualified names and ladder drawings (as rung text) print inline; other nodes are children. */
     private static boolean isChild(Object v) {
         if (v instanceof Collection<?> col) {
             return !col.isEmpty() && col.iterator().next() instanceof Node n && isChild(n);
         }
-        return v instanceof Node && !(v instanceof Identifier) && !(v instanceof QualifiedName);
+        return v instanceof Node
+                && !(v instanceof Identifier)
+                && !(v instanceof QualifiedName)
+                && !(v instanceof Ladder);
     }
 
     private static String scalar(Object v) {
         if (v instanceof QualifiedName q) {
             // spelled with each part's form (`"FB_Motor"`, `#x`), unlike QualifiedName.toString used for lookups
             return q.parts().stream().map(Identifier::toString).collect(java.util.stream.Collectors.joining("."));
+        }
+        if (v instanceof Ladder l) {
+            return scalar(l.text());
         }
         if (v instanceof String s) {
             return '"' + s.replace("\\", "\\\\").replace("\n", "\\n").replace("\"", "\\\"") + '"';

@@ -39,6 +39,10 @@ import java.util.regex.Pattern;
  * the declaration says {@code ExternalAccessible := 'False'} (TIA writes the attribute only when it differs from the
  * default). So statics are reported only when hidden that way; temporaries and constants always. Siemens attributes are
  * therefore no exposure exemption, and data blocks are never reported (they exist to be accessed from outside).
+ *
+ * <p>Rockwell: every tag carries {@code ExternalAccess}; tags an HMI can read or write ({@code Read/Write}, {@code Read
+ * Only}) are not reported, those with {@code None} are. A base tag used only through an alias (or an SCL overlay view)
+ * is used.
  */
 public final class UnusedVariable implements ProjectRule {
 
@@ -61,6 +65,9 @@ public final class UnusedVariable implements ProjectRule {
         Consumer<Expression> markUsed = e -> {
             if (m.symbol(e).orElse(null) instanceof VariableSymbol v) {
                 used.add(v);
+                if (v.overlayOf() != null) {
+                    used.add(v.overlayOf());
+                }
             }
         };
 
@@ -110,11 +117,13 @@ public final class UnusedVariable implements ProjectRule {
                 continue;
             }
             boolean siemens = p.dialect() == Dialect.SIEMENS;
+            boolean rockwell = p.dialect() == Dialect.ROCKWELL;
             for (VariableSymbol v : p.variables().values()) {
-                if (siemens && reachableFromOutside(v)) {
+                if (siemens && reachableFromOutside(v) || rockwell && externallyAccessible(v)) {
                     continue;
                 }
-                if (LOCAL_SECTIONS.contains(v.section()) && candidate(v, used, namesInDeclarations, spare, siemens)) {
+                if (LOCAL_SECTIONS.contains(v.section())
+                        && candidate(v, used, namesInDeclarations, spare, siemens || rockwell)) {
                     ctx.report(
                             p,
                             v.declaration().name().span(),
@@ -153,17 +162,23 @@ public final class UnusedVariable implements ProjectRule {
                         .noneMatch(p -> p.isAttribute("ExternalAccessible") && "false".equalsIgnoreCase(p.value()));
     }
 
+    /** A Rockwell tag an HMI may access: {@code ExternalAccess} other than {@code None}. */
+    private static boolean externallyAccessible(VariableSymbol v) {
+        return v.pragmas().stream()
+                .noneMatch(p -> p.isAttribute("ExternalAccess") && "None".equalsIgnoreCase(p.value()));
+    }
+
     private static boolean candidate(
             VariableSymbol v,
             Set<VariableSymbol> used,
             Set<String> namesInDeclarations,
             Pattern spare,
-            boolean siemens) {
+            boolean vendorAttributes) {
         return v.declaration() != null
                 && !v.isResult()
                 && !used.contains(v)
                 && v.address() == null
-                && (siemens || v.pragmas().stream().noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE))
+                && (vendorAttributes || v.pragmas().stream().noneMatch(p -> p.kind() == Pragma.Kind.ATTRIBUTE))
                 && !namesInDeclarations.contains(v.name().toLowerCase(Locale.ROOT))
                 && !spare.matcher(v.name()).find();
     }

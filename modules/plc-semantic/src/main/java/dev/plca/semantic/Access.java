@@ -15,7 +15,12 @@ public record Access(VariableSymbol variable, String path, Kind kind, Expression
         /** VAR_IN_OUT argument: may be read and written by the callee. */
         READ_WRITE,
         /** Address taken ({@code ADR(x)}, {@code REF(x)}, {@code r REF= x}): aliasing, not a read. */
-        ADDRESS
+        ADDRESS,
+        /**
+         * Operand of an instruction the analyzer does not know (Rockwell): it may be read or written. Counts as a use,
+         * never as a write, so rules neither invent nor hide a write by guessing.
+         */
+        UNKNOWN
     }
 
     public boolean isWrite() {
@@ -23,7 +28,7 @@ public record Access(VariableSymbol variable, String path, Kind kind, Expression
     }
 
     public boolean isRead() {
-        return kind == Kind.READ || kind == Kind.READ_WRITE;
+        return kind == Kind.READ || kind == Kind.READ_WRITE || kind == Kind.UNKNOWN;
     }
 
     /** {@code var.path}, e.g. {@code fbTimer.Q}. */

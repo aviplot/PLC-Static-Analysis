@@ -152,8 +152,9 @@ class MainTest {
         Path p = project("P.st", WARNINGS_ONLY);
         Files.writeString(p.resolve("Motor.scl"), "FUNCTION_BLOCK \"Motor\"\nEND_FUNCTION_BLOCK\n");
         Files.writeString(p.resolve("Line.L5X"), "<RSLogix5000Content/>");
+        Files.writeString(p.resolve("Line.L5K"), "CONTROLLER Line\nEND_CONTROLLER\n");
         Files.writeString(p.resolve("other.xml"), "<root/>");
-        assertThat(Analyzer.skipped(p)).containsExactly("Line.L5X");
+        assertThat(Analyzer.skipped(p)).containsExactly("Line.L5K");
     }
 
     @Test

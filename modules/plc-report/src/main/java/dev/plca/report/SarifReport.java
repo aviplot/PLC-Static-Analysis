@@ -74,9 +74,10 @@ public final class SarifReport {
             res.put("level", level(f.severity()));
             res.putObject("message").put("text", f.message());
             ObjectNode loc = location(r.sources().resolve(f.span()), null);
-            if (f.pou() != null) {
+            if (f.place() != null || f.pou() != null) {
+                // Rockwell: program → routine → rung, as Studio 5000 shows it; else the POU
                 ObjectNode logical = loc.putArray("logicalLocations").addObject();
-                logical.put("fullyQualifiedName", f.pou());
+                logical.put("fullyQualifiedName", f.place() != null ? f.place() : f.pou());
                 logical.put("kind", "function");
             }
             res.putArray("locations").add(loc);

@@ -17,6 +17,8 @@ public sealed interface Statement extends Node {
         RESET,
         /** CODESYS {@code REF=} */
         REF,
+        /** Rockwell {@code [:=]}: an assignment whose target is also cleared at prescan and power-up. */
+        NON_RETENTIVE,
         /** Siemens {@code +=} (and the other compound operators): {@code x := x + value}. */
         ADD,
         SUB,
@@ -115,7 +117,6 @@ public sealed interface Statement extends Node {
         }
     }
 
-    /** A lone {@code ;} (also the {@code ;} after {@code END_IF}). */
     /** SCL {@code REGION name … END_REGION}: a named group of statements (outline only, no semantics). */
     record Region(String name, List<Statement> body, Span span) implements Statement {
         public Region {
@@ -123,6 +124,19 @@ public sealed interface Statement extends Node {
         }
     }
 
+    /**
+     * A ladder rung: its drawing ({@code ladder}, null when the rung text did not parse) and its lowering to statements
+     * ({@code body}, design rule 4), which is what the semantic model and rules see. {@code number} is the rung number
+     * the engineer sees; {@code type} the L5X rung type ({@code N}, or a pending-edit marker such as
+     * {@code I}/{@code R}).
+     */
+    record Rung(int number, String type, Ladder ladder, List<Statement> body, Span span) implements Statement {
+        public Rung {
+            body = List.copyOf(body);
+        }
+    }
+
+    /** A lone {@code ;} (also the {@code ;} after {@code END_IF}). */
     record Empty(Span span) implements Statement {}
 
     /** A region that did not parse; a diagnostic has been reported. */

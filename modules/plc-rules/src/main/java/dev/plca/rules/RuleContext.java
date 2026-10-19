@@ -4,6 +4,7 @@ import dev.plca.ast.Node;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
+import dev.plca.semantic.PouSymbol;
 import dev.plca.semantic.SemanticModel;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,18 @@ public abstract sealed class RuleContext permits PouContext, ProjectContext {
     /** Reports a finding with the rule's configured severity; {@code pou} as in {@link Finding#pou()}. */
     public void report(String pou, Span span, String message, List<Diagnostic.Related> related) {
         findings.add(new Finding(descriptor.id(), descriptor.severity(), message, span, related, pou));
+    }
+
+    /** Reports a finding in {@code pou} (null outside POUs), with its IDE location where the dialect has one. */
+    void report(PouSymbol pou, Span span, String message, List<Diagnostic.Related> related, boolean unused) {
+        findings.add(new Finding(
+                descriptor.id(),
+                descriptor.severity(),
+                message,
+                span,
+                related,
+                pou == null ? null : pou.qualifiedName(),
+                pou == null ? null : Places.of(pou, span, sources)));
     }
 
     public String stringParam(String name) {

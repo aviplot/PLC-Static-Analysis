@@ -46,6 +46,6 @@ public final class PouContext extends RuleContext {
     }
 
     public void report(Span span, String message, Diagnostic.Related... related) {
-        report(pou.qualifiedName(), span, message, List.of(related));
+        report(pou, span, message, List.of(related), false);
     }
 }

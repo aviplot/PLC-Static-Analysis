@@ -59,6 +59,10 @@ public final class Walk {
         switch (e) {
             case Expression.MemberAccess m -> deep(m.target(), action);
             case Expression.BitAccess b -> deep(b.target(), action);
+            case Expression.IndirectBit b -> {
+                deep(b.target(), action);
+                deep(b.bit(), action);
+            }
             case Expression.Slice s -> deep(s.target(), action);
             case Expression.Deref d -> deep(d.target(), action);
             case Expression.Index i -> {
@@ -106,6 +110,7 @@ public final class Walk {
             case Expression.Index i -> lastName(i.target());
             case Expression.Deref d -> lastName(d.target());
             case Expression.BitAccess b -> lastName(b.target());
+            case Expression.IndirectBit b -> lastName(b.target());
             case Expression.Slice s -> lastName(s.target());
             case null, default -> null;
         };

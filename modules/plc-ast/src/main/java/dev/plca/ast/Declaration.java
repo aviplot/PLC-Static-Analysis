@@ -20,7 +20,12 @@ public sealed interface Declaration extends Node {
         ACTION,
         TRANSITION,
         /** Siemens OB: a cyclic or event entry point, called by the operating system. */
-        ORGANIZATION_BLOCK
+        ORGANIZATION_BLOCK,
+        /**
+         * Rockwell routine: a member of a program or AOI with no variables of its own; it sees its owner's tags and
+         * runs when called ({@code JSR}, the program's main routine, an AOI's scan modes).
+         */
+        ROUTINE
     }
 
     enum Modifier {

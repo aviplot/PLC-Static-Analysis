@@ -8,10 +8,23 @@ import java.util.Objects;
 
 /**
  * A rule violation. {@code pou} is the qualified name of the POU the finding belongs to (null outside POUs, e.g. in a
- * GVL); reports use it for stable fingerprints that do not depend on line numbers.
+ * GVL); reports use it for stable fingerprints that do not depend on line numbers. {@code place} is where the engineer
+ * finds it in the vendor IDE when that is not a file line ({@code Program:Main/Routine:Fill/Rung:14} for Rockwell),
+ * else null; it is shown, never fingerprinted.
  */
 public record Finding(
-        String ruleId, Severity severity, String message, Span span, List<Diagnostic.Related> related, String pou) {
+        String ruleId,
+        Severity severity,
+        String message,
+        Span span,
+        List<Diagnostic.Related> related,
+        String pou,
+        String place) {
+
+    public Finding(
+            String ruleId, Severity severity, String message, Span span, List<Diagnostic.Related> related, String pou) {
+        this(ruleId, severity, message, span, related, pou, null);
+    }
 
     public Finding {
         Objects.requireNonNull(ruleId, "ruleId");

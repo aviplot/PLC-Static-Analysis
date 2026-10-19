@@ -1,0 +1,153 @@
+# Rockwell Logix 5000 instructions: operand roles for lowering and effects.
+# Source: Logix 5000 Controllers General Instructions Reference Manual (1756-RM003); motion operands from MOTION-RM002.
+# Chosen by repo count in the corpus (docs/grammar/rockwell.md §4). Lines ending in '?' are not checked against the
+# manual text yet (TODO(verify-format)).
+#
+# Format: MNEMONIC KIND ROLE...
+#   KIND   in      input: ANDs a term onto the rung condition
+#          out     output: runs when the rung condition is true
+#          always  output that runs every scan with the rung condition as its input (timers, counters, one-shots)
+#   ROLE   r read, w write, rw read and write, inst instance structure (read and written), name (a word that is not a
+#          tag: class/attribute names, modes), routine, label, expr (an expression), disp (display value: not lowered),
+#          n (operand count), jsr (JSR/SBR-style parameters: the first n are inputs, the rest returns).
+#          A trailing '*' repeats the role for all further operands.
+
+# ---- bit
+XIC     in      r
+XIO     in      r
+OTE     out     w
+OTL     out     w
+OTU     out     w
+ONS     in      rw
+OSR     always  rw w
+OSF     always  rw w
+
+# ---- timers and counters
+TON     always  inst disp disp
+TOF     always  inst disp disp
+RTO     always  inst disp disp
+CTU     always  inst disp disp
+CTD     always  inst disp disp
+RES     out     inst
+TONR    always  inst
+TOFR    always  inst
+RTOR    always  inst
+CTUD    always  inst
+
+# ---- compare
+EQU     in      r r
+NEQ     in      r r
+GRT     in      r r
+GEQ     in      r r
+LES     in      r r
+LEQ     in      r r
+LIM     in      r r r
+MEQ     in      r r r
+CMP     in      expr
+
+# ---- compute and math
+CPT     out     w expr
+ADD     out     r r w
+SUB     out     r r w
+MUL     out     r r w
+DIV     out     r r w
+MOD     out     r r w
+SQR     out     r w
+SQRT    out     r w
+NEG     out     r w
+ABS     out     r w
+XPY     out     r r w
+LN      out     r w
+LOG     out     r w
+SIN     out     r w
+COS     out     r w
+TAN     out     r w
+ASN     out     r w
+ACS     out     r w
+ATN     out     r w
+DEG     out     r w
+RAD     out     r w
+TRN     out     r w
+TOD     out     r w
+FRD     out     r w
+
+# ---- move and logical
+MOV     out     r w
+MVM     out     r r w
+CLR     out     w
+SWPB    out     r name w
+AND     out     r r w
+OR      out     r r w
+XOR     out     r r w
+NOT     out     r w
+BTD     out     r r w r r
+
+# ---- file and array
+COP     out     r w r
+CPS     out     r w r
+FLL     out     r w r
+SIZE    out     r r w
+FAL     out     inst r disp name w expr ?
+FSC     out     inst r disp name expr ?
+AVE     out     r name w inst r disp ?
+SRT     out     rw name inst r disp ?
+FFL     out     r rw inst r disp
+FFU     out     rw w inst r disp
+LFL     out     r rw inst r disp
+LFU     out     rw w inst r disp
+BSL     out     rw inst rw r ?
+BSR     out     rw inst rw r ?
+SQO     out     r r w inst r disp ?
+
+# ---- strings and conversion
+CONCAT  out     r r w
+MID     out     r r r w
+FIND    out     r r r w
+INSERT  out     r r r w
+DELETE  out     r r r w
+DTOS    out     r w
+STOD    out     r w
+RTOS    out     r w
+STOR    out     r w
+UPPER   out     r w
+LOWER   out     r w
+
+# ---- program control
+JSR     out     routine n jsr*
+SBR     out     w*
+RET     out     r*
+JMP     out     label
+LBL     in      label
+NOP     out
+TND     out
+MCR     out
+AFI     in
+EOT     out     r
+UID     out
+UIE     out
+FOR     out     routine rw r r r
+BRK     out
+SFR     out     routine r
+SFP     out     routine r
+EVENT   out     name
+
+# ---- input/output and system
+GSV     out     name name name w
+SSV     out     name name name r
+MSG     out     inst
+IOT     out     r
+PID     out     inst r r w r r r disp disp disp ?
+ALMD    always  inst r r r r r ?
+ALMA    always  inst r r r r r r r ?
+
+# ---- motion: axis, motion control, then parameters
+MSO     out     rw inst
+MSF     out     rw inst
+MAFR    out     rw inst
+MASR    out     rw inst
+MAH     out     rw inst
+MAS     out     rw inst r* ?
+MAM     out     rw inst r* ?
+MAJ     out     rw inst r* ?
+MCD     out     rw inst r* ?
+MAG     out     rw rw inst r* ?

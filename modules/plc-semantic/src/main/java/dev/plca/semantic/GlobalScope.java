@@ -18,6 +18,7 @@ public final class GlobalScope {
     private final Map<String, VariableSymbol> globals = new HashMap<>();
     private final Map<String, List<EnumValueSymbol>> enumValues = new HashMap<>();
     private final Builtins builtins = new Builtins();
+    private final RockwellTypes rockwellTypes = new RockwellTypes();
 
     public Collection<PouSymbol> pous() {
         return Collections.unmodifiableCollection(pous.values());
@@ -79,6 +80,11 @@ public final class GlobalScope {
             return Optional.of(s);
         }
         return builtins.lookup(name);
+    }
+
+    /** Rockwell's predefined structures (TIMER, COUNTER, CONTROL, STRING). */
+    RockwellTypes rockwellTypes() {
+        return rockwellTypes;
     }
 
     /** Previous declaration with the same name, or null. */

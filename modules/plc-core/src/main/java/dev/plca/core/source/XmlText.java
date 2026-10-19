@@ -24,6 +24,16 @@ public final class XmlText {
     public static Fragment decode(String fileText, int start, int end) {
         StringBuilder out = new StringBuilder(end - start);
         SourceMap.Builder map = SourceMap.builder();
+        decodeInto(fileText, start, end, out, map);
+        return new Fragment(out.toString(), map.build());
+    }
+
+    /**
+     * Appends the decoded content of {@code fileText[start, end)} to {@code out} and its segments to {@code map}, so
+     * several elements can form one fragment (an L5X routine's rungs or ST lines). Regions must be appended in file
+     * order.
+     */
+    public static void decodeInto(String fileText, int start, int end, StringBuilder out, SourceMap.Builder map) {
         int i = start;
         while (i < end) {
             char c = fileText.charAt(i);
@@ -51,7 +61,6 @@ public final class XmlText {
                 i = copyNormalisingNewlines(fileText, i, runEnd, out, map);
             }
         }
-        return new Fragment(out.toString(), map.build());
     }
 
     /** Copies {@code [from, to)}, turning {@code \r\n} and lone {@code \r} into {@code \n}; returns {@code to}. */

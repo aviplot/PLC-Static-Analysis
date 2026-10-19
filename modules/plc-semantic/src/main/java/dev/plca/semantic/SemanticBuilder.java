@@ -49,8 +49,18 @@ public final class SemanticBuilder {
     private final List<PendingType> pendingTypes = new ArrayList<>();
     private int anonymous;
 
-    /** Something whose TypeRef is resolved in pass 2, in the context of a POU (for local constants). */
-    private record PendingType(Object target, TypeRef ref, PouSymbol context) {}
+    /**
+     * Something whose TypeRef is resolved in pass 2, in the context of a POU (for local constants); {@code rockwell}
+     * when it was declared in a Rockwell unit (Rockwell's predefined types apply).
+     */
+    private record PendingType(Object target, TypeRef ref, PouSymbol context, boolean rockwell) {}
+
+    /** Declarations of the unit being declared (pass 1) or the type being resolved (pass 2) are Rockwell's. */
+    private boolean rockwell;
+
+    private PendingType pending(Object target, TypeRef ref, PouSymbol context) {
+        return new PendingType(target, ref, context, rockwell);
+    }
 
     private SemanticBuilder(DiagnosticSink sink) {
         this.sink = sink;
@@ -74,11 +84,17 @@ public final class SemanticBuilder {
         model.constants = new ConstantEvaluator(model.symbols::get);
 
         for (SourceUnit u : units) {
+            rockwell = u.dialect() == Dialect.ROCKWELL;
             declare(u, u.declarations(), "");
         }
+        rockwell = false;
+        RockwellAliases aliases = new RockwellAliases(model, global);
+        aliases.link();
         resolveTypes();
+        aliases.typeAliases();
         new Binder(model, sink).bindAll();
         new EffectsBuilder(model).buildAll();
+        rockwellEntryPoints();
         buildTasks();
         buildInstances();
         return model;
@@ -102,7 +118,7 @@ public final class SemanticBuilder {
                 case Declaration.TypeDecl t -> {
                     TypeSymbol s = declareType(t.name().name(), t, t.type(), t.pragmas(), null);
                     if (t.extendsType() != null) {
-                        pendingTypes.add(new PendingType(new StructExtends(s, t.extendsType()), null, null));
+                        pendingTypes.add(pending(new StructExtends(s, t.extendsType()), null, null));
                     }
                     reportDuplicate(global.addType(namespace + t.name().name(), s), s, t.name());
                     if (!namespace.isEmpty()) {
@@ -145,7 +161,7 @@ public final class SemanticBuilder {
         GvlSymbol dbs = global.dataBlocks();
         VariableSymbol v = new VariableSymbol(db.name().name(), decl, null, VarBlock.Section.GLOBAL, dbs, false);
         dbs.addVariable(v);
-        pendingTypes.add(new PendingType(v, layout, null));
+        pendingTypes.add(pending(v, layout, null));
         reportDuplicate(global.addGlobal(v), v, db.name());
     }
 
@@ -156,7 +172,7 @@ public final class SemanticBuilder {
             for (VarDecl v : b.variables()) {
                 VariableSymbol vs = new VariableSymbol(v.name().name(), v, b, b.section(), s, false);
                 s.addVariable(vs);
-                pendingTypes.add(new PendingType(vs, v.type(), s));
+                pendingTypes.add(pending(vs, v.type(), s));
             }
         }
         boolean siemens = unit != null && unit.dialect() == Dialect.SIEMENS;
@@ -169,7 +185,7 @@ public final class SemanticBuilder {
         if (hasResult) {
             VariableSymbol result = new VariableSymbol(p.name().name(), null, null, VarBlock.Section.OUTPUT, s, true);
             s.addVariable(result);
-            pendingTypes.add(new PendingType(new ResultOf(s, result), p.returnType(), s));
+            pendingTypes.add(pending(new ResultOf(s, result), p.returnType(), s));
         }
         for (Pou m : p.members()) {
             PouSymbol ms = declarePou(unit, m, s);
@@ -241,7 +257,7 @@ public final class SemanticBuilder {
             }
             default -> {}
         }
-        pendingTypes.add(new PendingType(s, ref, context));
+        pendingTypes.add(pending(s, ref, context));
         return s;
     }
 
@@ -249,7 +265,7 @@ public final class SemanticBuilder {
         for (VarDecl v : members) {
             VariableSymbol vs = new VariableSymbol(v.name().name(), v, null, VarBlock.Section.VAR, owner, false);
             owner.addMember(vs);
-            pendingTypes.add(new PendingType(vs, v.type(), context));
+            pendingTypes.add(pending(vs, v.type(), context));
         }
     }
 
@@ -261,7 +277,7 @@ public final class SemanticBuilder {
         for (VarDecl v : b.variables()) {
             VariableSymbol vs = new VariableSymbol(v.name().name(), v, b, b.section(), gvl, false);
             gvl.addVariable(vs);
-            pendingTypes.add(new PendingType(vs, v.type(), null));
+            pendingTypes.add(pending(vs, v.type(), null));
             if (!gvl.qualifiedOnly()) {
                 Symbol previous = global.addGlobal(vs);
                 if (previous != null && !(previous instanceof VariableSymbol pv && pv.owner() == gvl)) {
@@ -312,6 +328,7 @@ public final class SemanticBuilder {
         // a loop with an index: resolving may add anonymous inline types to the list
         for (int i = 0; i < pendingTypes.size(); i++) {
             PendingType t = pendingTypes.get(i);
+            rockwell = t.rockwell();
             switch (t.target()) {
                 case VariableSymbol v ->
                     v.setType(t.ref() == null ? constantType(v, t.context()) : resolve(t.ref(), t.context()));
@@ -328,6 +345,7 @@ public final class SemanticBuilder {
                 default -> {}
             }
         }
+        rockwell = false;
     }
 
     /** Classic SCL {@code CONST n := 10; END_CONST} has no declared type: it follows from the value. */
@@ -466,6 +484,14 @@ public final class SemanticBuilder {
     }
 
     private Type namedBase(QualifiedName q, PouSymbol context) {
+        if (rockwell && q.parts().size() == 1) {
+            // TIMER, COUNTER, CONTROL, and STRING as Logix defines it (a structure with LEN and DATA)
+            Optional<TypeSymbol> predefined =
+                    global.rockwellTypes().lookup(q.last().name());
+            if (predefined.isPresent()) {
+                return predefined.get().type();
+            }
+        }
         if (q.parts().size() == 1) {
             Optional<ElementaryKind> k = ElementaryKind.byName(q.last().name());
             if (k.isPresent()) {
@@ -548,6 +574,39 @@ public final class SemanticBuilder {
             }
         }
         return null;
+    }
+
+    /**
+     * Rockwell routines that run without a JSR: a program's fault routine (on a major fault) and an AOI's Prescan,
+     * Postscan and EnableInFalse routines (scan modes). They become call edges so reachability and task mapping see
+     * them.
+     */
+    private void rockwellEntryPoints() {
+        for (PouSymbol p : List.copyOf(model.pous)) {
+            if (p.dialect() != Dialect.ROCKWELL || p.declaration() == null) {
+                continue;
+            }
+            if (p.kind() == PouKind.PROGRAM) {
+                for (Pragma pr : p.declaration().pragmas()) {
+                    if (pr.isAttribute("FaultRoutine") && pr.value() != null) {
+                        p.member(pr.value())
+                                .ifPresent(r -> model.callGraph.add(
+                                        new CallSite(p, r, CallSite.Kind.ROUTINE, null, pr.span())));
+                    }
+                }
+            } else if (p.kind() == PouKind.FUNCTION_BLOCK) {
+                for (PouSymbol m : p.members().values()) {
+                    if (m.kind() == PouKind.ROUTINE) {
+                        model.callGraph.add(new CallSite(
+                                p,
+                                m,
+                                CallSite.Kind.ROUTINE,
+                                null,
+                                m.declaration().name().span()));
+                    }
+                }
+            }
+        }
     }
 
     // ============================================================================================

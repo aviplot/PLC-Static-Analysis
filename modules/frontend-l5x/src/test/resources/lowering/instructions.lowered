@@ -1,0 +1,135 @@
+rung: XIC(S)OTL(M);
+text: XIC(S)OTL(M);
+  IF S THEN
+    M := TRUE;
+  END_IF
+
+rung: XIC(R)OTU(M);
+text: XIC(R)OTU(M);
+  IF R THEN
+    M := FALSE;
+  END_IF
+
+rung: OTL(M);
+text: OTL(M);
+  M := TRUE;
+
+rung: XIC(R)MOV(5,X)ADD(X,1,Y);
+text: XIC(R)MOV(5,X)ADD(X,1,Y);
+  IF R THEN
+    X := 5;
+    Y := X + 1;
+  END_IF
+
+rung: XIC(R)SUB(A,B,C)MUL(A,2.5,C)DIV(A,0,C)MOD(A,3,C);
+text: XIC(R)SUB(A,B,C)MUL(A,2.5,C)DIV(A,0,C)MOD(A,3,C);
+  IF R THEN
+    C := A - B;
+    C := A * 2.5;
+    C := A / 0;
+    C := A MOD 3;
+  END_IF
+
+rung: XIC(R)CLR(X)NEG(A,B)NOT(W,V)AND(W,16#FF,V)OR(W,2#1010,V)XOR(W,V,V)XPY(A,2,B);
+text: XIC(R)CLR(X)NEG(A,B)NOT(W,V)AND(W,16#FF,V)OR(W,2#1010,V)XOR(W,V,V)XPY(A,2,B);
+  IF R THEN
+    X := 0;
+    B := -A;
+    V := NOT W;
+    V := W AND 16#FF;
+    V := W OR 2#1010;
+    V := W XOR V;
+    B := A ** 2;
+  END_IF
+
+rung: XIC(R)CPT(Out,((In_Raw - Min)/(Max - Min))*(EUMax - EUMin) + EUMin);
+text: XIC(R)CPT(Out,(In_Raw - Min) / (Max - Min) * (EUMax - EUMin) + EUMin);
+  IF R THEN
+    Out := (In_Raw - Min) / (Max - Min) * (EUMax - EUMin) + EUMin;
+  END_IF
+
+rung: EQU(A,B)NEQ(A,B)GRT(A,B)GEQ(A,B)LES(A,B)LEQ(A,B)OTE(C);
+text: EQU(A,B)NEQ(A,B)GRT(A,B)GEQ(A,B)LES(A,B)LEQ(A,B)OTE(C);
+  C := A = B AND A <> B AND A > B AND A >= B AND A < B AND A <= B;
+
+rung: CMP(A + B > C * 2)LIM(0,X,100)MEQ(V,16#0F,3)OTE(Ok);
+text: CMP(A + B > C * 2)LIM(0,X,100)MEQ(V,16#0F,3)OTE(Ok);
+  Ok := A + B > C * 2 AND LIM(0, X, 100) AND MEQ(V, 16#0F, 3);
+
+rung: XIC(E)TON(T1,?,?);
+text: XIC(E)TON(T1,?,?);
+  TON(T1, ?, ?, EnableIn := E);
+
+rung: XIC(E)TOF(T2,5000,0)XIC(T2.DN)OTE(Off);
+text: XIC(E)TOF(T2,5000,0)XIC(T2.DN)OTE(Off);
+  TOF(T2, 5000, 0, EnableIn := E);
+  Off := E AND T2.DN;
+
+rung: XIC(E)CTU(C1,10,0)RES(C1);
+text: XIC(E)CTU(C1,10,0)RES(C1);
+  CTU(C1, 10, 0, EnableIn := E);
+  IF E THEN
+    RES(C1);
+  END_IF
+
+rung: XIC(A)ONS(OS)OTE(B);
+text: XIC(A)ONS(OS)OTE(B);
+  $rc1 := A AND ONS(OS);
+  B := $rc1;
+
+rung: XIC(A)ONS(OS);
+text: XIC(A)ONS(OS);
+  $rc1 := A AND ONS(OS);
+
+rung: XIC(A)OSR(Store,Pulse)OTE(B);
+text: XIC(A)OSR(Store,Pulse)OTE(B);
+  OSR(Store, Pulse, EnableIn := A);
+  B := A;
+
+rung: XIC(G)JSR(Fill,2,In1,In2,Ret1);
+text: XIC(G)JSR(Fill,2,In1,In2,Ret1);
+  IF G THEN
+    JSR(Fill, 2, In1, In2, Ret1);
+  END_IF
+
+rung: JSR(Main,0);
+text: JSR(Main,0);
+  JSR(Main, 0);
+
+rung: XIC(Go)JMP(Skip);
+text: XIC(Go)JMP(Skip);
+  IF Go THEN
+    JMP(Skip);
+  END_IF
+
+rung: LBL(Skip)XIC(A)OTE(B);
+text: LBL(Skip)XIC(A)OTE(B);
+  B := A;
+
+rung: XIC(Init)GSV(ControllerDevice,,DeviceName,Name[0]);
+text: XIC(Init)GSV(ControllerDevice,,DeviceName,Name[0]);
+  IF Init THEN
+    GSV(ControllerDevice, ?, DeviceName, Name[0]);
+  END_IF
+
+rung: XIC(R)COP(Src[0],Dst[0],10)FLL(0,Dst[0],10)SIZE(Arr,0,Len);
+text: XIC(R)COP(Src[0],Dst[0],10)FLL(0,Dst[0],10)SIZE(Arr,0,Len);
+  IF R THEN
+    COP(Src[0], Dst[0], 10);
+    FLL(0, Dst[0], 10);
+    SIZE(Arr, 0, Len);
+  END_IF
+
+rung: XIC(Req)MSG(Msg1);
+text: XIC(Req)MSG(Msg1);
+  IF Req THEN
+    MSG(Msg1);
+  END_IF
+
+rung: XIC(R)MYSTERY(A,B,C)OTE(D);
+text: XIC(R)MYSTERY(A,B,C)OTE(D);
+  IF R THEN
+    MYSTERY(A, B, C);
+  END_IF
+  D := R;
+

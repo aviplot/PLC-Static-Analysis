@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":frontend-st"))
     implementation(project(":frontend-scl"))
+    implementation(project(":frontend-l5x"))
     implementation(project(":plc-semantic"))
     implementation(project(":plc-rules"))
 }
@@ -34,6 +35,7 @@ tasks.register<JavaExec>("corpusCheck") {
             .asFile.absolutePath
     args(corpusDir, baseline, reports)
     if (providers.gradleProperty("updateBaseline").isPresent) args("--update-baseline")
+    providers.gradleProperty("only").orNull?.let { args("--only=$it") }
 }
 
 // ./gradlew :plc-devtools:parseDebug --args="<file> ... | @listfile" prints diagnostics with source lines.

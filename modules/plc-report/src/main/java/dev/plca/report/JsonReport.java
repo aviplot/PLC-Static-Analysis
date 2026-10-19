@@ -57,6 +57,9 @@ public final class JsonReport {
             n.put("ruleId", f.ruleId());
             n.put("severity", Json.severity(f.severity()));
             n.put("message", f.message());
+            if (f.place() != null) {
+                n.put("place", f.place());
+            }
             if (f.pou() != null) {
                 n.put("pou", f.pou());
             }

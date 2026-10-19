@@ -1,0 +1,35 @@
+rung: XIC(Local:1:I.Data.5)OTE(IO_Rack1:2:O.Data[0].3);
+text: XIC(Local:1:I.Data.5)OTE(IO_Rack1:2:O.Data[0].3);
+  IO_Rack1:2:O.Data[0].3 := Local:1:I.Data.5;
+
+rung: XIC(S:FS)CLR(Count);
+text: XIC(S:FS)CLR(Count);
+  IF S:FS THEN
+    Count := 0;
+  END_IF
+
+rung: XIC(\MainProgram.Ready)OTE(Go);
+text: XIC(\MainProgram.Ready)OTE(Go);
+  Go := \MainProgram.Ready;
+
+rung: XIC(Word.[Index])OTE(Bits[I,J].0);
+text: XIC(Word.[Index])OTE(Bits[I,J].0);
+  Bits[I,J].0 := Word.[Index];
+
+rung: XIC(Arr[Idx + 1].Member)OTE(Out[2*K]);
+text: XIC(Arr[Idx + 1].Member)OTE(Out[2 * K]);
+  Out[2 * K] := Arr[Idx + 1].Member;
+
+rung: EQU(Name,'LWO_3072')MOV(-128,X)MOV(.6,R)MOV(1.17549435e-038,R)MOV(16#0000_00FF,D);
+text: EQU(Name,'LWO_3072')MOV(-128,X)MOV(.6,R)MOV(1.17549435e-038,R)MOV(16#0000_00FF,D);
+  IF Name = 'LWO_3072' THEN
+    X := -128;
+    R := .6;
+    R := 1.17549435e-038;
+    D := 16#0000_00FF;
+  END_IF
+
+rung: XIC(A)  [ XIC(B) , XIC(C) ]   OTE(D) ;
+text: XIC(A)[XIC(B),XIC(C)]OTE(D);
+  D := A AND (B OR C);
+

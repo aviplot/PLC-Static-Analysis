@@ -2,6 +2,7 @@ package dev.plca.cli;
 
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
+import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.StFrontend;
@@ -32,10 +33,10 @@ import java.util.Set;
  */
 public final class Analyzer {
 
-    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
 
-    /** Extensions of dialects whose frontends come in M5–M6; such files are listed as skipped, not ignored silently. */
-    private static final Set<String> LATER_DIALECTS = Set.of(".l5x", ".l5k");
+    /** Extensions of formats not analysed yet; such files are listed as skipped, not ignored silently. */
+    private static final Set<String> LATER_DIALECTS = Set.of(".l5k");
 
     private final RuleRegistry registry;
 
@@ -91,7 +92,7 @@ public final class Analyzer {
                 stats);
     }
 
-    /** Files of dialects we cannot analyse yet: L5X/L5K by extension, PLCopen XML by its namespace. */
+    /** Files we cannot analyse yet: L5K (Rockwell's text export) by extension, PLCopen XML by its namespace. */
     static List<String> skipped(Path root) {
         List<String> out = new ArrayList<>();
         try {

@@ -1,0 +1,14 @@
+rung: XIC(Auto)Valve(V1,Cmd1,Open1,Pos1)OTE(Done);
+text: XIC(Auto)Valve(V1,Cmd1,Open1,Pos1)OTE(Done);
+  V1(Cmd := Cmd1, Open => Open1, Pos := Pos1, EnableIn := Auto);
+  Done := Auto AND V1.EnableOut;
+
+rung: Valve(V2,Cmd2,Open2,Pos2);
+text: Valve(V2,Cmd2,Open2,Pos2);
+  V2(Cmd := Cmd2, Open => Open2, Pos := Pos2, EnableIn := TRUE);
+
+rung: XIC(A)Valve(V3,Cmd3)OTE(B);
+text: XIC(A)Valve(V3,Cmd3)OTE(B);
+  V3(Cmd := Cmd3, EnableIn := A);
+  B := A AND V3.EnableOut;
+

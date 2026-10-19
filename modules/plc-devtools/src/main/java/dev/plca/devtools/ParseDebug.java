@@ -5,7 +5,11 @@ import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.Location;
 import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
+import dev.plca.frontend.l5x.L5xFrontend;
+import dev.plca.frontend.scl.SclFrontend;
 import dev.plca.frontend.st.StFrontend;
+import dev.plca.frontend.st.kit.Frontend;
+import dev.plca.frontend.st.kit.Frontends;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -15,7 +19,7 @@ public final class ParseDebug {
     private ParseDebug() {}
 
     public static void main(String[] args) throws Exception {
-        StFrontend fe = new StFrontend();
+        Frontends frontends = Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new);
         java.util.List<String> files = new java.util.ArrayList<>();
         for (String a : args) {
             if (a.startsWith("@")) {
@@ -29,6 +33,11 @@ public final class ParseDebug {
             SourceFile f = SourceFile.fromBytes(p.toString(), Files.readAllBytes(p));
             SourceRegistry reg = new SourceRegistry();
             DiagnosticCollector diags = new DiagnosticCollector();
+            Frontend fe = frontends.forPath(p.toString());
+            if (fe == null) {
+                System.out.println("== " + a + ": no frontend reads this extension");
+                continue;
+            }
             fe.parse(f, reg, diags);
             System.out.println("== " + a + " (" + diags.size() + " diagnostics)");
             int n = 0;

@@ -47,6 +47,11 @@ import java.util.regex.Pattern;
  *   <li>Across POUs, only globals and {@code %Q} variables are compared, and only between program and FB bodies:
  *       methods and actions run on demand, often as alternatives.
  * </ul>
+ *
+ * <p>Ladder (Rockwell): an {@code OTE} is a coil by definition, so its lowered assignment counts whatever the rung
+ * reads (a seal-in reads its own coil) and whatever happens between two OTEs; any tag counts, and routines are compared
+ * like program bodies — the classic "duplicate destructive bit" check. {@code OTL}/{@code OTU} latches never count.
+ * REGION and rung containers are opened: their statements run in sequence like top-level ones.
  */
 public final class DoubleCoil implements ProjectRule {
 
@@ -57,7 +62,7 @@ public final class DoubleCoil implements ProjectRule {
 
     private record Key(VariableSymbol variable, String path) {}
 
-    private record Write(PouSymbol pou, int index, Access access) {}
+    private record Write(PouSymbol pou, int index, Access access, boolean coil) {}
 
     @Override
     public void check(ProjectContext ctx) {
@@ -67,21 +72,25 @@ public final class DoubleCoil implements ProjectRule {
 
         Map<Key, List<Write>> survivors = new LinkedHashMap<>();
         for (PouSymbol pou : m.pous()) {
-            List<Statement> body =
+            List<Statement> declared =
                     pou.declaration() == null ? null : pou.declaration().body();
-            if (body == null) {
+            if (declared == null) {
                 continue;
             }
+            Set<Statement> coils = Collections.newSetFromMap(new IdentityHashMap<>());
+            List<Statement> body = sequence(declared, coils);
             Map<Key, Write> previous = new HashMap<>();
             for (int i = 0; i < body.size(); i++) {
-                for (Access a : unconditionalWrites(m, body.get(i))) {
-                    if (!eligible(a.variable(), pou, includeLocals)) {
+                boolean coil = coils.contains(body.get(i));
+                for (Access a : unconditionalWrites(m, body.get(i), coil)) {
+                    if (!coil && !eligible(a.variable(), pou, includeLocals)) {
                         continue;
                     }
                     Key key = new Key(a.variable(), a.path());
-                    Write w = new Write(pou, i, a);
+                    Write w = new Write(pou, i, a, coil);
                     Write prev = previous.put(key, w);
-                    if (prev != null && !readBetween(m, readers, body, prev, w)) {
+                    boolean bothCoils = coil && prev != null && prev.coil();
+                    if (prev != null && (bothCoils || !readBetween(m, readers, body, prev, w))) {
                         ctx.report(
                                 pou,
                                 a.span(),
@@ -97,7 +106,7 @@ public final class DoubleCoil implements ProjectRule {
 
         // the same global or physical output driven from several POUs
         survivors.forEach((key, writes) -> {
-            if (!crossPou(key.variable())) {
+            if (!crossPou(key.variable()) && writes.stream().noneMatch(Write::coil)) {
                 return;
             }
             List<Write> cyclic = writes.stream().filter(w -> cyclic(w.pou())).toList();
@@ -133,6 +142,7 @@ public final class DoubleCoil implements ProjectRule {
      */
     private static boolean cyclic(PouSymbol p) {
         return p.kind() == Declaration.PouKind.PROGRAM
+                || p.kind() == Declaration.PouKind.ROUTINE
                 || p.kind() == Declaration.PouKind.ORGANIZATION_BLOCK && !startupOb(p)
                 || p.kind() == Declaration.PouKind.FUNCTION_BLOCK;
     }
@@ -150,8 +160,51 @@ public final class DoubleCoil implements ProjectRule {
                         && STARTUP.matcher(info.title()).find();
     }
 
-    /** {@code :=} targets and {@code =>} outputs of one statement; nothing for compound statements. */
-    private static List<Access> unconditionalWrites(SemanticModel m, Statement s) {
+    /**
+     * The statements of a body in execution order, with REGION and rung containers opened; {@code coils} receives the
+     * assignments lowered from ladder {@code OTE} instructions (same span as the instruction).
+     */
+    static List<Statement> sequence(List<Statement> body, Set<Statement> coils) {
+        List<Statement> out = new ArrayList<>(body.size());
+        for (Statement s : body) {
+            switch (s) {
+                case Statement.Region r -> out.addAll(sequence(r.body(), coils));
+                case Statement.Rung r -> {
+                    if (r.ladder() != null) {
+                        Set<dev.plca.core.source.Span> ote = new HashSet<>();
+                        oteSpans(r.ladder().elements(), ote);
+                        for (Statement x : r.body()) {
+                            if (x instanceof Statement.Assignment a && ote.contains(a.span())) {
+                                coils.add(x);
+                            }
+                        }
+                    }
+                    out.addAll(r.body());
+                }
+                default -> out.add(s);
+            }
+        }
+        return out;
+    }
+
+    private static void oteSpans(List<dev.plca.ast.Ladder.Element> elements, Set<dev.plca.core.source.Span> out) {
+        for (dev.plca.ast.Ladder.Element e : elements) {
+            switch (e) {
+                case dev.plca.ast.Ladder.Instruction i -> {
+                    if (i.mnemonic().is("OTE")) {
+                        out.add(i.span());
+                    }
+                }
+                case dev.plca.ast.Ladder.Branch b -> b.legs().forEach(l -> oteSpans(l.elements(), out));
+            }
+        }
+    }
+
+    /**
+     * {@code :=} targets and {@code =>} outputs of one statement; nothing for compound statements. A ladder coil is a
+     * coil even when its rung reads it (seal-in), so the read-modify-write exemption does not apply to it.
+     */
+    private static List<Access> unconditionalWrites(SemanticModel m, Statement s, boolean coil) {
         if (!(s instanceof Statement.Assignment a && a.op() == Statement.AssignOp.ASSIGN)
                 && !(s instanceof Statement.CallStatement)) {
             return List.of();
@@ -178,7 +231,7 @@ public final class DoubleCoil implements ProjectRule {
                     && targets.contains(a.expression())
                     && !a.path().contains("*")
                     && !a.path().contains("^")
-                    && !readModifyWrite(a, accesses)) {
+                    && (coil || !readModifyWrite(a, accesses))) {
                 r.add(a);
             }
         }

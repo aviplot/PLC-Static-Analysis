@@ -45,6 +45,9 @@ public final class ConsoleReport {
         }
         for (Finding f : r.findings()) {
             entry(sb, r, f.span(), f.severity(), f.ruleId(), f.message());
+            if (f.place() != null) {
+                sb.append("      ").append(dim("in " + f.place())).append('\n');
+            }
             for (Diagnostic.Related rel : f.related()) {
                 sb.append("      ")
                         .append(dim(r.sources().resolve(rel.span()).path() + ":" + lineCol(r, rel.span())))
@@ -137,7 +140,7 @@ public final class ConsoleReport {
             sb.append(s.skippedFiles().size())
                     .append(" file")
                     .append(s.skippedFiles().size() == 1 ? "" : "s")
-                    .append(" skipped (Siemens, Rockwell and PLCopen XML are not supported yet)\n");
+                    .append(" skipped (PLCopen XML and L5K are not supported yet)\n");
         }
         sb.append(String.format(
                 Locale.ROOT,
