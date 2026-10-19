@@ -271,6 +271,10 @@ public final class UncheckedExternalInput implements ProjectRule {
      * aside); null otherwise.
      */
     private static Source soleSource(SemanticModel m, Expression e, PouSymbol pou, Set<Key> written, Pattern names) {
+        // cheap structural pass first: the expression must hold exactly one designator rooted at an external variable
+        if (!hasExternalRoot(m, e, pou, written, names)) {
+            return null;
+        }
         Source[] found = {null};
         boolean[] other = {false};
         Set<Expression> inside = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -307,9 +311,42 @@ public final class UncheckedExternalInput implements ProjectRule {
         return external(found[0], pou, written, names) ? found[0] : null;
     }
 
+    /** Some name in {@code e} resolves to a variable that may be external (no member resolution, no constants). */
+    private static boolean hasExternalRoot(
+            SemanticModel m, Expression e, PouSymbol pou, Set<Key> written, Pattern names) {
+        boolean[] any = {false};
+        Walk.deep(e, x -> {
+            if (!any[0] && x instanceof Expression.NameRef n && m.symbol(n).orElse(null) instanceof VariableSymbol v) {
+                Source s = source(m, x);
+                any[0] = s != null && candidate(v, pou);
+            }
+        });
+        return any[0];
+    }
+
+    /** Cheap filters that hold for every external variable of the dialect. */
+    private static boolean candidate(VariableSymbol v, PouSymbol pou) {
+        if (v.address() != null || v.ioAlias() != null || v.isConstant()) {
+            return false;
+        }
+        // function block and AOI instances: their members are written by the block's own logic
+        if (v.type().resolved() instanceof dev.plca.semantic.Type.Instance) {
+            return false;
+        }
+        return switch (pou.dialect()) {
+            case ROCKWELL ->
+                v.isGlobal()
+                        || v.owner() instanceof PouSymbol owner
+                                && owner.kind() == dev.plca.ast.Declaration.PouKind.PROGRAM;
+            case SIEMENS -> v.isGlobal();
+            case null -> false;
+            default -> true;
+        };
+    }
+
     private static boolean external(Source src, PouSymbol pou, Set<Key> written, Pattern names) {
         VariableSymbol v = src.key().variable();
-        if (v.address() != null || v.ioAlias() != null || v.isConstant()) {
+        if (!candidate(v, pou)) {
             return false;
         }
         boolean unwritten = !written.contains(src.key()) && !written.contains(new Key(v, ""));

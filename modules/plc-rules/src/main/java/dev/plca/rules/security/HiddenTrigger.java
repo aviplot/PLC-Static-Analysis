@@ -150,6 +150,11 @@ public final class HiddenTrigger implements ProjectRule {
         for (Expression[] side : sides) {
             Expression value = side[0];
             Expression constant = side[1];
+            // only literals can be dates, years or magic values; skip everything else before asking the model
+            Expression lit = constant instanceof Expression.Unary u ? u.operand() : constant;
+            if (!(lit instanceof Expression.Literal) || value instanceof Expression.Literal) {
+                continue;
+            }
             ElementaryKind kind = Type.elementary(m.type(constant));
             boolean date = kind == ElementaryKind.DATE
                     || kind == ElementaryKind.DATE_AND_TIME

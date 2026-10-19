@@ -35,6 +35,11 @@ public final class UncheckedDereference implements PouRule {
     @Override
     public void check(PouContext ctx) {
         SemanticModel m = ctx.model();
+        boolean[] any = {false};
+        ctx.forEachExpression(e -> any[0] |= e instanceof Expression.Deref);
+        if (!any[0]) {
+            return;
+        }
         Set<VariableSymbol> safe = new HashSet<>();
         Set<VariableSymbol> reported = new HashSet<>();
         // pointers of the function block that its own code sets (FB_init, a setter method): the object's contract

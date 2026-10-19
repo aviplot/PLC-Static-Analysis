@@ -7,7 +7,7 @@ dialects: all
 tags: [security, input-validation]
 cwe: CWE-20
 parameters:
-  externalPattern: regex = (?i)(^|[._])(hmi|scada|visu|opc|remote|ext)[._a-z0-9]* | Names (or list.name) of variables that an HMI, SCADA system or other client writes, in dialects whose exports do not say so
+  externalPattern: regex = (?:^|[._])(?:HMI|Hmi|hmi|SCADA|Scada|scada|VISU|Visu|visu|OPC|Opc|opc)(?![a-z]) | Names (or list.name) of variables that an HMI, SCADA system or other client writes, in dialects whose exports do not say so; the word must stand alone (hmiStart, GVL_HMI.rSetpoint, not visual)
 ---
 ## Description
 
@@ -26,7 +26,8 @@ practice 9 "Validate indirections".
 Externally writable means: Rockwell controller and program tags with `ExternalAccess="Read/Write"` (the default) that no
 logic of the project writes; Siemens data block members that are not `ExternalWritable := 'False'` and that no block
 writes; in CODESYS, TwinCAT and PLCopen, where any symbol may be reachable, variables with an OPC UA attribute or whose
-name or list name matches `externalPattern` (HMI, SCADA, VISU, OPC, remote).
+name or list name matches `externalPattern` (HMI, SCADA, VISU, OPC as a word of the name). Function block and Add-On
+Instruction instances are never sources: their members are written by the block's own logic.
 
 A use counts as checked when the value is compared, limited (`LIMIT`, `MIN`, `MAX`, `SEL`, `MUX`, ladder `LIM`), used
 as a CASE selector or overwritten earlier in the body or in a condition around the use. Only pass-through is reported:
