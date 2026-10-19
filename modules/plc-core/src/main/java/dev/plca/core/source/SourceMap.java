@@ -67,6 +67,44 @@ public final class SourceMap {
         return isVerbatim(i) ? fileStart[i] + (offset - fragStart[i]) : fileStart[i] + fileLen[i];
     }
 
+    /**
+     * The inverse: the fragment offset of file offset {@code fileOffset}, or -1 if the file character belongs to no
+     * fragment character (CDATA markers, other XML between segments, outside the fragment). An offset inside a
+     * replacement maps to the start of its produced text. The end of a segment maps to the fragment offset after it, so
+     * a cursor directly after the last character of a fragment still finds it.
+     */
+    public int toFragment(int fileOffset) {
+        int n = fileStart.length;
+        int i = Arrays.binarySearch(fileStart, 0, n, fileOffset);
+        if (i < 0) {
+            i = -i - 2;
+        } else {
+            // file offsets are non-decreasing but zero-length file ranges (inserted text) can repeat one: take the last
+            while (i + 1 < n && fileStart[i + 1] == fileOffset) {
+                i++;
+            }
+        }
+        if (i < 0) {
+            return -1;
+        }
+        int rel = fileOffset - fileStart[i];
+        if (rel < fileLen[i]) {
+            return isVerbatim(i) ? fragStart[i] + rel : fragStart[i];
+        }
+        return rel == fileLen[i] ? fragStart[i] + fragLen[i] : -1;
+    }
+
+    /** File offset where the fragment starts (its first segment), or -1 for an empty fragment. */
+    public int fileFrom() {
+        return fileStart.length == 0 ? -1 : fileStart[0];
+    }
+
+    /** File offset after the fragment's last segment, or -1 for an empty fragment. */
+    public int fileTo() {
+        int n = fileStart.length;
+        return n == 0 ? -1 : fileStart[n - 1] + fileLen[n - 1];
+    }
+
     private boolean isVerbatim(int i) {
         return fragLen[i] == fileLen[i];
     }

@@ -17,10 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 /**
  * Runs the enabled rules over a model: {@link PouRule}s once per POU body (parallel over POUs), {@link ProjectRule}s
@@ -116,8 +119,26 @@ public final class RuleEngine {
         return registry;
     }
 
+    /**
+     * Which part of a run to do: POU rules on the POUs {@code pous} accepts, project rules if {@code projectRules}. An
+     * editor runs the POU rules of the edited file at once and the rest when the user pauses; {@code cancelled} is
+     * polled between POUs and rules, and a cancelled run throws {@link CancellationException}.
+     */
+    public record Scope(Predicate<PouSymbol> pous, boolean projectRules, BooleanSupplier cancelled) {
+        public static final Scope ALL = new Scope(p -> true, true, () -> false);
+    }
+
     /** @throws IllegalArgumentException for an invalid configuration (unknown rule or parameter) */
     public Result run(SemanticModel model, SourceRegistry sources, RuleConfig config, int threads) {
+        return run(model, sources, config, threads, Scope.ALL);
+    }
+
+    /**
+     * As {@link #run(SemanticModel, SourceRegistry, RuleConfig, int)}, limited to {@code scope}.
+     *
+     * @throws CancellationException when {@code scope.cancelled()} turns true during the run
+     */
+    public Result run(SemanticModel model, SourceRegistry sources, RuleConfig config, int threads, Scope scope) {
         Set<String> enabled = config.resolve(registry);
         List<PouRule> pouRules = new ArrayList<>();
         List<ProjectRule> projectRules = new ArrayList<>();
@@ -139,16 +160,24 @@ public final class RuleEngine {
         List<Callable<Partial>> tasks = new ArrayList<>();
         if (!pouRules.isEmpty()) {
             for (PouSymbol p : model.pous()) {
-                if (!p.isBuiltin() && p.declaration() != null && p.declaration().body() != null) {
-                    tasks.add(() -> runPou(model, sources, config, settings, pouRules, p));
+                if (!p.isBuiltin()
+                        && p.declaration() != null
+                        && p.declaration().body() != null
+                        && scope.pous().test(p)) {
+                    tasks.add(() -> checked(scope, () -> runPou(model, sources, config, settings, pouRules, p)));
                 }
             }
         }
-        for (ProjectRule r : projectRules) {
-            tasks.add(() -> runProject(model, sources, config, settings.get(r.id()), r));
+        if (scope.projectRules()) {
+            for (ProjectRule r : projectRules) {
+                tasks.add(() -> checked(scope, () -> runProject(model, sources, config, settings.get(r.id()), r)));
+            }
         }
 
         List<Partial> parts = execute(tasks, threads);
+        if (scope.cancelled().getAsBoolean()) {
+            throw new CancellationException();
+        }
         List<Finding> findings = new ArrayList<>();
         List<Diagnostic> diagnostics = new ArrayList<>();
         Map<String, Long> nanos = new LinkedHashMap<>();
@@ -172,6 +201,13 @@ public final class RuleEngine {
             }
         }
         return new Result(kept, suppressed, diagnostics, nanos);
+    }
+
+    private static Partial checked(Scope scope, Callable<Partial> task) throws Exception {
+        if (scope.cancelled().getAsBoolean()) {
+            return new Partial();
+        }
+        return task.call();
     }
 
     private static final class Partial {

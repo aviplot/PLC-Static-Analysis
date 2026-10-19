@@ -86,4 +86,39 @@ class SourceRegistryTest {
         assertThatThrownBy(() -> registry.registerFragment(f, "bc", SourceMap.verbatim(1, 1)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void positionAtFindsTheFragmentUnderTheCursor() {
+        String file = "<POU><Declaration><![CDATA[VAR x : INT; END_VAR]]></Declaration>"
+                + "<ST><![CDATA[x := 1;]]></ST></POU>";
+        SourceFile sf = SourceFile.of("P.TcPOU", file);
+        registry.register(sf); // the whole file, as XML readers register it for their own diagnostics
+        int d = file.indexOf("VAR x");
+        SourceText decl = registry.registerXmlContent(sf, d - "<![CDATA[".length(), file.indexOf("</Declaration>"));
+        int b = file.indexOf("x := 1");
+        SourceText body = registry.registerXmlContent(sf, b - "<![CDATA[".length(), file.indexOf("</ST>"));
+
+        SourceRegistry.Position p = registry.positionAt("P.TcPOU", file.indexOf("x : INT"));
+        assertThat(p.text()).isSameAs(decl);
+        assertThat(p.offset()).isEqualTo(4);
+        p = registry.positionAt("P.TcPOU", b + 1); // directly after the x of the body
+        assertThat(p.text()).isSameAs(body);
+        assertThat(p.offset()).isEqualTo(1);
+        assertThat(registry.positionAt("P.TcPOU", 2).text().id()).isNotIn(decl.id(), body.id()); // in the XML
+        assertThat(registry.positionAt("other.st", 0)).isNull();
+    }
+
+    @Test
+    void withoutKeepsOtherFilesAndNeverReusesIds() {
+        SourceText a = registry.register(SourceFile.of("a.st", "PROGRAM A END_PROGRAM"));
+        SourceText b = registry.register(SourceFile.of("b.st", "PROGRAM B END_PROGRAM"));
+        SourceRegistry next = registry.without(java.util.Set.of("a.st"));
+        SourceText a2 = next.register(SourceFile.of("a.st", "PROGRAM A2 END_PROGRAM"));
+
+        assertThat(next.text(b.id())).isSameAs(b);
+        assertThat(a2.id()).isNotIn(a.id(), b.id());
+        assertThatThrownBy(() -> next.text(a.id())).isInstanceOf(IllegalArgumentException.class);
+        assertThat(registry.text(a.id())).isSameAs(a); // the older snapshot is unchanged
+        assertThat(next.textsOf("a.st")).containsExactly(a2);
+    }
 }

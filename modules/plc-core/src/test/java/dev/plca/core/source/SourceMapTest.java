@@ -62,4 +62,52 @@ class SourceMapTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> SourceMap.verbatim(0, 3).toFileStart(4)).isInstanceOf(IndexOutOfBoundsException.class);
     }
+
+    @Test
+    void inverseOfVerbatimReplacementAndGaps() {
+        // fragment "a<b" from "a&lt;b" at file offset 10, then "c" from file offset 30 (a second CDATA section)
+        SourceMap m = SourceMap.builder()
+                .verbatim(10, 1)
+                .replacement(11, 4, 1)
+                .verbatim(15, 1)
+                .verbatim(30, 1)
+                .build();
+        assertThat(m.toFragment(10)).isZero();
+        assertThat(m.toFragment(11)).isEqualTo(1);
+        assertThat(m.toFragment(13)).isEqualTo(1); // inside "&lt;"
+        assertThat(m.toFragment(15)).isEqualTo(2);
+        assertThat(m.toFragment(16)).isEqualTo(3); // directly after "b": the end of its segment
+        assertThat(m.toFragment(20)).isEqualTo(-1); // between the sections
+        assertThat(m.toFragment(30)).isEqualTo(3);
+        assertThat(m.toFragment(31)).isEqualTo(4);
+        assertThat(m.toFragment(9)).isEqualTo(-1);
+        assertThat(m.toFragment(32)).isEqualTo(-1);
+        assertThat(m.fileFrom()).isEqualTo(10);
+        assertThat(m.fileTo()).isEqualTo(31);
+        assertThat(SourceMap.builder().build().toFragment(0)).isEqualTo(-1);
+    }
+
+    @Test
+    void inverseRoundTripsOverDecodedXml() {
+        // every fragment offset that starts a character of its own maps back to itself
+        java.util.Random random = new java.util.Random(42);
+        String[] pieces = {"a", "b", "\n", "\r\n", "&lt;", "&amp;", "&#x1F600;", "<![CDATA[x:=1;]]>", "<!-- c -->", " "
+        };
+        for (int round = 0; round < 500; round++) {
+            StringBuilder xml = new StringBuilder("<t>");
+            int n = random.nextInt(20);
+            for (int i = 0; i < n; i++) {
+                xml.append(pieces[random.nextInt(pieces.length)]);
+            }
+            XmlText.Fragment f = XmlText.decode(xml.toString(), 3, xml.length());
+            SourceMap m = f.map();
+            for (int o = 0; o < m.fragmentLength(); o++) {
+                int file = m.toFileStart(o);
+                int back = m.toFragment(file);
+                // inside a replacement every produced char maps to the construct start, so back is its first char
+                assertThat(back).as("round %d offset %d in %s", round, o, xml).isBetween(0, o);
+                assertThat(m.toFileStart(back)).isEqualTo(file);
+            }
+        }
+    }
 }

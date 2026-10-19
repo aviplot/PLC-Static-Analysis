@@ -14,11 +14,69 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Owns every {@link SourceText} of an analysis run and resolves {@link Span}s to physical {@link Location}s. Safe for
  * concurrent registration from parser threads.
+ *
+ * <p>An editor session replaces files one at a time: {@link #without(Set)} derives a registry for the next version that
+ * keeps the texts of every other file and shares the id counter, so ids are never reused and spans held by an older
+ * snapshot still resolve in that snapshot's registry.
  */
 public final class SourceRegistry {
 
-    private final AtomicInteger nextId = new AtomicInteger();
+    private final AtomicInteger nextId;
     private final ConcurrentMap<Integer, SourceText> texts = new ConcurrentHashMap<>();
+
+    public SourceRegistry() {
+        this(new AtomicInteger());
+    }
+
+    private SourceRegistry(AtomicInteger nextId) {
+        this.nextId = nextId;
+    }
+
+    /** A new registry with every text of this one except those of the files whose path is in {@code paths}. */
+    public SourceRegistry without(Set<String> paths) {
+        SourceRegistry r = new SourceRegistry(nextId);
+        texts.forEach((id, t) -> {
+            if (!paths.contains(t.file().path())) {
+                r.texts.put(id, t);
+            }
+        });
+        return r;
+    }
+
+    /** The texts registered for the file with this display path, in id order. */
+    public List<SourceText> textsOf(String path) {
+        return texts.values().stream()
+                .filter(t -> t.file().path().equals(path))
+                .sorted(java.util.Comparator.comparingInt(SourceText::id))
+                .toList();
+    }
+
+    /**
+     * The text position at file offset {@code fileOffset} of the file {@code path}: the fragment that covers the offset
+     * (for XML exports: the CDATA, {@code <Text>} or {@code <ST>} body), or null if no analysed text is there. When a
+     * whole-file text and a fragment both cover it (an XML file registered whole for its XML diagnostics), the fragment
+     * wins: names live in fragments.
+     */
+    public Position positionAt(String path, int fileOffset) {
+        Position best = null;
+        int bestSize = Integer.MAX_VALUE;
+        for (SourceText t : textsOf(path)) {
+            SourceMap m = t.map();
+            if (m.fileFrom() < 0 || fileOffset < m.fileFrom() || fileOffset > m.fileTo()) {
+                continue;
+            }
+            int o = m.toFragment(fileOffset);
+            int size = m.fileTo() - m.fileFrom();
+            if (o >= 0 && size < bestSize) {
+                best = new Position(t, o);
+                bestSize = size;
+            }
+        }
+        return best;
+    }
+
+    /** An offset in a registered text. */
+    public record Position(SourceText text, int offset) {}
 
     /** Registers a whole file as one text. */
     public SourceText register(SourceFile file) {

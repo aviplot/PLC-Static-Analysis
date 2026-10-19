@@ -5,6 +5,7 @@ import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.SourceFile;
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.plcopen.PlcOpenFrontend;
 import dev.plca.frontend.scl.SclFrontend;
@@ -44,7 +45,7 @@ import java.util.regex.Pattern;
  */
 public final class Analyzer {
 
-    private static final Frontends FRONTENDS =
+    static final Frontends FRONTENDS =
             Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new, PlcOpenFrontend::new);
 
     /** Extensions of formats not analysed yet; such files are listed as skipped, not ignored silently. */
@@ -81,7 +82,7 @@ public final class Analyzer {
         long t1 = System.nanoTime();
         DiagnosticCollector semantic = new DiagnosticCollector();
         List<SemanticModel> models = new ArrayList<>();
-        for (List<SourceUnit> group : modelGroups(project)) {
+        for (List<SourceUnit> group : modelGroups(project.units(), project.registry())) {
             models.add(SemanticBuilder.build(group, semantic));
         }
         long t2 = System.nanoTime();
@@ -172,13 +173,13 @@ public final class Analyzer {
      * merge into duplicate symbols and cross-file double coils. Partial Rockwell exports (routines, programs, AOIs)
      * join the controller when there is exactly one, else the shared model, which holds everything else.
      */
-    public static List<List<SourceUnit>> modelGroups(ProjectLoader.Project project) {
+    public static List<List<SourceUnit>> modelGroups(List<SourceUnit> units, SourceRegistry registry) {
         Map<String, SourceFile> files = new HashMap<>();
-        project.registry().files().forEach(f -> files.put(f.path(), f));
+        registry.files().forEach(f -> files.put(f.path(), f));
         List<List<SourceUnit>> controllers = new ArrayList<>();
         List<SourceUnit> partial = new ArrayList<>();
         List<SourceUnit> shared = new ArrayList<>();
-        for (SourceUnit u : project.units()) {
+        for (SourceUnit u : units) {
             if (u.dialect() != Dialect.ROCKWELL) {
                 shared.add(u);
             } else if (isController(files.get(u.path()))) {
