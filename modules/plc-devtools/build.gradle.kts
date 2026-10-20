@@ -50,6 +50,17 @@ tasks.register<JavaExec>("navigationCheck") {
     workingDir = rootProject.projectDir
 }
 
+// ./gradlew :plc-devtools:modelCheck --args="[--edits=N] [--any-share] <project dir> ..." edits files at random and
+// compares every incremental model with a full build (M10).
+tasks.register<JavaExec>("modelCheck") {
+    group = "verification"
+    description = "Random edits on the given projects (--args); every incremental model must equal a full build."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "dev.plca.devtools.ModelCheck"
+    maxHeapSize = "8g"
+    workingDir = rootProject.projectDir
+}
+
 // ./gradlew :plc-devtools:renderCheck [--args="--sample=build/render-sample.html"] draws every rung and network of the
 // Rockwell and PLCopen corpus files as the workbench does (M9).
 tasks.register<JavaExec>("renderCheck") {

@@ -31,16 +31,22 @@ final class EffectsBuilder {
         this.model = model;
     }
 
-    void buildAll() {
+    /** Effects of every statement of all POUs, and the call graph. */
+    void build() {
         for (PouSymbol p : model.pous) {
-            Statements.forEachDeep(p.declaration().body(), s -> {
-                Collector c = new Collector(p);
-                statement(s, c);
-                Effects e = new Effects(c.accesses, c.calls);
-                model.effects.put(s, e);
-                e.calls().forEach(model.callGraph::add);
-            });
+            build(p);
+            Statements.forEachDeep(
+                    p.declaration().body(), st -> model.effects(st).calls().forEach(model.callGraph::add));
         }
+    }
+
+    /** Effects of every statement of {@code p}. */
+    void build(PouSymbol p) {
+        Statements.forEachDeep(p.declaration().body(), s -> {
+            Collector c = new Collector(p);
+            statement(s, c);
+            model.effects.put(s, new Effects(c.accesses, c.calls));
+        });
     }
 
     /** Accumulates the effects of one statement. */

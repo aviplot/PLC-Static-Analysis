@@ -6,17 +6,23 @@ import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
 import dev.plca.analysis.nav.Navigator;
 import dev.plca.analysis.nav.Outline;
+import dev.plca.core.diag.DiagnosticCollector;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
 import dev.plca.rules.Finding;
 import dev.plca.rules.RuleConfig;
 import dev.plca.rules.RuleEngine;
 import dev.plca.rules.RuleRegistry;
+import dev.plca.semantic.ModelPrinter;
+import dev.plca.semantic.SemanticBuilder;
+import dev.plca.semantic.SemanticModel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * Fuzzes the editor session (M8): random edits to a small project (ST and TwinCAT XML), each followed by a snapshot, a
@@ -72,6 +78,16 @@ class WorkspaceFuzzTest {
             "fb.", "E_Mode.", "IF ", " THEN ", "END_IF", ";", ":=", "(*", "*)", "//", "'", "]]>", "&lt;", "VAR",
             "END_VAR", "\n", "GVL.", "F_Half(", ")", "METHOD", "16#FF", "T#1s", "^", "REF=", "\"", "#", "{");
 
+    @BeforeAll
+    static void incrementalEvenForSmallProjects() {
+        SemanticBuilder.setMaxRebuiltShare(1.0);
+    }
+
+    @AfterAll
+    static void restore() {
+        SemanticBuilder.setMaxRebuiltShare(1 / 3.0);
+    }
+
     @FuzzTest(maxDuration = "5m")
     void fuzzEditsAndQueries(FuzzedDataProvider data) {
         Workspace w = new Workspace(Path.of("fuzz"));
@@ -101,12 +117,23 @@ class WorkspaceFuzzTest {
                             1,
                             () -> false);
                     check(s.registry(), a);
+                    sameAsFullBuild(s);
                 }
                 default -> {
                     nav = new Navigator(w.snapshot(), nav);
                     query(nav, path, data.consumeInt(0, text.length()));
                 }
             }
+        }
+    }
+
+    /** The incremental model of every group (M10) holds exactly what a full build of its units holds. */
+    private static void sameAsFullBuild(Snapshot s) {
+        for (Snapshot.Group g : s.groups()) {
+            SemanticModel full = SemanticBuilder.build(g.units(), new DiagnosticCollector());
+            assertThat(ModelPrinter.printAll(g.model(), s.registry()::resolve))
+                    .as(String.valueOf(g.model().buildInfo()))
+                    .isEqualTo(ModelPrinter.printAll(full, s.registry()::resolve));
         }
     }
 

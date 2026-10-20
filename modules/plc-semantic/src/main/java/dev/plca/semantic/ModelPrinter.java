@@ -20,6 +20,87 @@ public final class ModelPrinter {
         this.resolver = resolver;
     }
 
+    /**
+     * {@link #print} plus every side table entry (bindings, types, parameters, owners, effects), the unresolved names
+     * and the statistics, sorted: two models print the same exactly when they hold the same. A span the resolver cannot
+     * place (a symbol of an earlier version of a file) prints as {@code STALE}. For checking incremental builds against
+     * full ones.
+     */
+    public static String printAll(SemanticModel model, Function<Span, Location> resolver) {
+        Function<Span, Location> safe = span -> {
+            try {
+                return resolver.apply(span);
+            } catch (RuntimeException e) {
+                return new Location("STALE", 0, 0, 0, 0);
+            }
+        };
+        ModelPrinter p = new ModelPrinter(model, safe);
+        StringBuilder out = new StringBuilder(print(model, safe));
+        List<String> lines = new java.util.ArrayList<>();
+        model.symbols.forEach((e, s) -> lines.add("symbol " + p.node(e) + " -> " + p.symbol(s)));
+        model.types.forEach((e, t) -> lines.add("type " + p.node(e) + " : " + p.type(t)));
+        model.parameters.forEach((a, v) -> lines.add("param " + p.node(a) + " -> " + p.symbol(v)));
+        model.owners.forEach((st, o) -> lines.add("owner " + p.node(st) + " -> " + p.symbol(o)));
+        model.effects.forEach((st, e) -> lines.add("effects " + p.node(st) + " "
+                + e.accesses().size() + "/" + e.calls().size()));
+        lines.sort(null);
+        lines.forEach(l -> out.append(l).append('\n'));
+        out.append("sizes ")
+                .append(List.of(
+                        model.symbols.size(),
+                        model.types.size(),
+                        model.parameters.size(),
+                        model.owners.size(),
+                        model.effects.size()))
+                .append('\n');
+        out.append("unresolved");
+        model.unresolved().forEach(e -> out.append(' ').append(p.node(e)));
+        out.append('\n').append(model.resolutionStats()).append('\n');
+        return out.toString();
+    }
+
+    private String range(Span s) {
+        Location l = resolver.apply(s);
+        return l.path() + ":" + l.startLine() + ":" + l.startColumn() + "-" + l.endLine() + ":" + l.endColumn();
+    }
+
+    private String node(dev.plca.ast.Node n) {
+        return range(n.span()) + " " + n.getClass().getSimpleName();
+    }
+
+    private String symbol(Symbol s) {
+        String where =
+                s.declaration() == null ? "" : " @" + range(s.declaration().span());
+        String owner = s instanceof VariableSymbol v && v.owner() != null
+                ? " in " + v.owner().name()
+                        + (v.owner().declaration() == null
+                                ? ""
+                                : "@" + range(v.owner().declaration().span()))
+                : "";
+        return s.getClass().getSimpleName() + " " + s.name() + where + owner;
+    }
+
+    private String type(Type t) {
+        StringBuilder b = new StringBuilder(t.display());
+        typeSymbols(t, b);
+        return b.toString();
+    }
+
+    private void typeSymbols(Type t, StringBuilder b) {
+        switch (t) {
+            case Type.Instance i -> b.append(" [").append(symbol(i.pou())).append(']');
+            case Type.Struct st -> b.append(" [").append(symbol(st.symbol())).append(']');
+            case Type.Enum en -> b.append(" [").append(symbol(en.symbol())).append(']');
+            case Type.Alias a -> {
+                b.append(" [").append(symbol(a.symbol())).append(']');
+                typeSymbols(a.target(), b);
+            }
+            case Type.Array a -> typeSymbols(a.element(), b);
+            case Type.Pointer ptr -> typeSymbols(ptr.target(), b);
+            default -> {}
+        }
+    }
+
     public static String print(SemanticModel model, Function<Span, Location> resolver) {
         ModelPrinter p = new ModelPrinter(model, resolver);
         p.pous();

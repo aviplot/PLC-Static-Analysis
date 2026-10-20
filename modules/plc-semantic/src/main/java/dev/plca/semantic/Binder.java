@@ -8,11 +8,12 @@ import dev.plca.ast.Initializer;
 import dev.plca.ast.Statement;
 import dev.plca.ast.TypeRef.PointerKind;
 import dev.plca.ast.VarBlock;
-import dev.plca.core.diag.DiagnosticSink;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Pass 3: binds every name, member access and call in every body to its {@link Symbol} and computes expression types.
@@ -30,28 +31,111 @@ final class Binder {
     private int unresolved;
     private int external;
 
-    Binder(SemanticModel model, DiagnosticSink sink) {
+    /** Per unit, when the model keeps bookkeeping for incremental rebuilds; null otherwise. */
+    private final Map<String, UnitState> states;
+    /** Which unit declared a global variable. */
+    private final Map<Object, UnitState> declaredBy;
+    /** The unit being bound (with bookkeeping) and the unresolved names of the POU or variable being bound. */
+    private UnitState unit;
+
+    private List<Expression> unresolvedHere;
+
+    Binder(SemanticModel model, Map<String, UnitState> states, Map<Object, UnitState> declaredBy) {
         this.model = model;
         this.global = model.global;
+        this.states = states;
+        this.declaredBy = declaredBy;
     }
 
-    void bindAll() {
-        for (PouSymbol p : List.copyOf(model.pous)) {
-            for (VariableSymbol v : p.variables().values()) {
-                bindInitializer(v.initializer(), p);
+    /** Binds the POUs and global variables of the units in {@code only} (by path), or of all units (null). */
+    void bind(Set<String> only) {
+        if (only == null) {
+            for (PouSymbol p : List.copyOf(model.pous)) {
+                bindPou(p);
             }
-            if (p.declaration().body() != null) {
-                for (Statement s : p.declaration().body()) {
-                    statement(s, p);
+            for (GvlSymbol g : global.gvls()) {
+                for (VariableSymbol v : g.variables().values()) {
+                    bindGlobal(v);
+                }
+            }
+            model.stats = new SemanticModel.ResolutionStats(names, resolved, library, unresolved, external);
+        } else {
+            // unresolved names and counts are kept per POU / variable and per unit: any order will do
+            for (String path : only) {
+                UnitState st = states.get(path);
+                st.pous.forEach(this::bindPou);
+                for (VariableSymbol v : st.globals) {
+                    // as a full build: only what its list holds (a later file's variable of the same name replaces it)
+                    if (v.owner() instanceof GvlSymbol g && g.variable(v.name()).orElse(null) == v) {
+                        bindGlobal(v);
+                    }
                 }
             }
         }
-        for (GvlSymbol g : global.gvls()) {
-            for (VariableSymbol v : g.variables().values()) {
-                bindInitializer(v.initializer(), null);
+    }
+
+    private void bindPou(PouSymbol p) {
+        String path = p.unit() == null ? null : p.unit().path();
+        begin(p, states == null || path == null ? null : states.get(path));
+        for (VariableSymbol v : p.variables().values()) {
+            bindInitializer(v.initializer(), p);
+        }
+        if (p.declaration().body() != null) {
+            for (Statement s : p.declaration().body()) {
+                statement(s, p);
             }
         }
-        model.stats = new SemanticModel.ResolutionStats(names, resolved, library, unresolved, external);
+        end(p);
+    }
+
+    private void bindGlobal(VariableSymbol v) {
+        begin(v, states == null ? null : declaredBy.get(v));
+        bindInitializer(v.initializer(), null);
+        end(v);
+    }
+
+    private final int[] before = new int[5];
+
+    private void begin(Object owner, UnitState st) {
+        unit = st;
+        unresolvedHere = new ArrayList<>();
+        before[0] = names;
+        before[1] = resolved;
+        before[2] = library;
+        before[3] = unresolved;
+        before[4] = external;
+    }
+
+    private void end(Object owner) {
+        if (unresolvedHere.isEmpty()) {
+            model.unresolvedBy.remove(owner);
+        } else {
+            model.unresolvedBy.put(owner, unresolvedHere);
+        }
+        if (unit != null) {
+            unit.stats[0] += names - before[0];
+            unit.stats[1] += resolved - before[1];
+            unit.stats[2] += library - before[2];
+            unit.stats[3] += unresolved - before[3];
+            unit.stats[4] += external - before[4];
+        }
+        unit = null;
+    }
+
+    // ---- side tables, with the keys each unit wrote ----
+
+    private void putSymbol(Expression e, Symbol s) {
+        model.symbols.put(e, s);
+        if (unit != null) {
+            unit.symbolKeys.add(e);
+        }
+    }
+
+    private void putType(Expression e, Type t) {
+        model.types.put(e, t);
+        if (unit != null) {
+            unit.typeKeys.add(e);
+        }
     }
 
     private void bindInitializer(Initializer init, PouSymbol pou) {
@@ -67,6 +151,9 @@ final class Binder {
 
     private void statement(Statement s, PouSymbol pou) {
         model.owners.put(s, pou);
+        if (unit != null) {
+            unit.statementKeys.add(s);
+        }
         switch (s) {
             case Statement.Assignment a -> {
                 expression(a.target(), pou);
@@ -191,15 +278,15 @@ final class Binder {
             case Expression.TypeOperand t2 -> Type.UNKNOWN;
             case Expression.Invalid inv -> Type.UNKNOWN;
         };
-        model.types.put(e, t);
+        putType(e, t);
         return t;
     }
 
     private void record(Expression e, Symbol s, Type t) {
         if (s != null) {
-            model.symbols.put(e, s);
+            putSymbol(e, s);
         }
-        model.types.put(e, t);
+        putType(e, t);
     }
 
     private Type name(Expression.NameRef n, PouSymbol pou) {
@@ -227,28 +314,28 @@ final class Binder {
             // module and status tags (Local:1:I, S:FS) come from the I/O configuration, not from the export's tags
             external++;
             IoTagSymbol io = IoTagSymbol.of(name);
-            model.symbols.put(n, io);
+            putSymbol(n, io);
             return io.status() && name.length() <= 4 ? Type.BOOL : new Type.Unknown(name);
         }
         if (s.isEmpty() && rockwell(pou) && partialExport(pou)) {
             // a routine or AOI exported on its own refers to tags of the project it came from
             external++;
-            model.symbols.put(n, new LibrarySymbol(name));
+            putSymbol(n, new LibrarySymbol(name));
             return new Type.Unknown(name);
         }
         if (s.isEmpty() && n.name().form() == Identifier.Form.QUOTED) {
             // a PLC tag (tag tables are not part of SCL exports) or a block outside the export: never guessed
             external++;
-            model.symbols.put(n, new LibrarySymbol(name));
+            putSymbol(n, new LibrarySymbol(name));
             return new Type.Unknown(name);
         }
         if (s.isEmpty()) {
             unresolved++;
-            model.unresolved.add(n);
+            unresolvedHere.add(n);
             return new Type.Unknown(name);
         }
         resolved++;
-        model.symbols.put(n, s.get());
+        putSymbol(n, s.get());
         return typeOfSymbol(s.get());
     }
 
@@ -324,8 +411,8 @@ final class Binder {
             // unknown prefix: a namespace/library qualifier, or a typo
             names--; // the prefix was already counted as unresolved
             unresolved--;
-            if (!model.unresolved.isEmpty() && model.unresolved.getLast() == prefix) {
-                model.unresolved.removeLast();
+            if (!unresolvedHere.isEmpty() && unresolvedHere.getLast() == prefix) {
+                unresolvedHere.removeLast();
             }
             s = qualified(prefix.name().name(), name, pou);
         } else {
@@ -336,7 +423,7 @@ final class Binder {
                 library++; // member of a library (or otherwise unknown) type: cannot know
             } else {
                 unresolved++;
-                model.unresolved.add(m);
+                unresolvedHere.add(m);
             }
             return new Type.Unknown(name);
         }
@@ -345,7 +432,7 @@ final class Binder {
         } else {
             resolved++;
         }
-        model.symbols.put(m, s);
+        putSymbol(m, s);
         return typeOfSymbol(s);
     }
 
@@ -454,8 +541,8 @@ final class Binder {
         } else {
             library++; // an AOI or instruction outside the export: cannot know
         }
-        model.symbols.put(c.callee(), instr);
-        model.types.put(c.callee(), Type.VOID);
+        putSymbol(c.callee(), instr);
+        putType(c.callee(), Type.VOID);
         List<Type> argTypes = new ArrayList<>();
         int index = 0;
         for (Argument a : c.arguments()) {
@@ -546,7 +633,7 @@ final class Binder {
         // inside F, `F` is the result variable, but `F(...)` calls F (recursion)
         if (callee instanceof VariableSymbol v && v.isResult() && v.owner() instanceof PouSymbol self) {
             callee = self;
-            model.symbols.put(c.callee(), self);
+            putSymbol(c.callee(), self);
             calleeType = Type.VOID;
         }
         List<VariableSymbol> params = parameters(callee, calleeType);
@@ -574,6 +661,9 @@ final class Binder {
             }
             if (param != null) {
                 model.parameters.put(a, param);
+                if (unit != null) {
+                    unit.parameterKeys.add(a);
+                }
             }
         }
         return switch (callee) {
@@ -731,7 +821,7 @@ final class Binder {
                 Optional<EnumValueSymbol> v = enumType.get().value(l.text());
                 if (v.isPresent()) {
                     resolved++;
-                    model.symbols.put(l, v.get());
+                    putSymbol(l, v.get());
                 } else {
                     unresolved++;
                 }

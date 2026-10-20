@@ -17,8 +17,25 @@ public final class GlobalScope {
     private final Map<String, GvlSymbol> gvls = new LinkedHashMap<>();
     private final Map<String, VariableSymbol> globals = new HashMap<>();
     private final Map<String, List<EnumValueSymbol>> enumValues = new HashMap<>();
-    private final Builtins builtins = new Builtins();
-    private final RockwellTypes rockwellTypes = new RockwellTypes();
+    private final Builtins builtins;
+    private final RockwellTypes rockwellTypes;
+
+    public GlobalScope() {
+        this(new Builtins(), new RockwellTypes());
+    }
+
+    /**
+     * An empty scope sharing {@code previous}'s builtins: an incremental build keeps the bindings of units it does not
+     * touch, and those refer to the builtin symbols ({@code TON}, …) of the model they were bound in.
+     */
+    GlobalScope(GlobalScope previous) {
+        this(previous.builtins, previous.rockwellTypes);
+    }
+
+    private GlobalScope(Builtins builtins, RockwellTypes rockwellTypes) {
+        this.builtins = builtins;
+        this.rockwellTypes = rockwellTypes;
+    }
 
     public Collection<PouSymbol> pous() {
         return Collections.unmodifiableCollection(pous.values());
@@ -109,6 +126,23 @@ public final class GlobalScope {
 
     Symbol addGlobal(VariableSymbol v) {
         return globals.putIfAbsent(PouSymbol.key(v.name()), v);
+    }
+
+    /** Repeats a registration of an earlier build (a unit the incremental build does not declare again). */
+    void replay(UnitState.Registration r) {
+        switch (r.kind()) {
+            case POU -> pous.putIfAbsent(r.key(), (PouSymbol) r.symbol());
+            case TYPE -> types.putIfAbsent(r.key(), (TypeSymbol) r.symbol());
+            case GVL -> gvls.putIfAbsent(r.key(), (GvlSymbol) r.symbol());
+            case GLOBAL -> globals.putIfAbsent(r.key(), (VariableSymbol) r.symbol());
+            case ENUM_VALUE ->
+                enumValues.computeIfAbsent(r.key(), k -> new ArrayList<>()).add((EnumValueSymbol) r.symbol());
+        }
+    }
+
+    /** True if a variable list of this name exists (the incremental build must not merge into another unit's). */
+    boolean hasGvl(String name) {
+        return gvls.containsKey(PouSymbol.key(name));
     }
 
     void addEnumValue(EnumValueSymbol v) {

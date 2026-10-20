@@ -31,8 +31,6 @@ Workspace symbols: POUs, types and global variables of every model, matched by s
 Requests beyond LSP: `plca/diagrams {uri}` lists a file's ladder routines and LD/FBD bodies with each one's text range,
 `plca/diagram {uri, name, from | at, count}` draws a page of their rungs or networks as SVG, from part `from` or from
 the part holding position `at` (used by the web workbench, [web.md](web.md)).
-Commands: `plca.analyzeWorkspace` (re-read everything from disk), `plca.ruleDoc` (server: a rule's Markdown), and in
-VS Code "Show documentation of PLCA-…" on every finding.
 **Loading.** When the client supports work-done progress (`window.workDoneProgress`; VS Code shows it in the status
 bar), loading a workspace reports "Reading files: n of N", "Building the semantic model" and "Checking the rules", and
 ends with the number of files analysed. Drawings do not wait for the load: while files are parsed, `plca/diagrams` and
@@ -40,6 +38,8 @@ ends with the number of files analysed. Drawings do not wait for the load: while
 under half a second for a 43 MB export once warm), and while the first model is built, from the parsed units.
 
 ## How an edit is processed
+Commands: `plca.analyzeWorkspace` (re-read everything from disk), `plca.ruleDoc` (server: a rule's Markdown), and in
+VS Code "Show documentation of PLCA-…" on every finding.
 
 1. The client sends the full text (full sync). The analysis thread parses that file only, with a frontend per thread,
    into a new `SourceRegistry` derived from the previous one (`without(path)`): ids are never reused, so older
@@ -49,6 +49,16 @@ under half a second for a 43 MB export once warm), and while the first model is 
    file's parse, model and rule diagnostics are published with the document version.
 3. **Project tier**, 750 ms after the last edit, on save and after loading: all rules on the snapshot, on their own
    thread; diagnostics of every file whose set changed are published. Project-rule findings of an edited file are
+   The model is rebuilt **incrementally** (M10, `SemanticBuilder.buildForEditing`): each unit's declarations,
+   bindings and dependencies are kept, and an edit declares again only the edited file and the files whose
+   declarations use its symbols (an FB holding an instance of it, a type built on it, transitively), and binds again
+   those plus the files whose bodies use them. Everything else, including its side-table entries, is taken from the
+   previous model. A full build runs instead when the result could differ: the edit changes names other files see
+   (a POU, type, variable list or global variable added, removed or renamed), the file shares declarations with
+   others (a name declared twice, a variable list split over files, data blocks, a configuration), the group is a
+   Rockwell controller, or more than a third of the group is affected. Either way the model equals a full build;
+   `-Dplca.model.verify=true` checks that on every edit (slow), `./gradlew :plc-devtools:modelCheck` on corpus
+   projects.
    withdrawn by the fast tier and come back here.
 4. Every edit increments a generation. Runs check it between POUs and rules, and results of an older generation are
    never published.
@@ -62,17 +72,20 @@ and the defaults apply.
 
 ## Performance
 
-JMH `EditCycleBenchmark` (`./gradlew :plc-devtools:jmh -Pjmh.args=EditCycleBenchmark`), one thread:
+JMH `EditCycleBenchmark` (`./gradlew :plc-devtools:jmh -Pjmh.args=EditCycleBenchmark`), one thread, with the
+incremental model (M10; M8's full rebuild in brackets):
 
 | Project | Fast tier p50 / p95 | Project tier p50 / p95 |
 |---|---|---|
-| generated, 200 FBs (≈ 24k lines) | 9 / 11 ms | 37 / 45 ms |
-| generated, 2000 FBs (≈ 240k lines, one model group) | 125 / 266 ms | 504 / 607 ms |
-| TwinCAT repository, 98k lines incl. a 7.6 MB generated FB | 649 / 798 ms | 1.9 / 2.6 s |
+| generated, 200 FBs (≈ 24k lines) | 2.4 / 2.6 ms (9 / 11) | 30 / 32 ms (37 / 45) |
+| generated, 2000 FBs (≈ 240k lines, one model group) | 29–42 / 60–89 ms (125 / 266) | 430 / 560 ms (504 / 607) |
 
-The fast tier rebuilds the whole model group: model build time grows with the group, not with the edit. Typical
-projects are far inside the 200 ms target; very large groups, and projects with huge generated POUs, are not. The
-follow-up is an incremental model that re-binds only changed POUs (M8 "As built").
+An edit to one of the 2000 FBs declares and binds that FB and `MAIN` (which holds all 2000 instances) again; the rest
+is the fixed cost of a build over a big group (copying the side tables, the instance graph). On real repositories
+(`modelCheck`, random edits): TC-Robot-Control-System (98k lines with a 7.6 MB generated FB) 11 ms median for an
+incremental build against 650 ms–1.7 s for a full one; other TwinCAT/CODESYS repositories of 270–1,100 files 0–28 ms.
+Between 30% and 100% of edits are incremental, most often 90% or more; the rest add or rename names (a full build
+then, as before).
 
 ## Testing
 

@@ -11,6 +11,7 @@ import dev.plca.frontend.st.ProjectLoader;
 import dev.plca.frontend.st.SyntaxCodes;
 import dev.plca.frontend.st.kit.Frontend;
 import dev.plca.frontend.st.kit.Frontends;
+import dev.plca.semantic.ModelPrinter;
 import dev.plca.semantic.SemanticBuilder;
 import dev.plca.semantic.SemanticModel;
 import java.io.IOException;
@@ -42,6 +43,11 @@ public final class Workspace {
             diagnostics = List.copyOf(diagnostics);
         }
     }
+
+    /** {@code -Dplca.model.verify=true}: every incremental model is checked against a full build (slow; for tests). */
+    private static final boolean VERIFY = Boolean.getBoolean("plca.model.verify");
+
+    private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(Workspace.class.getName());
 
     private final Path root;
     private final Frontends frontends;
@@ -208,7 +214,18 @@ public final class Workspace {
                 groups.add(reused);
             } else {
                 DiagnosticCollector d = new DiagnosticCollector();
-                SemanticModel model = SemanticBuilder.build(g, d, last == null ? null : last.similarGroup(g));
+                SemanticModel model = SemanticBuilder.buildForEditing(g, d, last == null ? null : last.similarGroup(g));
+                if (VERIFY && model.buildInfo().incremental()) {
+                    DiagnosticCollector fd = new DiagnosticCollector();
+                    SemanticModel full = SemanticBuilder.build(g, fd);
+                    SourceRegistry r = registry;
+                    if (!ModelPrinter.printAll(model, r::resolve).equals(ModelPrinter.printAll(full, r::resolve))) {
+                        LOG.warning("plca: the incremental model differs from a full build (" + model.buildInfo()
+                                + "); using the full build");
+                        model = full;
+                        d = fd;
+                    }
+                }
                 groups.add(new Snapshot.Group(g, model, d.diagnostics()));
             }
         }

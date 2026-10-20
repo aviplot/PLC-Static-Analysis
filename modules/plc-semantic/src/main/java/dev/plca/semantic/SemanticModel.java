@@ -35,6 +35,17 @@ public final class SemanticModel {
         }
     }
 
+    /**
+     * How a model was built. {@code incremental}: from the previous model, declaring {@code declared} and binding
+     * {@code bound} of {@code units} units again; otherwise a full build, with {@code reason} saying why when an
+     * incremental one was asked for.
+     */
+    public record BuildInfo(boolean incremental, int units, int declared, int bound, String reason) {
+        static BuildInfo full(int units, String reason) {
+            return new BuildInfo(false, units, units, units, reason);
+        }
+    }
+
     final List<SourceUnit> units;
     final GlobalScope global;
     final List<PouSymbol> pous = new ArrayList<>();
@@ -44,6 +55,14 @@ public final class SemanticModel {
     final Map<Statement, Effects> effects;
     final Map<Statement, PouSymbol> owners;
     final List<Expression> unresolved = new ArrayList<>();
+    /** Unresolved names per binding owner (a POU or member, a global variable), assembled into {@link #unresolved}. */
+    final Map<Object, List<Expression>> unresolvedBy;
+    /** Per unit, in unit order, when built for incremental rebuilds; null otherwise. */
+    Map<String, UnitState> states;
+    /** With {@link #states}: which unit declared each type, variable list and global variable. */
+    Map<Object, UnitState> declaredBy;
+
+    BuildInfo buildInfo;
     final CallGraph callGraph = new CallGraph();
     InstanceGraph instanceGraph = new InstanceGraph();
     TaskModel taskModel;
@@ -66,6 +85,21 @@ public final class SemanticModel {
         this.parameters = new IdentityHashMap<>(like == null ? 32 : like.parameters.size());
         this.effects = new IdentityHashMap<>(like == null ? 32 : like.effects.size());
         this.owners = new IdentityHashMap<>(like == null ? 32 : like.owners.size());
+        this.unresolvedBy = new IdentityHashMap<>();
+    }
+
+    /** A model starting from copies of {@code previous}'s side tables (an incremental build). */
+    @SuppressWarnings("unchecked")
+    SemanticModel(List<SourceUnit> units, GlobalScope global, SemanticModel previous, boolean copyTables) {
+        this.units = List.copyOf(units);
+        this.global = global;
+        this.symbols = (Map<Expression, Symbol>) ((IdentityHashMap<Expression, Symbol>) previous.symbols).clone();
+        this.types = (Map<Expression, Type>) ((IdentityHashMap<Expression, Type>) previous.types).clone();
+        this.parameters = (Map<Expression.Argument, VariableSymbol>)
+                ((IdentityHashMap<Expression.Argument, VariableSymbol>) previous.parameters).clone();
+        this.effects = (Map<Statement, Effects>) ((IdentityHashMap<Statement, Effects>) previous.effects).clone();
+        this.owners = (Map<Statement, PouSymbol>) ((IdentityHashMap<Statement, PouSymbol>) previous.owners).clone();
+        this.unresolvedBy = new IdentityHashMap<>(previous.unresolvedBy);
     }
 
     public List<SourceUnit> units() {
@@ -149,6 +183,30 @@ public final class SemanticModel {
 
     public ResolutionStats resolutionStats() {
         return stats;
+    }
+
+    /** Whether this model was built incrementally, and how much of it was redone. */
+    public BuildInfo buildInfo() {
+        return buildInfo;
+    }
+
+    /** Collects the unresolved names of every owner in binding order: POUs in order, then global variables. */
+    void assembleUnresolved() {
+        unresolved.clear();
+        for (PouSymbol p : pous) {
+            List<Expression> l = unresolvedBy.get(p);
+            if (l != null) {
+                unresolved.addAll(l);
+            }
+        }
+        for (GvlSymbol g : global.gvls()) {
+            for (VariableSymbol v : g.variables().values()) {
+                List<Expression> l = unresolvedBy.get(v);
+                if (l != null) {
+                    unresolved.addAll(l);
+                }
+            }
+        }
     }
 
     /** Names (NameRef) and member accesses that could not be bound, in body order. */
