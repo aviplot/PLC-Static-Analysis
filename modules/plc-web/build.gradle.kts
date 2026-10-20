@@ -15,3 +15,10 @@ dependencies {
     testImplementation(testFixtures(project(":plc-core")))
     testImplementation(libs.jazzer.junit)
 }
+
+// The browser app, when built (./gradlew :editors:web:bundle): served from the jar under dev/plca/web/static.
+val webDist = rootProject.layout.projectDirectory.dir("editors/web/dist")
+tasks.processResources {
+    inputs.files(fileTree(webDist)).withPropertyName("webDist").optional()
+    from(webDist) { into("dev/plca/web/static") }
+}

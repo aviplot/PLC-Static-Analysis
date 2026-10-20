@@ -36,3 +36,5 @@ listOf(
 
 // VS Code extension (M8): npm-driven, not part of `build` (Node is needed only for these tasks).
 include("editors:vscode")
+// Web workbench app (M9): npm-driven as well; plc-web packs its dist/ when it has been built.
+include("editors:web")

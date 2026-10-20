@@ -1,4 +1,5 @@
-"""Generates the TextMate grammars in syntaxes/ (run: python3 scripts/grammars.py). Keyword lists live here once."""
+"""Generates the TextMate grammars in syntaxes/ and the Monaco (Monarch) tokenizers of the web workbench in
+../web/src/generated/monarch.json (run: python3 scripts/grammars.py). Keyword lists live here once."""
 import json
 import pathlib
 
@@ -171,3 +172,141 @@ l5x = xml_with_cdata("Rockwell L5X export", "text.xml.l5x", [("Text", "source.ro
 for file, grammar in [("iec-st", st), ("siemens-scl", scl), ("rockwell-rll", rll), ("twincat", twincat), ("l5x", l5x)]:
     (OUT / f"{file}.tmLanguage.json").write_text(json.dumps(grammar, indent=2) + "\n")
     print("wrote", file)
+
+
+# ---- Monarch (Monaco) tokenizers for editors/web ------------------------------------------------------------------
+# Same keyword lists; Monarch regexes are JavaScript sources (no inline flags: ignoreCase covers case).
+
+DURATION = r"(?:LTIME|LT|TIME|T)#[+-]?(?:[0-9_.]+(?:d|h|ms|m|s|us|ns))+"
+DATE_TIME = r"(?:LDATE_AND_TIME|DATE_AND_TIME|LDT|DT)#\d{4}-\d{1,2}-\d{1,2}-\d{1,2}:\d{1,2}(?::\d{1,2}(?:\.\d+)?)?"
+DATE = r"(?:LDATE|DATE|D)#\d{4}-\d{1,2}-\d{1,2}"
+TOD = r"(?:LTIME_OF_DAY|TIME_OF_DAY|LTOD|TOD)#\d{1,2}:\d{1,2}(?::\d{1,2}(?:\.\d+)?)?"
+
+
+def monarch_st(extra_root=(), extra_words=()):
+    return {
+        "ignoreCase": True,
+        "defaultToken": "",
+        "control": CONTROL,
+        "vars": VAR,
+        "declarations": DECLARATION + list(extra_words),
+        "modifiers": MODIFIER,
+        "types": TYPES,
+        "wordops": OPERATORS,
+        "constants": CONSTANTS,
+        "self": SELF,
+        "tokenizer": {
+            "root": list(extra_root) + [
+                [r"\(\*", "comment", "@comment"],
+                [r"/\*", "comment", "@ccomment"],
+                [r"//.*$", "comment"],
+                [r"\{", "metatag", "@pragma"],
+                ["'", "string", "@sq"],
+                ['"', "string", "@dq"],
+                [r"\b(?:" + DURATION + "|" + DATE_TIME + "|" + DATE + "|" + TOD + r")", "number"],
+                [r"\b(?:[A-Z_]+#)?(?:2|8|16)#[0-9A-F_]+\b", "number.hex"],
+                [r"\b(?:[A-Z_]+#)?\d[\d_]*(?:\.\d[\d_]*)?(?:E[+-]?\d+)?\b", "number"],
+                [r"%[IQM](?:\*|[XBWDL]?\d+(?:\.\d+)*)", "variable.predefined"],
+                [r"[A-Z_][A-Z0-9_]*", {"cases": {
+                    "@control": "keyword",
+                    "@vars": "keyword",
+                    "@declarations": "keyword",
+                    "@modifiers": "keyword",
+                    "@types": "type",
+                    "@wordops": "keyword",
+                    "@constants": "constant",
+                    "@self": "variable.predefined",
+                    "@default": "identifier",
+                }}],
+                [r":=|=>|\?=|<>|<=|>=|\*\*|[<>=+\-*/&^]", "operator"],
+                [r"[;,.:()\[\]]", "delimiter"],
+            ],
+            # IEC block comments nest in CODESYS: (* a (* b *) c *)
+            "comment": [[r"\(\*", "comment", "@push"], [r"\*\)", "comment", "@pop"], [r"[^(*]+", "comment"],
+                        [r"[(*]", "comment"]],
+            "ccomment": [[r"\*/", "comment", "@pop"], [r"[^*]+", "comment"], [r"\*", "comment"]],
+            "pragma": [[r"\}", "metatag", "@pop"], [r"[^}]+", "metatag"]],
+            "sq": [[r"\$.", "string.escape"], ["'", "string", "@pop"], [r"[^'$]+", "string"]],
+            "dq": [[r"\$.", "string.escape"], ['"', "string", "@pop"], [r"[^\"$]+", "string"]],
+        },
+    }
+
+
+monarch = {
+    "iec-st": monarch_st(),
+    # SCL: "Motor_DB".speed are names, #local variables, absolute DB addresses
+    "siemens-scl": monarch_st(extra_root=[
+        [r"\(\*", "comment", "@comment"],
+        [r"\{", "metatag", "@pragma"],
+        ['"[^"\\r\\n]*"', "variable"],
+        [r'#(?:[A-Z_][A-Z0-9_]*|"[^"\r\n]*")', "variable.parameter"],
+        [r"%(?:DB\d+\.DB[XBWD]\d+(?:\.\d+)?|[IQM][XBWD]?\d+(?:\.\d+)?)", "variable.predefined"],
+    ], extra_words=SCL_BLOCKS),
+    "rockwell-rll": {
+        "defaultToken": "",
+        "tokenizer": {"root": [
+            [r"[A-Za-z_][A-Za-z0-9_]*(?=\s*\()", "keyword"],
+            [r"[\[\],]", "delimiter.bracket"],
+            [r"\?", "constant"],
+            [r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b", "number"],
+            [r"\\[A-Za-z_][A-Za-z0-9_]*", "variable.predefined"],
+            [r"[A-Za-z_][A-Za-z0-9_:]*", "identifier"],
+            [r"[;()]", "delimiter"],
+        ]},
+    },
+}
+
+
+def monarch_xml(code):
+    """XML whose code elements (regex -> embedded language id) hold their code in CDATA sections."""
+    tag = [
+        [r"[\w:.-]+", "attribute.name"],
+        ["=", "delimiter"],
+        ['"[^"]*"', "attribute.value"],
+        ["'[^']*'", "attribute.value"],
+        [r"/?>", "delimiter", "@pop"],
+        [r"\s+", ""],
+    ]
+    tokenizer = {
+        "root": [
+            [r"<!--", "comment", "@xmlcomment"],
+            [r"<\?", "metatag", "@pi"],
+            [r"<!\[CDATA\[", "delimiter.cdata", "@cdata"],
+        ] + [
+            # the element names its language: the codetag state's argument ($S2)
+            [r"(<)(" + element + r")(?=[\s/>])", ["delimiter", {"token": "tag", "next": "@codetag." + language}]]
+            for element, language in code.items()
+        ] + [
+            [r"(<)([\w:.-]+)", ["delimiter", {"token": "tag", "next": "@tag"}]],
+            [r"(</)([\w:.-]+)(\s*)(>)", ["delimiter", "tag", "", "delimiter"]],
+            [r"&\w+;|&#\w+;", "string.escape"],
+            [r"[^<&]+", ""],
+        ],
+        "tag": tag,
+        "codetag": [r for r in tag if r[0] != r"/?>"] + [["/>", "delimiter", "@pop"],
+                                                          [">", {"token": "delimiter", "switchTo": "@code.$S2"}]],
+        "code": [
+            [r"<!\[CDATA\[", {"token": "delimiter.cdata", "next": "@embedded.$S2", "nextEmbedded": "$S2"}],
+            [r"\]\]>", "delimiter.cdata"],
+            [r"(</)([\w:.-]+)(\s*)(>)", ["delimiter", "tag", "", {"token": "delimiter", "next": "@pop"}]],
+            [r"[^<\]]+", ""],
+            [r"[<\]]", ""],
+        ],
+        "embedded": [[r"\]\]>", {"token": "@rematch", "next": "@pop", "nextEmbedded": "@pop"}]],
+        "cdata": [[r"\]\]>", "delimiter.cdata", "@pop"], [r"[^\]]+", "string"], [r"\]", "string"]],
+        "xmlcomment": [[r"-->", "comment", "@pop"], [r"[^-]+", "comment"], ["-", "comment"]],
+        "pi": [[r"\?>", "metatag", "@pop"], [r"[^?]+", "metatag"], [r"\?", "metatag"]],
+    }
+    return {"defaultToken": "", "tokenizer": tokenizer}
+
+
+twincat_m = monarch_xml({"Declaration": "iec-st", "ST": "iec-st"})
+l5x_m = monarch_xml({"Text": "rockwell-rll", "Line": "iec-st"})
+monarch["twincat-xml"] = twincat_m
+monarch["rockwell-l5x"] = l5x_m
+monarch["plcopen-xml"] = monarch_xml({"xhtml:p": "iec-st", "p": "iec-st"})
+
+WEB = pathlib.Path(__file__).resolve().parent.parent.parent / "web" / "src" / "generated"
+WEB.mkdir(parents=True, exist_ok=True)
+(WEB / "monarch.json").write_text(json.dumps(monarch, indent=1) + "\n")
+print("wrote", WEB / "monarch.json")

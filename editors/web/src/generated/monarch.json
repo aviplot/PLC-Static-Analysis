@@ -1,0 +1,1384 @@
+{
+ "iec-st": {
+  "ignoreCase": true,
+  "defaultToken": "",
+  "control": [
+   "IF",
+   "THEN",
+   "ELSIF",
+   "ELSE",
+   "END_IF",
+   "CASE",
+   "OF",
+   "END_CASE",
+   "FOR",
+   "TO",
+   "BY",
+   "DO",
+   "END_FOR",
+   "WHILE",
+   "END_WHILE",
+   "REPEAT",
+   "UNTIL",
+   "END_REPEAT",
+   "EXIT",
+   "CONTINUE",
+   "RETURN",
+   "JMP",
+   "__TRY",
+   "__CATCH",
+   "__FINALLY",
+   "__ENDTRY"
+  ],
+  "vars": [
+   "VAR",
+   "VAR_INPUT",
+   "VAR_OUTPUT",
+   "VAR_IN_OUT",
+   "VAR_GLOBAL",
+   "VAR_EXTERNAL",
+   "VAR_TEMP",
+   "VAR_STAT",
+   "VAR_INST",
+   "VAR_CONFIG",
+   "VAR_ACCESS",
+   "END_VAR"
+  ],
+  "declarations": [
+   "PROGRAM",
+   "END_PROGRAM",
+   "FUNCTION_BLOCK",
+   "END_FUNCTION_BLOCK",
+   "FUNCTION",
+   "END_FUNCTION",
+   "METHOD",
+   "END_METHOD",
+   "PROPERTY",
+   "END_PROPERTY",
+   "GET",
+   "END_GET",
+   "SET",
+   "END_SET",
+   "INTERFACE",
+   "END_INTERFACE",
+   "ACTION",
+   "END_ACTION",
+   "TRANSITION",
+   "END_TRANSITION",
+   "CLASS",
+   "END_CLASS",
+   "TYPE",
+   "END_TYPE",
+   "STRUCT",
+   "END_STRUCT",
+   "UNION",
+   "END_UNION",
+   "NAMESPACE",
+   "END_NAMESPACE",
+   "USING",
+   "CONFIGURATION",
+   "END_CONFIGURATION",
+   "RESOURCE",
+   "END_RESOURCE",
+   "TASK",
+   "WITH",
+   "ON",
+   "EXTENDS",
+   "IMPLEMENTS",
+   "STEP",
+   "END_STEP",
+   "INITIAL_STEP",
+   "FROM"
+  ],
+  "modifiers": [
+   "CONSTANT",
+   "RETAIN",
+   "NON_RETAIN",
+   "PERSISTENT",
+   "AT",
+   "ABSTRACT",
+   "FINAL",
+   "OVERRIDE",
+   "PUBLIC",
+   "PRIVATE",
+   "PROTECTED",
+   "INTERNAL",
+   "READ_ONLY",
+   "READ_WRITE"
+  ],
+  "types": [
+   "BOOL",
+   "BIT",
+   "BYTE",
+   "WORD",
+   "DWORD",
+   "LWORD",
+   "SINT",
+   "INT",
+   "DINT",
+   "LINT",
+   "USINT",
+   "UINT",
+   "UDINT",
+   "ULINT",
+   "REAL",
+   "LREAL",
+   "TIME",
+   "LTIME",
+   "DATE",
+   "LDATE",
+   "TIME_OF_DAY",
+   "TOD",
+   "LTIME_OF_DAY",
+   "LTOD",
+   "DATE_AND_TIME",
+   "DT",
+   "LDATE_AND_TIME",
+   "LDT",
+   "STRING",
+   "WSTRING",
+   "CHAR",
+   "WCHAR",
+   "ARRAY",
+   "POINTER",
+   "REFERENCE",
+   "REF_TO",
+   "ANY",
+   "ANY_NUM",
+   "ANY_INT",
+   "ANY_REAL",
+   "ANY_BIT",
+   "ANY_STRING",
+   "ANY_DATE",
+   "__XWORD",
+   "__UXINT",
+   "__XINT",
+   "XWORD",
+   "PVOID"
+  ],
+  "wordops": [
+   "AND",
+   "OR",
+   "XOR",
+   "NOT",
+   "MOD",
+   "AND_THEN",
+   "OR_ELSE"
+  ],
+  "constants": [
+   "TRUE",
+   "FALSE",
+   "NULL"
+  ],
+  "self": [
+   "THIS",
+   "SUPER"
+  ],
+  "tokenizer": {
+   "root": [
+    [
+     "\\(\\*",
+     "comment",
+     "@comment"
+    ],
+    [
+     "/\\*",
+     "comment",
+     "@ccomment"
+    ],
+    [
+     "//.*$",
+     "comment"
+    ],
+    [
+     "\\{",
+     "metatag",
+     "@pragma"
+    ],
+    [
+     "'",
+     "string",
+     "@sq"
+    ],
+    [
+     "\"",
+     "string",
+     "@dq"
+    ],
+    [
+     "\\b(?:(?:LTIME|LT|TIME|T)#[+-]?(?:[0-9_.]+(?:d|h|ms|m|s|us|ns))+|(?:LDATE_AND_TIME|DATE_AND_TIME|LDT|DT)#\\d{4}-\\d{1,2}-\\d{1,2}-\\d{1,2}:\\d{1,2}(?::\\d{1,2}(?:\\.\\d+)?)?|(?:LDATE|DATE|D)#\\d{4}-\\d{1,2}-\\d{1,2}|(?:LTIME_OF_DAY|TIME_OF_DAY|LTOD|TOD)#\\d{1,2}:\\d{1,2}(?::\\d{1,2}(?:\\.\\d+)?)?)",
+     "number"
+    ],
+    [
+     "\\b(?:[A-Z_]+#)?(?:2|8|16)#[0-9A-F_]+\\b",
+     "number.hex"
+    ],
+    [
+     "\\b(?:[A-Z_]+#)?\\d[\\d_]*(?:\\.\\d[\\d_]*)?(?:E[+-]?\\d+)?\\b",
+     "number"
+    ],
+    [
+     "%[IQM](?:\\*|[XBWDL]?\\d+(?:\\.\\d+)*)",
+     "variable.predefined"
+    ],
+    [
+     "[A-Z_][A-Z0-9_]*",
+     {
+      "cases": {
+       "@control": "keyword",
+       "@vars": "keyword",
+       "@declarations": "keyword",
+       "@modifiers": "keyword",
+       "@types": "type",
+       "@wordops": "keyword",
+       "@constants": "constant",
+       "@self": "variable.predefined",
+       "@default": "identifier"
+      }
+     }
+    ],
+    [
+     ":=|=>|\\?=|<>|<=|>=|\\*\\*|[<>=+\\-*/&^]",
+     "operator"
+    ],
+    [
+     "[;,.:()\\[\\]]",
+     "delimiter"
+    ]
+   ],
+   "comment": [
+    [
+     "\\(\\*",
+     "comment",
+     "@push"
+    ],
+    [
+     "\\*\\)",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^(*]+",
+     "comment"
+    ],
+    [
+     "[(*]",
+     "comment"
+    ]
+   ],
+   "ccomment": [
+    [
+     "\\*/",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^*]+",
+     "comment"
+    ],
+    [
+     "\\*",
+     "comment"
+    ]
+   ],
+   "pragma": [
+    [
+     "\\}",
+     "metatag",
+     "@pop"
+    ],
+    [
+     "[^}]+",
+     "metatag"
+    ]
+   ],
+   "sq": [
+    [
+     "\\$.",
+     "string.escape"
+    ],
+    [
+     "'",
+     "string",
+     "@pop"
+    ],
+    [
+     "[^'$]+",
+     "string"
+    ]
+   ],
+   "dq": [
+    [
+     "\\$.",
+     "string.escape"
+    ],
+    [
+     "\"",
+     "string",
+     "@pop"
+    ],
+    [
+     "[^\\\"$]+",
+     "string"
+    ]
+   ]
+  }
+ },
+ "siemens-scl": {
+  "ignoreCase": true,
+  "defaultToken": "",
+  "control": [
+   "IF",
+   "THEN",
+   "ELSIF",
+   "ELSE",
+   "END_IF",
+   "CASE",
+   "OF",
+   "END_CASE",
+   "FOR",
+   "TO",
+   "BY",
+   "DO",
+   "END_FOR",
+   "WHILE",
+   "END_WHILE",
+   "REPEAT",
+   "UNTIL",
+   "END_REPEAT",
+   "EXIT",
+   "CONTINUE",
+   "RETURN",
+   "JMP",
+   "__TRY",
+   "__CATCH",
+   "__FINALLY",
+   "__ENDTRY"
+  ],
+  "vars": [
+   "VAR",
+   "VAR_INPUT",
+   "VAR_OUTPUT",
+   "VAR_IN_OUT",
+   "VAR_GLOBAL",
+   "VAR_EXTERNAL",
+   "VAR_TEMP",
+   "VAR_STAT",
+   "VAR_INST",
+   "VAR_CONFIG",
+   "VAR_ACCESS",
+   "END_VAR"
+  ],
+  "declarations": [
+   "PROGRAM",
+   "END_PROGRAM",
+   "FUNCTION_BLOCK",
+   "END_FUNCTION_BLOCK",
+   "FUNCTION",
+   "END_FUNCTION",
+   "METHOD",
+   "END_METHOD",
+   "PROPERTY",
+   "END_PROPERTY",
+   "GET",
+   "END_GET",
+   "SET",
+   "END_SET",
+   "INTERFACE",
+   "END_INTERFACE",
+   "ACTION",
+   "END_ACTION",
+   "TRANSITION",
+   "END_TRANSITION",
+   "CLASS",
+   "END_CLASS",
+   "TYPE",
+   "END_TYPE",
+   "STRUCT",
+   "END_STRUCT",
+   "UNION",
+   "END_UNION",
+   "NAMESPACE",
+   "END_NAMESPACE",
+   "USING",
+   "CONFIGURATION",
+   "END_CONFIGURATION",
+   "RESOURCE",
+   "END_RESOURCE",
+   "TASK",
+   "WITH",
+   "ON",
+   "EXTENDS",
+   "IMPLEMENTS",
+   "STEP",
+   "END_STEP",
+   "INITIAL_STEP",
+   "FROM",
+   "ORGANIZATION_BLOCK",
+   "END_ORGANIZATION_BLOCK",
+   "DATA_BLOCK",
+   "END_DATA_BLOCK",
+   "BEGIN",
+   "REGION",
+   "END_REGION",
+   "TITLE",
+   "VERSION",
+   "AUTHOR",
+   "FAMILY",
+   "NAME",
+   "KNOW_HOW_PROTECT",
+   "NON_RETAIN",
+   "DB_SPECIFIC",
+   "GOTO",
+   "UNLINKED",
+   "S7_Optimized_Access"
+  ],
+  "modifiers": [
+   "CONSTANT",
+   "RETAIN",
+   "NON_RETAIN",
+   "PERSISTENT",
+   "AT",
+   "ABSTRACT",
+   "FINAL",
+   "OVERRIDE",
+   "PUBLIC",
+   "PRIVATE",
+   "PROTECTED",
+   "INTERNAL",
+   "READ_ONLY",
+   "READ_WRITE"
+  ],
+  "types": [
+   "BOOL",
+   "BIT",
+   "BYTE",
+   "WORD",
+   "DWORD",
+   "LWORD",
+   "SINT",
+   "INT",
+   "DINT",
+   "LINT",
+   "USINT",
+   "UINT",
+   "UDINT",
+   "ULINT",
+   "REAL",
+   "LREAL",
+   "TIME",
+   "LTIME",
+   "DATE",
+   "LDATE",
+   "TIME_OF_DAY",
+   "TOD",
+   "LTIME_OF_DAY",
+   "LTOD",
+   "DATE_AND_TIME",
+   "DT",
+   "LDATE_AND_TIME",
+   "LDT",
+   "STRING",
+   "WSTRING",
+   "CHAR",
+   "WCHAR",
+   "ARRAY",
+   "POINTER",
+   "REFERENCE",
+   "REF_TO",
+   "ANY",
+   "ANY_NUM",
+   "ANY_INT",
+   "ANY_REAL",
+   "ANY_BIT",
+   "ANY_STRING",
+   "ANY_DATE",
+   "__XWORD",
+   "__UXINT",
+   "__XINT",
+   "XWORD",
+   "PVOID"
+  ],
+  "wordops": [
+   "AND",
+   "OR",
+   "XOR",
+   "NOT",
+   "MOD",
+   "AND_THEN",
+   "OR_ELSE"
+  ],
+  "constants": [
+   "TRUE",
+   "FALSE",
+   "NULL"
+  ],
+  "self": [
+   "THIS",
+   "SUPER"
+  ],
+  "tokenizer": {
+   "root": [
+    [
+     "\\(\\*",
+     "comment",
+     "@comment"
+    ],
+    [
+     "\\{",
+     "metatag",
+     "@pragma"
+    ],
+    [
+     "\"[^\"\\r\\n]*\"",
+     "variable"
+    ],
+    [
+     "#(?:[A-Z_][A-Z0-9_]*|\"[^\"\\r\\n]*\")",
+     "variable.parameter"
+    ],
+    [
+     "%(?:DB\\d+\\.DB[XBWD]\\d+(?:\\.\\d+)?|[IQM][XBWD]?\\d+(?:\\.\\d+)?)",
+     "variable.predefined"
+    ],
+    [
+     "\\(\\*",
+     "comment",
+     "@comment"
+    ],
+    [
+     "/\\*",
+     "comment",
+     "@ccomment"
+    ],
+    [
+     "//.*$",
+     "comment"
+    ],
+    [
+     "\\{",
+     "metatag",
+     "@pragma"
+    ],
+    [
+     "'",
+     "string",
+     "@sq"
+    ],
+    [
+     "\"",
+     "string",
+     "@dq"
+    ],
+    [
+     "\\b(?:(?:LTIME|LT|TIME|T)#[+-]?(?:[0-9_.]+(?:d|h|ms|m|s|us|ns))+|(?:LDATE_AND_TIME|DATE_AND_TIME|LDT|DT)#\\d{4}-\\d{1,2}-\\d{1,2}-\\d{1,2}:\\d{1,2}(?::\\d{1,2}(?:\\.\\d+)?)?|(?:LDATE|DATE|D)#\\d{4}-\\d{1,2}-\\d{1,2}|(?:LTIME_OF_DAY|TIME_OF_DAY|LTOD|TOD)#\\d{1,2}:\\d{1,2}(?::\\d{1,2}(?:\\.\\d+)?)?)",
+     "number"
+    ],
+    [
+     "\\b(?:[A-Z_]+#)?(?:2|8|16)#[0-9A-F_]+\\b",
+     "number.hex"
+    ],
+    [
+     "\\b(?:[A-Z_]+#)?\\d[\\d_]*(?:\\.\\d[\\d_]*)?(?:E[+-]?\\d+)?\\b",
+     "number"
+    ],
+    [
+     "%[IQM](?:\\*|[XBWDL]?\\d+(?:\\.\\d+)*)",
+     "variable.predefined"
+    ],
+    [
+     "[A-Z_][A-Z0-9_]*",
+     {
+      "cases": {
+       "@control": "keyword",
+       "@vars": "keyword",
+       "@declarations": "keyword",
+       "@modifiers": "keyword",
+       "@types": "type",
+       "@wordops": "keyword",
+       "@constants": "constant",
+       "@self": "variable.predefined",
+       "@default": "identifier"
+      }
+     }
+    ],
+    [
+     ":=|=>|\\?=|<>|<=|>=|\\*\\*|[<>=+\\-*/&^]",
+     "operator"
+    ],
+    [
+     "[;,.:()\\[\\]]",
+     "delimiter"
+    ]
+   ],
+   "comment": [
+    [
+     "\\(\\*",
+     "comment",
+     "@push"
+    ],
+    [
+     "\\*\\)",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^(*]+",
+     "comment"
+    ],
+    [
+     "[(*]",
+     "comment"
+    ]
+   ],
+   "ccomment": [
+    [
+     "\\*/",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^*]+",
+     "comment"
+    ],
+    [
+     "\\*",
+     "comment"
+    ]
+   ],
+   "pragma": [
+    [
+     "\\}",
+     "metatag",
+     "@pop"
+    ],
+    [
+     "[^}]+",
+     "metatag"
+    ]
+   ],
+   "sq": [
+    [
+     "\\$.",
+     "string.escape"
+    ],
+    [
+     "'",
+     "string",
+     "@pop"
+    ],
+    [
+     "[^'$]+",
+     "string"
+    ]
+   ],
+   "dq": [
+    [
+     "\\$.",
+     "string.escape"
+    ],
+    [
+     "\"",
+     "string",
+     "@pop"
+    ],
+    [
+     "[^\\\"$]+",
+     "string"
+    ]
+   ]
+  }
+ },
+ "rockwell-rll": {
+  "defaultToken": "",
+  "tokenizer": {
+   "root": [
+    [
+     "[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()",
+     "keyword"
+    ],
+    [
+     "[\\[\\],]",
+     "delimiter.bracket"
+    ],
+    [
+     "\\?",
+     "constant"
+    ],
+    [
+     "[+-]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b",
+     "number"
+    ],
+    [
+     "\\\\[A-Za-z_][A-Za-z0-9_]*",
+     "variable.predefined"
+    ],
+    [
+     "[A-Za-z_][A-Za-z0-9_:]*",
+     "identifier"
+    ],
+    [
+     "[;()]",
+     "delimiter"
+    ]
+   ]
+  }
+ },
+ "twincat-xml": {
+  "defaultToken": "",
+  "tokenizer": {
+   "root": [
+    [
+     "<!--",
+     "comment",
+     "@xmlcomment"
+    ],
+    [
+     "<\\?",
+     "metatag",
+     "@pi"
+    ],
+    [
+     "<!\\[CDATA\\[",
+     "delimiter.cdata",
+     "@cdata"
+    ],
+    [
+     "(<)(Declaration)(?=[\\s/>])",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@codetag.iec-st"
+      }
+     ]
+    ],
+    [
+     "(<)(ST)(?=[\\s/>])",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@codetag.iec-st"
+      }
+     ]
+    ],
+    [
+     "(<)([\\w:.-]+)",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@tag"
+      }
+     ]
+    ],
+    [
+     "(</)([\\w:.-]+)(\\s*)(>)",
+     [
+      "delimiter",
+      "tag",
+      "",
+      "delimiter"
+     ]
+    ],
+    [
+     "&\\w+;|&#\\w+;",
+     "string.escape"
+    ],
+    [
+     "[^<&]+",
+     ""
+    ]
+   ],
+   "tag": [
+    [
+     "[\\w:.-]+",
+     "attribute.name"
+    ],
+    [
+     "=",
+     "delimiter"
+    ],
+    [
+     "\"[^\"]*\"",
+     "attribute.value"
+    ],
+    [
+     "'[^']*'",
+     "attribute.value"
+    ],
+    [
+     "/?>",
+     "delimiter",
+     "@pop"
+    ],
+    [
+     "\\s+",
+     ""
+    ]
+   ],
+   "codetag": [
+    [
+     "[\\w:.-]+",
+     "attribute.name"
+    ],
+    [
+     "=",
+     "delimiter"
+    ],
+    [
+     "\"[^\"]*\"",
+     "attribute.value"
+    ],
+    [
+     "'[^']*'",
+     "attribute.value"
+    ],
+    [
+     "\\s+",
+     ""
+    ],
+    [
+     "/>",
+     "delimiter",
+     "@pop"
+    ],
+    [
+     ">",
+     {
+      "token": "delimiter",
+      "switchTo": "@code.$S2"
+     }
+    ]
+   ],
+   "code": [
+    [
+     "<!\\[CDATA\\[",
+     {
+      "token": "delimiter.cdata",
+      "next": "@embedded.$S2",
+      "nextEmbedded": "$S2"
+     }
+    ],
+    [
+     "\\]\\]>",
+     "delimiter.cdata"
+    ],
+    [
+     "(</)([\\w:.-]+)(\\s*)(>)",
+     [
+      "delimiter",
+      "tag",
+      "",
+      {
+       "token": "delimiter",
+       "next": "@pop"
+      }
+     ]
+    ],
+    [
+     "[^<\\]]+",
+     ""
+    ],
+    [
+     "[<\\]]",
+     ""
+    ]
+   ],
+   "embedded": [
+    [
+     "\\]\\]>",
+     {
+      "token": "@rematch",
+      "next": "@pop",
+      "nextEmbedded": "@pop"
+     }
+    ]
+   ],
+   "cdata": [
+    [
+     "\\]\\]>",
+     "delimiter.cdata",
+     "@pop"
+    ],
+    [
+     "[^\\]]+",
+     "string"
+    ],
+    [
+     "\\]",
+     "string"
+    ]
+   ],
+   "xmlcomment": [
+    [
+     "-->",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^-]+",
+     "comment"
+    ],
+    [
+     "-",
+     "comment"
+    ]
+   ],
+   "pi": [
+    [
+     "\\?>",
+     "metatag",
+     "@pop"
+    ],
+    [
+     "[^?]+",
+     "metatag"
+    ],
+    [
+     "\\?",
+     "metatag"
+    ]
+   ]
+  }
+ },
+ "rockwell-l5x": {
+  "defaultToken": "",
+  "tokenizer": {
+   "root": [
+    [
+     "<!--",
+     "comment",
+     "@xmlcomment"
+    ],
+    [
+     "<\\?",
+     "metatag",
+     "@pi"
+    ],
+    [
+     "<!\\[CDATA\\[",
+     "delimiter.cdata",
+     "@cdata"
+    ],
+    [
+     "(<)(Text)(?=[\\s/>])",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@codetag.rockwell-rll"
+      }
+     ]
+    ],
+    [
+     "(<)(Line)(?=[\\s/>])",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@codetag.iec-st"
+      }
+     ]
+    ],
+    [
+     "(<)([\\w:.-]+)",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@tag"
+      }
+     ]
+    ],
+    [
+     "(</)([\\w:.-]+)(\\s*)(>)",
+     [
+      "delimiter",
+      "tag",
+      "",
+      "delimiter"
+     ]
+    ],
+    [
+     "&\\w+;|&#\\w+;",
+     "string.escape"
+    ],
+    [
+     "[^<&]+",
+     ""
+    ]
+   ],
+   "tag": [
+    [
+     "[\\w:.-]+",
+     "attribute.name"
+    ],
+    [
+     "=",
+     "delimiter"
+    ],
+    [
+     "\"[^\"]*\"",
+     "attribute.value"
+    ],
+    [
+     "'[^']*'",
+     "attribute.value"
+    ],
+    [
+     "/?>",
+     "delimiter",
+     "@pop"
+    ],
+    [
+     "\\s+",
+     ""
+    ]
+   ],
+   "codetag": [
+    [
+     "[\\w:.-]+",
+     "attribute.name"
+    ],
+    [
+     "=",
+     "delimiter"
+    ],
+    [
+     "\"[^\"]*\"",
+     "attribute.value"
+    ],
+    [
+     "'[^']*'",
+     "attribute.value"
+    ],
+    [
+     "\\s+",
+     ""
+    ],
+    [
+     "/>",
+     "delimiter",
+     "@pop"
+    ],
+    [
+     ">",
+     {
+      "token": "delimiter",
+      "switchTo": "@code.$S2"
+     }
+    ]
+   ],
+   "code": [
+    [
+     "<!\\[CDATA\\[",
+     {
+      "token": "delimiter.cdata",
+      "next": "@embedded.$S2",
+      "nextEmbedded": "$S2"
+     }
+    ],
+    [
+     "\\]\\]>",
+     "delimiter.cdata"
+    ],
+    [
+     "(</)([\\w:.-]+)(\\s*)(>)",
+     [
+      "delimiter",
+      "tag",
+      "",
+      {
+       "token": "delimiter",
+       "next": "@pop"
+      }
+     ]
+    ],
+    [
+     "[^<\\]]+",
+     ""
+    ],
+    [
+     "[<\\]]",
+     ""
+    ]
+   ],
+   "embedded": [
+    [
+     "\\]\\]>",
+     {
+      "token": "@rematch",
+      "next": "@pop",
+      "nextEmbedded": "@pop"
+     }
+    ]
+   ],
+   "cdata": [
+    [
+     "\\]\\]>",
+     "delimiter.cdata",
+     "@pop"
+    ],
+    [
+     "[^\\]]+",
+     "string"
+    ],
+    [
+     "\\]",
+     "string"
+    ]
+   ],
+   "xmlcomment": [
+    [
+     "-->",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^-]+",
+     "comment"
+    ],
+    [
+     "-",
+     "comment"
+    ]
+   ],
+   "pi": [
+    [
+     "\\?>",
+     "metatag",
+     "@pop"
+    ],
+    [
+     "[^?]+",
+     "metatag"
+    ],
+    [
+     "\\?",
+     "metatag"
+    ]
+   ]
+  }
+ },
+ "plcopen-xml": {
+  "defaultToken": "",
+  "tokenizer": {
+   "root": [
+    [
+     "<!--",
+     "comment",
+     "@xmlcomment"
+    ],
+    [
+     "<\\?",
+     "metatag",
+     "@pi"
+    ],
+    [
+     "<!\\[CDATA\\[",
+     "delimiter.cdata",
+     "@cdata"
+    ],
+    [
+     "(<)(xhtml:p)(?=[\\s/>])",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@codetag.iec-st"
+      }
+     ]
+    ],
+    [
+     "(<)(p)(?=[\\s/>])",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@codetag.iec-st"
+      }
+     ]
+    ],
+    [
+     "(<)([\\w:.-]+)",
+     [
+      "delimiter",
+      {
+       "token": "tag",
+       "next": "@tag"
+      }
+     ]
+    ],
+    [
+     "(</)([\\w:.-]+)(\\s*)(>)",
+     [
+      "delimiter",
+      "tag",
+      "",
+      "delimiter"
+     ]
+    ],
+    [
+     "&\\w+;|&#\\w+;",
+     "string.escape"
+    ],
+    [
+     "[^<&]+",
+     ""
+    ]
+   ],
+   "tag": [
+    [
+     "[\\w:.-]+",
+     "attribute.name"
+    ],
+    [
+     "=",
+     "delimiter"
+    ],
+    [
+     "\"[^\"]*\"",
+     "attribute.value"
+    ],
+    [
+     "'[^']*'",
+     "attribute.value"
+    ],
+    [
+     "/?>",
+     "delimiter",
+     "@pop"
+    ],
+    [
+     "\\s+",
+     ""
+    ]
+   ],
+   "codetag": [
+    [
+     "[\\w:.-]+",
+     "attribute.name"
+    ],
+    [
+     "=",
+     "delimiter"
+    ],
+    [
+     "\"[^\"]*\"",
+     "attribute.value"
+    ],
+    [
+     "'[^']*'",
+     "attribute.value"
+    ],
+    [
+     "\\s+",
+     ""
+    ],
+    [
+     "/>",
+     "delimiter",
+     "@pop"
+    ],
+    [
+     ">",
+     {
+      "token": "delimiter",
+      "switchTo": "@code.$S2"
+     }
+    ]
+   ],
+   "code": [
+    [
+     "<!\\[CDATA\\[",
+     {
+      "token": "delimiter.cdata",
+      "next": "@embedded.$S2",
+      "nextEmbedded": "$S2"
+     }
+    ],
+    [
+     "\\]\\]>",
+     "delimiter.cdata"
+    ],
+    [
+     "(</)([\\w:.-]+)(\\s*)(>)",
+     [
+      "delimiter",
+      "tag",
+      "",
+      {
+       "token": "delimiter",
+       "next": "@pop"
+      }
+     ]
+    ],
+    [
+     "[^<\\]]+",
+     ""
+    ],
+    [
+     "[<\\]]",
+     ""
+    ]
+   ],
+   "embedded": [
+    [
+     "\\]\\]>",
+     {
+      "token": "@rematch",
+      "next": "@pop",
+      "nextEmbedded": "@pop"
+     }
+    ]
+   ],
+   "cdata": [
+    [
+     "\\]\\]>",
+     "delimiter.cdata",
+     "@pop"
+    ],
+    [
+     "[^\\]]+",
+     "string"
+    ],
+    [
+     "\\]",
+     "string"
+    ]
+   ],
+   "xmlcomment": [
+    [
+     "-->",
+     "comment",
+     "@pop"
+    ],
+    [
+     "[^-]+",
+     "comment"
+    ],
+    [
+     "-",
+     "comment"
+    ]
+   ],
+   "pi": [
+    [
+     "\\?>",
+     "metatag",
+     "@pop"
+    ],
+    [
+     "[^?]+",
+     "metatag"
+    ],
+    [
+     "\\?",
+     "metatag"
+    ]
+   ]
+  }
+ }
+}

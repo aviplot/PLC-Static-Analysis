@@ -43,6 +43,10 @@ final class WebCommand implements Callable<Integer> {
     @Option(names = "--open", description = "Open the workbench in the default browser.")
     boolean open;
 
+    // for the end-to-end tests: how long a project outlives its page
+    @Option(names = "--grace-seconds", hidden = true, defaultValue = "120")
+    int graceSeconds;
+
     /** Held so the level survives garbage collection of unreferenced loggers. */
     private static final java.util.logging.Logger JETTY = java.util.logging.Logger.getLogger("org.eclipse.jetty");
 
@@ -53,6 +57,7 @@ final class WebCommand implements Callable<Integer> {
         if (workDir != null) {
             o = o.withWorkDir(workDir);
         }
+        o = o.withLifetimes(java.time.Duration.ofSeconds(Math.max(1, graceSeconds)), o.idle());
         String t = token;
         if (t == null && !isLoopback(host)) {
             byte[] b = new byte[24];

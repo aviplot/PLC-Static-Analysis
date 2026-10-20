@@ -2,6 +2,7 @@
 # Local CI (no hosted CI yet): what a pipeline would run before merge.
 #   scripts/ci.sh          full build on JDK 21, tests again on JDK 25, harvester tests, VS Code extension
 #   PLCA_E2E=1 scripts/ci.sh   also the extension's smoke test in VS Code (opens a window; use xvfb-run headless)
+#                              and the web workbench's Playwright tests (headless Google Chrome)
 # Requires JDK 21 and 25 installed where Gradle can detect them (e.g. /usr/lib/jvm).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -33,8 +34,14 @@ if command -v npm >/dev/null; then
     echo "== VS Code extension: smoke test in VS Code"
     ./gradlew :editors:vscode:e2eTest
   fi
+  echo "== web workbench: typecheck, unit tests, bundle"
+  ./gradlew :editors:web:unitTest :editors:web:bundle
+  if [[ -n "${PLCA_E2E:-}" ]]; then
+    echo "== web workbench: end-to-end tests in Chrome"
+    ./gradlew :editors:web:e2eTest
+  fi
 else
-  echo "== VS Code extension skipped (no npm)"
+  echo "== VS Code extension and web workbench skipped (no npm)"
 fi
 
 echo "== CI OK"

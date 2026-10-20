@@ -1,0 +1,18 @@
+Third-party software in plca (server and command line)
+
+Licenses as declared in each artifact's Maven POM. Full license texts:
+Apache-2.0 https://www.apache.org/licenses/LICENSE-2.0
+EPL-2.0    https://www.eclipse.org/legal/epl-2.0/
+BSD-3-Clause, BSD-2-Clause, MIT: https://opensource.org/licenses
+
+ANTLR 4 runtime 4.13.2 ........................ BSD-3-Clause      https://www.antlr.org
+Eclipse Jetty 12.1.14 (server, websocket) ..... EPL-2.0 or Apache-2.0  https://jetty.org
+Eclipse LSP4J 1.0.0 (lsp4j, jsonrpc) .......... EPL-2.0           https://github.com/eclipse-lsp4j/lsp4j
+Gson 2.14.0 ................................... Apache-2.0        https://github.com/google/gson
+Error Prone annotations 2.48.0 ................ Apache-2.0        https://errorprone.info
+Jackson 3.2.3 (core, databind, YAML), annotations 2.22 ... Apache-2.0  https://github.com/FasterXML/jackson
+SnakeYAML Engine 3.0.1 ........................ Apache-2.0        https://bitbucket.org/snakeyaml/snakeyaml-engine
+Woodstox 7.3.0 ................................ Apache-2.0        https://github.com/FasterXML/woodstox
+Stax2 API 4.3.1 ............................... BSD-2-Clause      https://github.com/FasterXML/stax2-api
+picocli 4.7.7 ................................. Apache-2.0        https://picocli.info
+SLF4J 2.0.17 (api, jdk14) ..................... MIT               https://www.slf4j.org
