@@ -964,6 +964,23 @@ input.search {
   overflow-wrap: anywhere;
 }
 
+.diagram-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+}
+
+.diagram-list .empty {
+  padding: 8px 10px;
+}
+
+.diagram-body .earlier {
+  margin: 0 0 8px;
+}
+
 .diagram-list .n {
   color: var(--muted);
   font-size: 12px;

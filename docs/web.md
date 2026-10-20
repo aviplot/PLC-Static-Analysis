@@ -37,7 +37,9 @@ Without the bundle, `plca web` still starts and its page says how to build the a
    references, hover for declarations; the Outline tab lists the file's POUs, variables and types.
 3. **Ladder and diagrams** (L5X and PLCopen files): every routine or POU with a graphical body, rung by rung (pages of
    40 as you scroll). Elements with a finding are outlined in the finding's colour; hover shows the finding and the
-   operand's declaration; click goes to the text.
+   operand's declaration; click goes to the text. The list shows each routine's findings by severity, can hide the
+   routines without findings or put the ones with most findings first, and opens a routine at the rung of its first
+   finding (click it again to go back there; "Show earlier parts" loads the rungs above).
 4. **Edit to try a fix**: buffers are editable and analysed as you type. Edits are never written to the server;
    "Download edited files" gives a zip of the changed files, each in the encoding and with the BOM it was uploaded with
    (UTF-8, UTF-16, Windows-1252), so the IDE imports it as it exported it; line endings are kept. A file whose edits

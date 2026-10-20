@@ -28,8 +28,9 @@ tier), `fastDelayMs` (100), `fullDelayMs` (750), `maxFileSizeMb` (20). The root 
 | Highlighting (TextMate) | yes | XML + ST in `Declaration`/`ST` CDATA | yes | XML + rung text in `Text`, ST in `Line` | VS Code's XML |
 
 Workspace symbols: POUs, types and global variables of every model, matched by subsequence (`fbm` finds `FB_Motor`).
-Requests beyond LSP: `plca/diagrams {uri}` lists a file's ladder routines and LD/FBD bodies, `plca/diagram {uri, name,
-from, count}` draws a page of their rungs or networks as SVG (used by the web workbench, [web.md](web.md)).
+Requests beyond LSP: `plca/diagrams {uri}` lists a file's ladder routines and LD/FBD bodies with each one's text range,
+`plca/diagram {uri, name, from | at, count}` draws a page of their rungs or networks as SVG, from part `from` or from
+the part holding position `at` (used by the web workbench, [web.md](web.md)).
 Commands: `plca.analyzeWorkspace` (re-read everything from disk), `plca.ruleDoc` (server: a rule's Markdown), and in
 VS Code "Show documentation of PLCA-…" on every finding.
 

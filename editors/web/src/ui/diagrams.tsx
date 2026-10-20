@@ -2,10 +2,20 @@
 // Findings are drawn on the smallest element whose source range holds them; hover asks the language server, click
 // goes to the text.
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { LspClient } from '../lsp.ts';
-import { type Finding, type Range, contains, overlaps, parseRange, uriOf } from '../model.ts';
-import { Lamp } from './lamps.tsx';
+import {
+  type Finding,
+  type Position,
+  type Range,
+  SEVERITIES,
+  contains,
+  findingsIn,
+  overlaps,
+  parseRange,
+  uriOf,
+} from '../model.ts';
+import { CountLamps, Lamp } from './lamps.tsx';
 import { Markdown } from './markdown.tsx';
 
 interface DiagramInfo {
@@ -13,6 +23,7 @@ interface DiagramInfo {
   kind: string;
   language: string;
   parts: number;
+  range: Range;
 }
 
 interface Part {
@@ -41,7 +52,10 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [parts, setParts] = useState<Part[]>([]);
+  const [start, setStart] = useState(0);
   const [total, setTotal] = useState(0);
+  const [onlyWithFindings, setOnlyWithFindings] = useState(false);
+  const [byFindings, setByFindings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tip, setTip] = useState<Tip | null>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -66,24 +80,52 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
       .catch((e) => setError(String(e.message ?? e)));
   }, [lsp, path]);
 
-  const load = async (name: string, from: number, reset: boolean) => {
+  // findings per diagram, for the list's badges, its filter and sort, and the first finding to open at
+  const stats = useMemo(() => new Map((list ?? []).map((d) => [d.name, findingsIn(findings, d.range)])), [list, findings]);
+  const statsRef = useRef(stats);
+  statsRef.current = stats;
+  const shown = useMemo(() => {
+    let l = (list ?? []).filter((d) => !onlyWithFindings || (stats.get(d.name)?.total ?? 0) > 0);
+    if (byFindings) {
+      const weight = (name: string) => {
+        const c = stats.get(name)!.counts;
+        return SEVERITIES.map((s) => c[s]);
+      };
+      l = [...l].sort((a, b) => {
+        const wa = weight(a.name);
+        const wb = weight(b.name);
+        const i = wa.findIndex((x, k) => x !== wb[k]);
+        return i < 0 ? 0 : wb[i] - wa[i];
+      });
+    }
+    return l;
+  }, [list, stats, onlyWithFindings, byFindings]);
+
+  /** A page: from part {@code at} (a number), or from the part holding a position; appended, prepended or anew. */
+  const load = async (name: string, at: number | Position, mode: 'reset' | 'append' | 'prepend', count = PAGE) => {
     if (!lsp) {
       return;
     }
     const g = ++generation.current;
     setLoading(true);
     try {
-      const page = await lsp.request<{ total: number; parts: Part[] } | null>('plca/diagram', {
+      const page = await lsp.request<{ total: number; from: number; parts: Part[] } | null>('plca/diagram', {
         uri: uriOf(path),
         name,
-        from,
-        count: PAGE,
+        ...(typeof at === 'number' ? { from: at } : { at }),
+        count,
       });
       if (g !== generation.current) {
         return;
       }
+      const got = page?.parts ?? [];
       setTotal(page?.total ?? 0);
-      setParts((old) => (reset ? (page?.parts ?? []) : [...old, ...(page?.parts ?? [])]));
+      if (mode === 'reset') {
+        setStart(page?.from ?? 0);
+      } else if (mode === 'prepend') {
+        setStart((s) => s - got.length);
+      }
+      setParts((old) => (mode === 'reset' ? got : mode === 'append' ? [...old, ...got] : [...got, ...old]));
     } catch (e: any) {
       setError(String(e.message ?? e));
     } finally {
@@ -93,14 +135,30 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
     }
   };
 
+  // a diagram with findings opens at the part of its first finding
   useEffect(() => {
     setParts([]);
+    setStart(0);
     setTotal(0);
     if (selected) {
       body.current?.scrollTo({ top: 0 });
-      load(selected, 0, true);
+      const first = statsRef.current.get(selected)?.first;
+      load(selected, first ? first.range.start : 0, 'reset');
     }
   }, [selected, lsp]);
+
+  const reopen = (name: string) => {
+    body.current?.scrollTo({ top: 0 });
+    const first = statsRef.current.get(name)?.first;
+    load(name, first ? first.range.start : 0, 'reset');
+  };
+
+  const earlier = () => {
+    if (selected && !loading && start > 0) {
+      const from = Math.max(0, start - PAGE);
+      load(selected, from, 'prepend', start - from);
+    }
+  };
 
   // the next page when the end of the list comes into view
   useEffect(() => {
@@ -109,13 +167,13 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
       return;
     }
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting) && !loading && parts.length < total) {
-        load(selected, parts.length, false);
+      if (entries.some((e) => e.isIntersecting) && !loading && start + parts.length < total) {
+        load(selected, start + parts.length, 'append');
       }
     });
     io.observe(s);
     return () => io.disconnect();
-  }, [parts, total, loading, selected]);
+  }, [parts, start, total, loading, selected]);
 
   // findings onto the drawings
   useLayoutEffect(() => {
@@ -206,18 +264,30 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
   return (
     <div class="diagrams">
       <nav class="diagram-list" aria-label="Routines and POUs">
-        {list.map((d) => (
+        <div class="diagram-options">
+          <label>
+            <input type="checkbox" checked={onlyWithFindings} onChange={(e) => setOnlyWithFindings(e.currentTarget.checked)} />
+            Only with findings
+          </label>
+          <label>
+            <input type="checkbox" checked={byFindings} onChange={(e) => setByFindings(e.currentTarget.checked)} />
+            Most findings first
+          </label>
+        </div>
+        {shown.map((d) => (
           <button
             key={d.name}
             class={d.name === selected ? 'active' : ''}
             aria-current={d.name === selected}
-            onClick={() => setSelected(d.name)}
+            onClick={() => (d.name === selected ? reopen(d.name) : setSelected(d.name))}
             title={`${d.kind.toLowerCase()}, ${d.language}, ${d.parts} ${d.language === 'RLL' ? 'rungs' : 'networks'}`}
           >
             <span class="name">{d.name}</span>
+            <CountLamps counts={stats.get(d.name)?.counts} compact />
             <span class="n">{d.parts}</span>
           </button>
         ))}
+        {shown.length === 0 ? <p class="empty">No routine has findings.</p> : null}
       </nav>
       <div
         class="diagram-body"
@@ -229,14 +299,19 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
         }}
         onClick={onClick}
       >
+        {start > 0 ? (
+          <button class="earlier" onClick={earlier} disabled={loading}>
+            Show {Math.min(start, PAGE)} earlier {start === 1 ? 'part' : 'parts'} ({start} before this one)
+          </button>
+        ) : null}
         {parts.map((p, i) => (
-          <figure key={selected + ':' + i} class="part">
+          <figure key={selected + ':' + (start + i)} class="part">
             {/* SVG drawn by the plca server; every text in it is escaped there */}
             <div class="svg" dangerouslySetInnerHTML={{ __html: p.svg }} />
           </figure>
         ))}
         <div ref={sentinel} class="sentinel">
-          {loading ? 'Loading…' : parts.length < total ? '' : total > 0 ? `${total} ${total === 1 ? 'part' : 'parts'}` : ''}
+          {loading ? 'Loading…' : start + parts.length < total ? '' : total > 0 ? `${total} ${total === 1 ? 'part' : 'parts'}` : ''}
         </div>
       </div>
       {tip ? (

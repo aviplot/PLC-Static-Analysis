@@ -145,7 +145,16 @@ test('ladder: rungs drawn, findings on the rung, hover and click to text', async
   await upload(page, 'line', zipProjects(['rockwell_line']));
   await page.locator('.tree').getByRole('button', { name: /^Line1\.L5X/ }).click();
   await page.getByRole('button', { name: 'Ladder and diagrams' }).click();
-  await page.locator('.diagram-list').getByRole('button', { name: /MainProgram\/Alarms/ }).click();
+  // finding counts per routine; "only with findings" hides the clean ones
+  const list = page.locator('.diagram-list');
+  await expect(list.getByRole('button', { name: /MainProgram\/Alarms/ }).locator('.counts')).toBeVisible({ timeout: 30_000 });
+  const all = await list.locator('button').count();
+  await list.getByLabel('Only with findings').check();
+  const withFindings = await list.locator('button').count();
+  expect(withFindings).toBeGreaterThan(0);
+  expect(withFindings).toBeLessThan(all);
+  await list.getByLabel('Only with findings').uncheck();
+  await list.getByRole('button', { name: /MainProgram\/Alarms/ }).click();
   await expect(page.locator('.part svg')).toHaveCount(2);
   await expect(page.locator('.part .has-finding').first()).toBeVisible({ timeout: 30_000 });
   await page.locator('.part text[data-range]').first().hover();

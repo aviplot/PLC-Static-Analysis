@@ -38,6 +38,7 @@ import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.SaveOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -128,10 +129,14 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         return server.exitCode;
     }
 
-    /** {@code plca/diagrams} and {@code plca/diagram}: a document and, for one diagram, its name and a page. */
-    public record DiagramParams(String uri, String name, Integer from, Integer count) {}
+    /**
+     * {@code plca/diagrams} and {@code plca/diagram}: a document and, for one diagram, its name and a page: from part
+     * {@code from}, or from the part that holds or follows position {@code at}.
+     */
+    public record DiagramParams(String uri, String name, Integer from, Integer count, Position at) {}
 
-    public record DiagramInfo(String name, String kind, String language, int parts) {}
+    /** {@code range}: from the first part's start to the last part's end, for counting the findings in a diagram. */
+    public record DiagramInfo(String name, String kind, String language, int parts, Range range) {}
 
     public record DiagramPage(String name, int total, int from, List<Diagrams.Part> parts) {}
 
@@ -142,7 +147,13 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
                 params,
                 (s, unit) -> Diagrams.of(unit).stream()
                         .map(d -> new DiagramInfo(
-                                d.name(), d.kind(), d.language(), d.parts().size()))
+                                d.name(),
+                                d.kind(),
+                                d.language(),
+                                d.parts().size(),
+                                Convert.cover(
+                                        Convert.range(s, d.parts().getFirst().span()),
+                                        Convert.range(s, d.parts().getLast().span()))))
                         .toList());
     }
 
@@ -152,7 +163,8 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         return unit(params, (s, unit) -> {
             for (Diagrams.Diagram d : Diagrams.of(unit)) {
                 if (d.name().equals(params.name())) {
-                    int from = params.from() == null ? 0 : params.from();
+                    int from =
+                            params.at() != null ? partAt(s, d, params.at()) : params.from() == null ? 0 : params.from();
                     int count = params.count() == null ? 50 : Math.min(params.count(), 500);
                     return new DiagramPage(
                             d.name(), d.parts().size(), from, Diagrams.render(d, s.registry(), from, count));
@@ -160,6 +172,18 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
             }
             return null;
         });
+    }
+
+    /** The first part that ends at or after {@code at} (parts are in text order); the last part if none does. */
+    private static int partAt(Snapshot s, Diagrams.Diagram d, Position at) {
+        for (int i = 0; i < d.parts().size(); i++) {
+            Position end = Convert.range(s, d.parts().get(i).span()).getEnd();
+            if (end.getLine() > at.getLine()
+                    || end.getLine() == at.getLine() && end.getCharacter() >= at.getCharacter()) {
+                return i;
+            }
+        }
+        return Math.max(0, d.parts().size() - 1);
     }
 
     private <T> CompletableFuture<T> unit(

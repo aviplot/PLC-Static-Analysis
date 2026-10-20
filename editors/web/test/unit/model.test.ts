@@ -9,6 +9,7 @@ import {
   countsByPath,
   emptyFilter,
   filterFiles,
+  findingsIn,
   formatBytes,
   group,
   languageOf,
@@ -115,6 +116,15 @@ test('counts roll up into folders and the root', () => {
   assert.deepEqual(c.get('a/b/'), { error: 1, warning: 0, info: 0, hint: 0 });
   assert.deepEqual(c.get('a/'), { error: 1, warning: 1, info: 0, hint: 0 });
   assert.deepEqual(c.get(''), { error: 1, warning: 1, info: 1, hint: 0 });
+});
+
+test('findings in a diagram: counts by severity and the first in text order', () => {
+  const list = [f('a', 'X', 'warning', 'w', 12), f('a', 'X', 'error', 'e', 15), f('a', 'X', 'info', 'i', 10), f('a', 'X', 'error', 'out', 30)];
+  const got = findingsIn(list, r(10, 0, 20, 0));
+  assert.deepEqual(got.counts, { error: 1, warning: 1, info: 1, hint: 0 });
+  assert.equal(got.total, 3);
+  assert.equal(got.first?.message, 'i');
+  assert.equal(findingsIn(list, r(40, 0, 50, 0)).first, null);
 });
 
 test('languages by extension; PLCopen by its namespace', () => {

@@ -234,6 +234,23 @@ export function countsByPath(list: Finding[]): Map<string, Counts> {
   return out;
 }
 
+/** The findings of a file that lie in a diagram's text range: counts, total and the first in text order. */
+export function findingsIn(list: Finding[], range: Range): { counts: Counts; total: number; first: Finding | null } {
+  const counts = zero();
+  let total = 0;
+  let first: Finding | null = null;
+  for (const f of list) {
+    if (contains(range, f.range) || overlaps(range, f.range)) {
+      counts[f.severity]++;
+      total++;
+      if (!first || before(f.range.start, first.range.start)) {
+        first = f;
+      }
+    }
+  }
+  return { counts, total, first };
+}
+
 /** Monaco language of a project file; PLCopen is told by its namespace, as the analyzer does. */
 export function languageOf(path: string, head = ''): string {
   const lower = path.toLowerCase();

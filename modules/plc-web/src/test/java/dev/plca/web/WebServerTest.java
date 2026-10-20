@@ -515,6 +515,30 @@ class WebServerTest {
                 .startsWith("<svg")
                 .contains("data-range=");
 
+        // each diagram has its text range; a page can start at the part holding a position (a finding)
+        JsonObject routine = diagrams.getAsJsonArray("result").get(0).getAsJsonObject();
+        assertThat(routine.getAsJsonObject("range")
+                        .getAsJsonObject("end")
+                        .get("line")
+                        .getAsInt())
+                .isGreaterThan(routine.getAsJsonObject("range")
+                        .getAsJsonObject("start")
+                        .get("line")
+                        .getAsInt());
+        String svg = result.getAsJsonArray("parts")
+                .get(1)
+                .getAsJsonObject()
+                .get("svg")
+                .getAsString();
+        java.util.regex.Matcher m =
+                java.util.regex.Pattern.compile("data-range=\"(\\d+),(\\d+),").matcher(svg);
+        assertThat(m.find()).isTrue();
+        JsonObject atPage = lsp.request(
+                "plca/diagram",
+                params("{\"uri\":\"file:///project/rockwell_line/Line1.L5X\",\"name\":\"MainProgram/MainRoutine\","
+                        + "\"at\":{\"line\":" + m.group(1) + ",\"character\":" + m.group(2) + "},\"count\":1}"));
+        assertThat(atPage.getAsJsonObject("result").get("from").getAsInt()).isEqualTo(2);
+
         // files outside the project do not exist for this server
         JsonObject outside = lsp.request(
                 "textDocument/hover",
