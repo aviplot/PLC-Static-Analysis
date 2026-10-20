@@ -21,6 +21,8 @@ import java.util.Map;
  * @param baseline the baseline comparison, or null when no baseline was given
  * @param fingerprints fingerprint of each finding (in {@code findings} and {@code suppressed}), by identity; computed
  *     by {@link Fingerprints} when absent
+ * @param drawings the rungs, networks and charts of the analysed files, for drawing them in the HTML report (M10);
+ *     {@link ReportDrawings#NONE} when not asked for
  */
 public record AnalysisResult(
         String rootUri,
@@ -31,7 +33,8 @@ public record AnalysisResult(
         Stats stats,
         List<Suppressed> suppressed,
         BaselineSummary baseline,
-        Map<Finding, String> fingerprints) {
+        Map<Finding, String> fingerprints,
+        ReportDrawings drawings) {
 
     /** Why a finding is not reported. */
     public enum SuppressionKind {
@@ -68,6 +71,7 @@ public record AnalysisResult(
     }
 
     public AnalysisResult {
+        drawings = drawings == null ? ReportDrawings.NONE : drawings;
         rules = List.copyOf(rules);
         findings = List.copyOf(findings);
         diagnostics = List.copyOf(diagnostics);
@@ -93,7 +97,7 @@ public record AnalysisResult(
             List<Diagnostic> diagnostics,
             SourceRegistry sources,
             Stats stats) {
-        this(rootUri, rules, findings, diagnostics, sources, stats, List.of(), null, null);
+        this(rootUri, rules, findings, diagnostics, sources, stats, List.of(), null, null, null);
     }
 
     /** The finding's fingerprint ({@link Fingerprints}). */

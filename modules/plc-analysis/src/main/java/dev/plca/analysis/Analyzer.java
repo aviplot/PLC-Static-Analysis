@@ -15,6 +15,7 @@ import dev.plca.frontend.st.kit.Frontends;
 import dev.plca.report.AnalysisResult;
 import dev.plca.report.Baseline;
 import dev.plca.report.Fingerprints;
+import dev.plca.report.ReportDrawings;
 import dev.plca.rules.Finding;
 import dev.plca.rules.RuleConfig;
 import dev.plca.rules.RuleEngine;
@@ -52,6 +53,14 @@ public final class Analyzer {
     private static final Set<String> LATER_DIALECTS = Set.of(".l5k");
 
     private final RuleRegistry registry;
+
+    private boolean drawings;
+
+    /** Results that carry the drawings of the analysed files' graphical bodies, for the HTML report (M10). */
+    public Analyzer withDrawings(boolean on) {
+        this.drawings = on;
+        return this;
+    }
 
     public Analyzer(RuleRegistry registry) {
         this.registry = registry;
@@ -164,7 +173,8 @@ public final class Analyzer {
                 stats,
                 suppressed,
                 summary,
-                fingerprints);
+                fingerprints,
+                drawings ? ReportDrawings.of(project.units(), project.registry()) : null);
     }
 
     /**

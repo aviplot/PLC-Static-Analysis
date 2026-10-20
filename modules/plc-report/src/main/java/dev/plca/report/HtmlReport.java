@@ -30,6 +30,43 @@ public final class HtmlReport {
     private HtmlReport() {}
 
     public static void write(AnalysisResult r, Writer out) throws IOException {
+        write(r, out, ReportDrawings.NONE);
+    }
+
+    /** Most drawings embedded in one report; after them, findings show their source text only. */
+    static final int MAX_DRAWINGS = 2_000;
+
+    static final long MAX_DRAWING_CHARS = 20L << 20;
+
+    /** The drawings a report embeds (M10): each part once, under its first finding, with all its findings outlined. */
+    private static final class Drawn {
+        final ReportDrawings drawings;
+        final Map<Finding, dev.plca.ast.Statement> partOf = new java.util.IdentityHashMap<>();
+        final Map<dev.plca.ast.Statement, List<ReportDrawings.Mark>> marks = new java.util.IdentityHashMap<>();
+        final Map<dev.plca.ast.Statement, String> anchors = new java.util.IdentityHashMap<>();
+        int count;
+        long chars;
+        boolean capped;
+
+        Drawn(ReportDrawings drawings, List<Finding> findings) {
+            this.drawings = drawings;
+            if (drawings.isEmpty()) {
+                return;
+            }
+            for (Finding f : findings) {
+                dev.plca.ast.Statement part = drawings.partOf(f.span());
+                if (part != null) {
+                    partOf.put(f, part);
+                    marks.computeIfAbsent(part, k -> new ArrayList<>())
+                            .add(new ReportDrawings.Mark(f.span(), f.severity()));
+                }
+            }
+        }
+    }
+
+    /** As {@link #write(AnalysisResult, Writer)}, with the drawing of the rung, network or chart of each finding. */
+    public static void write(AnalysisResult r, Writer out, ReportDrawings drawings) throws IOException {
+        Drawn drawn = new Drawn(drawings, r.findings());
         StringBuilder h = new StringBuilder(64 * 1024);
         Map<String, RuleDescriptor> rules = new LinkedHashMap<>();
         r.rules().forEach(d -> rules.put(d.id(), d));
@@ -45,7 +82,12 @@ public final class HtmlReport {
         header(h, r);
         summary(h, r);
         filters(h, r);
-        findings(h, r, rules);
+        findings(h, r, rules, drawn);
+        if (drawn.capped) {
+            h.append("<p class=\"muted\">Drawings stop after ")
+                    .append(drawn.count)
+                    .append(": the rest of the findings show their source text only.</p>\n");
+        }
         diagnostics(h, r);
         ruleHelp(h, r, rules);
 
@@ -160,7 +202,7 @@ public final class HtmlReport {
                 .append("</label>\n<span id=\"f-count\" class=\"muted\"></span>\n</section>\n");
     }
 
-    private static void findings(StringBuilder h, AnalysisResult r, Map<String, RuleDescriptor> rules) {
+    private static void findings(StringBuilder h, AnalysisResult r, Map<String, RuleDescriptor> rules, Drawn drawn) {
         h.append("<section id=\"findings\">\n<h2>Findings</h2>\n");
         if (r.findings().isEmpty()) {
             h.append("<p>No findings.</p>\n</section>\n");
@@ -179,14 +221,15 @@ public final class HtmlReport {
                     .append(list.size() == 1 ? " finding" : " findings")
                     .append("</span></summary>\n");
             for (Finding f : list) {
-                finding(h, r, f, rules.get(f.ruleId()), path);
+                finding(h, r, f, rules.get(f.ruleId()), path, drawn);
             }
             h.append("</details>\n");
         });
         h.append("</section>\n");
     }
 
-    private static void finding(StringBuilder h, AnalysisResult r, Finding f, RuleDescriptor d, String path) {
+    private static void finding(
+            StringBuilder h, AnalysisResult r, Finding f, RuleDescriptor d, String path, Drawn drawn) {
         Location l = r.sources().resolve(f.span());
         h.append("<article class=\"finding\" data-sev=\"")
                 .append(rank(f.severity()))
@@ -220,6 +263,7 @@ public final class HtmlReport {
             h.append("<p class=\"title muted\">").append(Html.escape(d.title())).append("</p>\n");
         }
         excerpt(h, r, f.span());
+        drawing(h, f, drawn);
         if (!f.related().isEmpty()) {
             h.append("<ul class=\"related\">\n");
             for (Diagnostic.Related rel : f.related()) {
@@ -236,6 +280,38 @@ public final class HtmlReport {
             h.append("</ul>\n");
         }
         h.append("</article>\n");
+    }
+
+    /** The finding's rung, network or chart: drawn under the part's first finding, a link to it under the others. */
+    private static void drawing(StringBuilder h, Finding f, Drawn drawn) {
+        dev.plca.ast.Statement part = drawn.partOf.get(f);
+        if (part == null) {
+            return;
+        }
+        String anchor = drawn.anchors.get(part);
+        if (anchor != null) {
+            h.append("<p class=\"drawn-above\"><a href=\"#")
+                    .append(anchor)
+                    .append("\">Drawing: ")
+                    .append(Html.escape(drawn.drawings.label(part)))
+                    .append("</a></p>\n");
+            return;
+        }
+        if (drawn.count >= MAX_DRAWINGS || drawn.chars >= MAX_DRAWING_CHARS) {
+            drawn.capped = true;
+            return;
+        }
+        String svg = drawn.drawings.svg(part, drawn.marks.get(part));
+        anchor = "d" + drawn.count++;
+        drawn.chars += svg.length();
+        drawn.anchors.put(part, anchor);
+        h.append("<figure class=\"drawing\" id=\"")
+                .append(anchor)
+                .append("\"><figcaption class=\"muted\">")
+                .append(Html.escape(drawn.drawings.label(part)))
+                .append("</figcaption>")
+                .append(svg)
+                .append("</figure>\n");
     }
 
     /**
@@ -414,6 +490,15 @@ public final class HtmlReport {
               border-radius: 4px; border: 1px solid currentColor; }
             .badge.sev-error { color: var(--err); } .badge.sev-warning { color: var(--warn); }
             .badge.sev-info, .badge.sev-hint { color: var(--info); }
+            .drawing { margin: 8px 0; overflow-x: auto; } .drawing figcaption { font-size: 12px; margin-bottom: 4px; }
+            .drawing svg { display: block; max-width: none; background: var(--bg); }
+            .drawing .plca-svg { --plca-wire: var(--muted); --plca-sym: var(--fg); --plca-text: var(--fg);
+              --plca-muted: var(--muted); }
+            .drawing .has-finding > .hit { stroke-width: 2; stroke-dasharray: 4 3; }
+            .drawing .has-finding.sev-error > .hit { stroke: var(--err); }
+            .drawing .has-finding.sev-warning > .hit { stroke: var(--warn); }
+            .drawing .has-finding.sev-info > .hit, .drawing .has-finding.sev-hint > .hit { stroke: var(--info); }
+            .drawn-above { font-size: 12px; margin: 4px 0; }
             .rule, .loc, .place { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
             .place { color: var(--muted); overflow-wrap: anywhere; }
             pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 8px 0;

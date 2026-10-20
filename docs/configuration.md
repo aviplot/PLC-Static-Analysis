@@ -60,6 +60,14 @@ L5X or PLCopen file) are not read.
 Suppressed findings are counted in every report; `--show-suppressed` lists them in the console report, the JSON
 report has them in `suppressed[]`, and SARIF keeps them with a `suppressions` entry (`inSource` or `external`).
 
+## Drawings in the HTML report
+
+`--format html` draws the rung, PLCopen LD/FBD network or SFC chart of every finding that lies in one, below the
+finding's source lines, with the element that holds the finding outlined in its severity's colour. A part with several
+findings is drawn once, under its first finding; the others link to it. After 2,000 drawings (or 20 MB of them) the
+rest of the findings show their source text only, and the report says so. `--report-diagrams none` gives the report
+without drawings.
+
 ## Baselines
 
 To adopt plca on existing code, record today's findings once and report only new ones from then on:

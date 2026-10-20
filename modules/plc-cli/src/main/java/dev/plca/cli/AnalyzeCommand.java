@@ -74,6 +74,19 @@ final class AnalyzeCommand implements Callable<Integer> {
             description = "Report format: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).")
     ReportFormat format;
 
+    /** What the HTML report draws (M10). */
+    enum ReportDiagrams {
+        FINDINGS,
+        NONE
+    }
+
+    @Option(
+            names = "--report-diagrams",
+            defaultValue = "findings",
+            description = "HTML report: draw the rung, network or SFC chart of each finding (findings, default) or no"
+                    + " drawings (none).")
+    ReportDiagrams reportDiagrams;
+
     @Option(
             names = {"-o", "--output"},
             description = "Write the report to this file instead of standard output.")
@@ -174,6 +187,7 @@ final class AnalyzeCommand implements Callable<Integer> {
         AnalysisResult result;
         try {
             result = new Analyzer(RuleRegistry.standard())
+                    .withDrawings(format == ReportFormat.HTML && reportDiagrams == ReportDiagrams.FINDINGS)
                     .analyze(path, ruleConfig, Math.max(1, threads), base, baseName);
         } catch (IllegalArgumentException e) {
             err.println("plca: " + e.getMessage());

@@ -75,7 +75,8 @@ final class Analyses {
             baseline = Baseline.read(b);
             baselineName = dir.toAbsolutePath().normalize().relativize(b).toString();
         }
-        AnalysisResult r = new Analyzer(registry).analyze(dir, rules, threads, baseline, baselineName);
+        AnalysisResult r =
+                new Analyzer(registry).withDrawings(true).analyze(dir, rules, threads, baseline, baselineName);
         return new AnalysisResult(
                 LspSocket.PREFIX,
                 r.rules(),
@@ -85,7 +86,8 @@ final class Analyses {
                 r.stats(),
                 r.suppressed(),
                 r.baseline(),
-                r.fingerprints());
+                r.fingerprints(),
+                r.drawings());
     }
 
     /** Findings of {@code head} classified against {@code base} by fingerprint (line-number independent). */

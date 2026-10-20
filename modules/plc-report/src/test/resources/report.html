@@ -41,6 +41,15 @@ details.file > summary { padding: 8px 12px; cursor: pointer; background: var(--c
   border-radius: 4px; border: 1px solid currentColor; }
 .badge.sev-error { color: var(--err); } .badge.sev-warning { color: var(--warn); }
 .badge.sev-info, .badge.sev-hint { color: var(--info); }
+.drawing { margin: 8px 0; overflow-x: auto; } .drawing figcaption { font-size: 12px; margin-bottom: 4px; }
+.drawing svg { display: block; max-width: none; background: var(--bg); }
+.drawing .plca-svg { --plca-wire: var(--muted); --plca-sym: var(--fg); --plca-text: var(--fg);
+  --plca-muted: var(--muted); }
+.drawing .has-finding > .hit { stroke-width: 2; stroke-dasharray: 4 3; }
+.drawing .has-finding.sev-error > .hit { stroke: var(--err); }
+.drawing .has-finding.sev-warning > .hit { stroke: var(--warn); }
+.drawing .has-finding.sev-info > .hit, .drawing .has-finding.sev-hint > .hit { stroke: var(--info); }
+.drawn-above { font-size: 12px; margin: 4px 0; }
 .rule, .loc, .place { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; }
 .place { color: var(--muted); overflow-wrap: anywhere; }
 pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 8px 0;

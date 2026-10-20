@@ -119,6 +119,48 @@ class ReportTest {
         assertThat(html).doesNotContainPattern("(?i)<link\\b|@import|url\\(");
     }
 
+    /** M10: the rung, network or chart of each finding drawn under it, with the finding outlined. */
+    @Test
+    void htmlWithDrawings() throws IOException {
+        String project = "rockwell_line";
+        Path dir = REPOSITORY
+                .resolve("modules/plc-semantic/src/test/resources/projects")
+                .resolve(project);
+        ProjectLoader.Project p = ProjectLoader.load(
+                dir,
+                Frontends.of(dev.plca.frontend.l5x.L5xFrontend::new, dev.plca.frontend.plcopen.PlcOpenFrontend::new),
+                2);
+        SemanticModel m = SemanticBuilder.build(p.units(), new DiagnosticCollector());
+        RuleRegistry registry = RuleRegistry.standard();
+        RuleEngine.Result r = new RuleEngine(registry).run(m, p.registry(), RuleConfig.defaults(), 2);
+        AnalysisResult result = new AnalysisResult(
+                "file:///project/",
+                registry.descriptors(),
+                r.findings(),
+                List.of(),
+                p.registry(),
+                new AnalysisResult.Stats(p.units().size(), 0, m.pous().size(), 0, 0, 0, 1.0, List.of()),
+                List.of(),
+                null,
+                null,
+                ReportDrawings.of(p.units(), p.registry()));
+        String html = render(ReportFormat.HTML, result);
+        assertThat(html).contains("<figure class=\"drawing\"").contains("has-finding sev-");
+        assertThat(HtmlCheck.problems(html)).isEmpty();
+        Golden.assertMatches(html, "report-drawings-" + project + ".html");
+        // without drawings, as before M10
+        assertThat(render(
+                        ReportFormat.HTML,
+                        new AnalysisResult(
+                                result.rootUri(),
+                                result.rules(),
+                                result.findings(),
+                                result.diagnostics(),
+                                result.sources(),
+                                result.stats())))
+                .doesNotContain("<figure class=\"drawing\"");
+    }
+
     @Test
     void fingerprintsSurviveCodeMovingDown(@TempDir Path tmp) throws IOException {
         Path a = tmp.resolve("a");

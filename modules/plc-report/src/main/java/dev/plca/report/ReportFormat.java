@@ -15,7 +15,7 @@ public enum ReportFormat {
             case CONSOLE -> new ConsoleReport(false).write(result, out);
             case JSON -> JsonReport.write(result, out);
             case SARIF -> SarifReport.write(result, out);
-            case HTML -> HtmlReport.write(result, out);
+            case HTML -> HtmlReport.write(result, out, result.drawings());
         }
     }
 }
