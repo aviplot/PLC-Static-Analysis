@@ -630,4 +630,25 @@ class WebServerTest {
                 .forEach(e -> rules.add(e.getAsJsonObject().get("id").getAsString()));
         assertThat(rules).contains("PLCA-Q001", "PLCA-P001");
     }
+
+    @Test
+    void cachesOnlyHashedAssets() throws Exception {
+        assertThat(WebServer.cacheControl("assets/app.js")).isEqualTo("no-cache");
+        assertThat(WebServer.cacheControl("assets/editor.worker.js")).isEqualTo("no-cache");
+        assertThat(WebServer.cacheControl("index.html")).isEqualTo("no-cache");
+        assertThat(WebServer.cacheControl("assets/atkinson-hyperlegible-latin-400-normal-4XQA3ZPE.woff2"))
+                .contains("immutable");
+        Browser b = new Browser();
+        HttpResponse<String> r = b.get("/");
+        if (r.headers().firstValue("ETag").isPresent()) { // the app is bundled into this build
+            String etag = r.headers().firstValue("ETag").orElseThrow();
+            HttpResponse<String> again = b.http.send(
+                    HttpRequest.newBuilder(URI.create(b.base() + "/"))
+                            .header("If-None-Match", etag)
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(again.statusCode()).isEqualTo(304);
+        }
+    }
 }

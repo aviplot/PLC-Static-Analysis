@@ -637,7 +637,8 @@ function UploadButtons({ onPick, compact }: { onPick: (p: Promise<Picked>) => vo
         {compact ? 'Open folder' : 'Choose a project folder'}
       </button>
       <button onClick={() => zip.current?.click()}>{compact ? 'Open zip' : 'Choose a zip file'}</button>
-      <input ref={folder} type="file" hidden {...({ webkitdirectory: '', directory: '' } as any)} multiple onChange={(e) => pick(e.currentTarget)} />
+      {/* true, not '': Preact assigns webkitdirectory as a DOM property, and '' would turn it off */}
+      <input ref={folder} type="file" hidden {...({ webkitdirectory: true } as any)} multiple onChange={(e) => pick(e.currentTarget)} />
       <input ref={zip} type="file" hidden accept=".zip,application/zip" onChange={(e) => pick(e.currentTarget)} />
     </span>
   );

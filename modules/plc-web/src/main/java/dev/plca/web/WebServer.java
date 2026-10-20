@@ -17,8 +17,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
@@ -86,6 +90,7 @@ public final class WebServer implements AutoCloseable {
         return t;
     });
     private final Map<String, byte[]> staticCache = new ConcurrentHashMap<>();
+    private final Map<String, String> staticEtags = new ConcurrentHashMap<>();
 
     private WebServer(WebOptions options) throws IOException {
         this.options = options;
@@ -217,7 +222,7 @@ public final class WebServer implements AutoCloseable {
                         return true;
                     }
                     Guard.session(request, response);
-                    serveStatic(path, response, callback);
+                    serveStatic(path, request, response, callback);
                 } else {
                     text(response, callback, 405, "method not allowed");
                 }
@@ -453,7 +458,7 @@ public final class WebServer implements AutoCloseable {
             "txt", "text/plain; charset=utf-8",
             "map", "application/json");
 
-    private void serveStatic(String path, Response response, Callback cb) throws ApiException {
+    private void serveStatic(String path, Request request, Response response, Callback cb) throws ApiException {
         String rel = path.equals("/") ? "index.html" : path.substring(1);
         if (!rel.equals("index.html") && !rel.startsWith("assets/") && !rel.equals("THIRD_PARTY_NOTICES.txt")
                 || rel.contains("..")
@@ -474,10 +479,33 @@ public final class WebServer implements AutoCloseable {
             }
             throw new ApiException(404, "not found");
         }
-        if (rel.startsWith("assets/")) {
-            response.getHeaders().put(HttpHeader.CACHE_CONTROL, "private, max-age=3600");
+        // app.js, app.css and editor.worker.js keep their names across builds: the browser must ask each time (a cheap
+        // 304 by ETag), or it runs the old app for an hour after a rebuild. Only content-hashed names are cached.
+        response.getHeaders().put(HttpHeader.CACHE_CONTROL, cacheControl(rel));
+        String etag = staticEtags.computeIfAbsent(rel, r -> etag(data));
+        response.getHeaders().put(HttpHeader.ETAG, etag);
+        if (etag.equals(request.getHeaders().get(HttpHeader.IF_NONE_MATCH))) {
+            response.setStatus(HttpStatus.NOT_MODIFIED_304);
+            cb.succeeded();
+            return;
         }
         bytes(response, cb, 200, type, data);
+    }
+
+    /** Long caching for content-hashed assets (esbuild's {@code name-HASH.ext}), revalidation for everything else. */
+    static String cacheControl(String rel) {
+        return HASHED.matcher(rel).find() ? "private, max-age=31536000, immutable" : "no-cache";
+    }
+
+    private static final Pattern HASHED = Pattern.compile("-[A-Z0-9]{8}\\.[a-z0-9]+$");
+
+    private static String etag(byte[] data) {
+        try {
+            byte[] h = MessageDigest.getInstance("SHA-256").digest(data);
+            return "\"" + HexFormat.of().formatHex(h, 0, 12) + "\"";
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static byte[] load(String rel) {

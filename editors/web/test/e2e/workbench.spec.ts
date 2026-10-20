@@ -50,6 +50,8 @@ test('review: findings, navigation, definition, outline', async ({ page }) => {
   await page.goto('/');
   const foreign = watchRequests(page);
   await expect(page.getByRole('heading', { name: 'Review a PLC project' })).toBeVisible();
+  // the folder button opens a folder picker, not a file picker
+  expect(await page.locator('input[type=file]:not([accept])').first().evaluate((i: HTMLInputElement) => i.webkitdirectory)).toBe(true);
   await upload(page, 'plant', zipProjects(['plant', 'rockwell_line']));
 
   // the analysis arrives: the recursion error of functions.st among them
