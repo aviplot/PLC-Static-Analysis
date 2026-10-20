@@ -41,6 +41,11 @@ final class RockwellStAstBuilder extends BuilderSupport {
         return statementList(ctx.statementList());
     }
 
+    /** An SFC transition's condition. */
+    Expression conditionOnly(ConditionOnlyContext ctx) {
+        return expression(ctx.expression(), span(ctx));
+    }
+
     // ============================================================================================
     // Statements
     // ============================================================================================

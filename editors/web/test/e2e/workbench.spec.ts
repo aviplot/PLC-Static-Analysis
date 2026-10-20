@@ -170,6 +170,22 @@ test('ladder: rungs drawn, findings on the rung, hover and click to text', async
   await expect(page.locator('.code .view-lines')).toContainText('Rack1:1:I.Data.3');
 });
 
+test('SFC: a chart is drawn with its steps, transitions and actions', async ({ page }) => {
+  await page.goto('/');
+  await upload(page, 'mixer', zipProjects(['plcopen_mixer']));
+  await page.locator('.tree').getByRole('button', { name: /^Mixer\.xml/ }).click();
+  await page.getByRole('button', { name: 'Ladder and diagrams' }).click();
+  await page.locator('.diagram-list').getByRole('button', { name: /Sequence/ }).click();
+  const chart = page.locator('.part svg.chart');
+  await expect(chart).toHaveCount(1);
+  await expect(chart.locator('g.el.step')).not.toHaveCount(0);
+  await expect(chart.locator('g.el.transition')).not.toHaveCount(0);
+  await expect(chart).toContainText('OpenValve');
+  // a step is linked to its text
+  await chart.locator('g.el.step').first().click();
+  await expect(page.getByRole('button', { name: 'Text', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('compare: new and fixed findings between two versions', async ({ page }) => {
   await page.goto('/');
   await upload(page, 'v1', zipProjects(['plant']));

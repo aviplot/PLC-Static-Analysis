@@ -10,6 +10,7 @@ import dev.plca.ast.Initializer;
 import dev.plca.ast.Ladder;
 import dev.plca.ast.Pragma;
 import dev.plca.ast.QualifiedName;
+import dev.plca.ast.Sfc;
 import dev.plca.ast.SourceUnit;
 import dev.plca.ast.Statement;
 import dev.plca.ast.TypeRef;
@@ -39,14 +40,17 @@ import dev.plca.frontend.l5x.L5xReader.TaskDef;
 import dev.plca.frontend.l5x.RungLowering.AoiSignature;
 import dev.plca.frontend.st.SyntaxCodes;
 import dev.plca.frontend.st.kit.Frontend;
+import dev.plca.frontend.st.kit.SfcLowering;
 import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.frontend.st.kit.XmlInput;
+import dev.plca.grammar.RockwellStParser.ConditionOnlyContext;
 import dev.plca.grammar.RockwellStParser.StatementsOnlyContext;
 import dev.plca.grammar.RungParser.RungContext;
 import dev.plca.grammar.RungParser.RungsContext;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -345,6 +349,7 @@ public final class L5xFrontend implements Frontend {
             switch (type.toUpperCase(Locale.ROOT)) {
                 case "RLL" -> body = parsed == null || parsed.test(path) ? ladder(r) : placeholders(r);
                 case "ST" -> body = drawn == null ? structuredText(r) : null;
+                case "SFC" -> body = r.sfc == null ? null : chart(r);
                 case "ENCRYPTED" ->
                     sink.report(Diagnostic.of(
                             L5xCodes.PROTECTED,
@@ -373,6 +378,230 @@ public final class L5xFrontend implements Frontend {
                     language,
                     List.of(),
                     elementSpan(r.offset));
+        }
+
+        // ---- SFC (M10) -------------------------------------------------------------------------------
+
+        /**
+         * An SFC routine: the chart's semantics (steps with their actions, transitions with the steps they leave and
+         * enter through branches) lowered as for PLCopen, and the chart as drawn. Step operands are the routine's
+         * SFC_STEP tags. TODO(verify-format): {@code docs/grammar/rockwell.md} §SFC.
+         */
+        List<Statement> chart(RoutineDef r) {
+            L5xReader.SfcDef d = r.sfc;
+            Map<Integer, L5xReader.SfcNode> byId = new HashMap<>();
+            for (L5xReader.SfcNode n : d.nodes) {
+                byId.putIfAbsent(n.id, n);
+            }
+            Map<Integer, List<Integer>> next = new HashMap<>();
+            Map<Integer, List<Integer>> previous = new HashMap<>();
+            for (int[] link : d.links) {
+                int from = d.legs.getOrDefault(link[0], link[0]);
+                int to = d.legs.getOrDefault(link[1], link[1]);
+                next.computeIfAbsent(from, k -> new ArrayList<>()).add(to);
+                previous.computeIfAbsent(to, k -> new ArrayList<>()).add(from);
+            }
+            List<Sfc.Step> steps = new ArrayList<>();
+            List<Sfc.Transition> transitions = new ArrayList<>();
+            List<Sfc.Element> drawn = new ArrayList<>();
+            for (L5xReader.SfcNode n : d.nodes) {
+                Span span = elementSpan(n.offset);
+                switch (n.tag) {
+                    case "Step" -> {
+                        List<Sfc.Action> actions = new ArrayList<>();
+                        for (L5xReader.SfcNode a : d.nodes) {
+                            if (a.tag.equals("Action") && a.step == n.id) {
+                                actions.add(new Sfc.Action(
+                                        qualifier(a.qualifier),
+                                        null,
+                                        null,
+                                        statements(a.lines),
+                                        elementSpan(a.offset)));
+                            }
+                        }
+                        steps.add(new Sfc.Step(operand(n), n.initial, actions, span));
+                    }
+                    case "Transition" -> {
+                        List<Identifier> from = new ArrayList<>();
+                        walk(n.id, byId, previous, new HashSet<>(), from);
+                        List<Identifier> to = new ArrayList<>();
+                        walk(n.id, byId, next, new HashSet<>(), to);
+                        transitions.add(new Sfc.Transition(from, to, condition(n, span), span));
+                    }
+                    default -> {}
+                }
+                Sfc.Element e = drawn(n, d, previous, next);
+                if (e != null) {
+                    drawn.add(e);
+                    Sfc.Element block = actionBlock(n, e, d);
+                    if (block != null) {
+                        drawn.add(block);
+                    }
+                }
+            }
+            Span span = elementSpan(r.offset);
+            Sfc chart = new Sfc(steps, transitions, new Sfc.Drawing(drawn), span);
+            List<Statement> lowered = SfcLowering.lower(chart, a -> a.inline() == null ? List.of() : a.inline());
+            return List.of(new Statement.Chart(chart, lowered, span));
+        }
+
+        private Identifier operand(L5xReader.SfcNode n) {
+            return n.operand.present()
+                    ? name(n.operand, n.offset)
+                    : new Identifier("<" + n.tag + " " + n.id + ">", elementSpan(n.offset));
+        }
+
+        /**
+         * The steps a transition leaves ({@code links}: backwards) or enters (forwards), through branches; a transition
+         * or stop ends the walk.
+         */
+        private void walk(
+                int id,
+                Map<Integer, L5xReader.SfcNode> byId,
+                Map<Integer, List<Integer>> links,
+                Set<Integer> seen,
+                List<Identifier> out) {
+            for (int other : links.getOrDefault(id, List.of())) {
+                L5xReader.SfcNode n = byId.get(other);
+                if (n == null || !seen.add(other)) {
+                    continue;
+                }
+                if (n.tag.equals("Step")) {
+                    out.add(operand(n));
+                } else if (n.tag.equals("Branch")) {
+                    walk(other, byId, links, seen, out);
+                }
+            }
+        }
+
+        /** The transition's ST condition; no text: always true. */
+        private Expression condition(L5xReader.SfcNode n, Span span) {
+            boolean empty = true;
+            for (LineDef l : n.lines) {
+                empty &= blank(l.text());
+            }
+            if (empty) {
+                return new Expression.Literal(Expression.LiteralKind.BOOL, "TRUE", null, span);
+            }
+            SourceText text = lines(n.lines);
+            Parsed p = stParser.parseCondition(text, sink);
+            count(p);
+            RockwellStAstBuilder b = new RockwellStAstBuilder(text, p.tokens(), sink);
+            Expression e = p.tree() instanceof ConditionOnlyContext x ? b.conditionOnly(x) : null;
+            b.collectHidden(comments, pragmas);
+            return e == null ? new Expression.Invalid(span) : e;
+        }
+
+        /** Logix qualifier words as IEC qualifiers. TODO(verify-format): words other than the corpus's. */
+        private static String qualifier(String q) {
+            return switch (q == null ? "" : q) {
+                case "Stored" -> "S";
+                case "Reset" -> "R";
+                case "TimeLimited" -> "L";
+                case "TimeDelayed" -> "D";
+                case "StoredTimeDelayed" -> "SD";
+                case "StoredTimeLimited" -> "SL";
+                case "Pulse" -> "P";
+                case "PulseRisingEdge" -> "P1";
+                case "PulseFallingEdge" -> "P0";
+                default -> "N";
+            };
+        }
+
+        /**
+         * The element as drawn. Rockwell gives each step, transition and stop an X/Y, taken as its centre, and a branch
+         * only its Y (a viewer spans it over its links). TODO(verify-format): centre or corner, and element sizes.
+         */
+        private Sfc.Element drawn(
+                L5xReader.SfcNode n,
+                L5xReader.SfcDef d,
+                Map<Integer, List<Integer>> previous,
+                Map<Integer, List<Integer>> next) {
+            Sfc.Kind kind;
+            List<String> lines = List.of();
+            int w;
+            int h;
+            switch (n.tag) {
+                case "Step", "Stop" -> {
+                    kind = n.tag.equals("Step") ? Sfc.Kind.STEP : Sfc.Kind.STOP;
+                    w = 80;
+                    h = 30;
+                }
+                case "Transition" -> {
+                    kind = Sfc.Kind.TRANSITION;
+                    w = 20;
+                    h = 10;
+                    lines = List.of(conditionText(n));
+                }
+                case "Branch" -> {
+                    boolean simultaneous = "Simultaneous".equals(n.branchType);
+                    // exports with placeholder words (DUMMY_ID_…): the links tell which way it goes
+                    boolean diverge = "Diverge".equals(n.branchFlow)
+                            || !"Converge".equals(n.branchFlow)
+                                    && next.getOrDefault(n.id, List.of()).size()
+                                            > previous.getOrDefault(n.id, List.of())
+                                                    .size();
+                    kind = simultaneous
+                            ? diverge ? Sfc.Kind.SIMULTANEOUS_DIVERGENCE : Sfc.Kind.SIMULTANEOUS_CONVERGENCE
+                            : diverge ? Sfc.Kind.SELECTION_DIVERGENCE : Sfc.Kind.SELECTION_CONVERGENCE;
+                    w = 0;
+                    h = 3;
+                }
+                default -> {
+                    return null;
+                }
+            }
+            List<Sfc.Link> inputs = new ArrayList<>();
+            for (int p : previous.getOrDefault(n.id, List.of())) {
+                inputs.add(new Sfc.Link(p, List.of()));
+            }
+            String name = n.operand.present() ? n.operand.value() : null;
+            int x = w == 0 ? n.x : n.x - w / 2;
+            Sfc.Element e = new Sfc.Element(
+                    n.id, kind, name, n.initial, lines, x, n.y - h / 2, w, h, inputs, elementSpan(n.offset));
+            return e;
+        }
+
+        /** A step's actions drawn beside it, as PLCopen draws an action block (an ID no element of the chart has). */
+        private Sfc.Element actionBlock(L5xReader.SfcNode step, Sfc.Element drawn, L5xReader.SfcDef d) {
+            if (!step.tag.equals("Step")) {
+                return null;
+            }
+            List<String> lines = new ArrayList<>();
+            int offset = -1;
+            for (L5xReader.SfcNode a : d.nodes) {
+                if (a.tag.equals("Action") && a.step == step.id) {
+                    lines.add(qualifier(a.qualifier) + " " + (a.operand.present() ? a.operand.value() : "Action"));
+                    offset = offset < 0 ? a.offset : offset;
+                }
+            }
+            if (lines.isEmpty()) {
+                return null;
+            }
+            int id = Integer.MIN_VALUE + step.id;
+            return new Sfc.Element(
+                    id,
+                    Sfc.Kind.ACTION_BLOCK,
+                    null,
+                    false,
+                    lines,
+                    drawn.x() + drawn.width() + 30,
+                    drawn.y(),
+                    0,
+                    0,
+                    List.of(new Sfc.Link(step.id, List.of())),
+                    elementSpan(offset));
+        }
+
+        private String conditionText(L5xReader.SfcNode n) {
+            StringBuilder b = new StringBuilder();
+            for (LineDef l : n.lines) {
+                b.append(XmlText.decode(file.text(), l.text().start(), l.text().end())
+                                .text())
+                        .append(' ');
+            }
+            String t = b.toString().strip().replaceAll("\\s+", " ");
+            return t.isEmpty() && n.operand.present() ? n.operand.value() : t;
         }
 
         // ---- ladder ---------------------------------------------------------------------------------
@@ -542,15 +771,24 @@ public final class L5xFrontend implements Frontend {
 
         /** The routine's lines as one text, so the engineer's line numbers are kept by the source map. */
         List<Statement> structuredText(RoutineDef r) {
+            return statements(r.lines);
+        }
+
+        /** ST lines as one text through the source map. */
+        private SourceText lines(List<LineDef> lines) {
             StringBuilder text = new StringBuilder();
             SourceMap.Builder map = SourceMap.builder();
             String fileText = file.text();
-            for (LineDef line : r.lines) {
+            for (LineDef line : lines) {
                 XmlText.decodeInto(fileText, line.text().start(), line.text().end(), text, map);
                 text.append('\n');
                 map.replacement(line.text().end(), 0, 1);
             }
-            SourceText routineText = registry.registerFragment(file, text.toString(), map.build());
+            return registry.registerFragment(file, text.toString(), map.build());
+        }
+
+        List<Statement> statements(List<LineDef> lines) {
+            SourceText routineText = lines(lines);
             Parsed p = stParser.parse(routineText, sink);
             count(p);
             RockwellStAstBuilder b = new RockwellStAstBuilder(routineText, p.tokens(), sink);

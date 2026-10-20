@@ -33,4 +33,9 @@ final class RockwellStParserDriver {
     Parsed parse(SourceText text, DiagnosticSink sink) {
         return parser.parse(text, parser.lex(text), RockwellStParser::statementsOnly, sink);
     }
+
+    /** An SFC transition's condition (entry rule {@code conditionOnly}: an expression, maybe a closing {@code ;}). */
+    Parsed parseCondition(SourceText text, DiagnosticSink sink) {
+        return parser.parse(text, parser.lex(text), RockwellStParser::conditionOnly, sink);
+    }
 }

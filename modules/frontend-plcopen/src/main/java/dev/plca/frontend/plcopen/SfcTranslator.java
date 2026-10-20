@@ -1,18 +1,13 @@
 package dev.plca.frontend.plcopen;
 
 import dev.plca.ast.Expression;
-import dev.plca.ast.Expression.BinaryOp;
 import dev.plca.ast.Identifier;
-import dev.plca.ast.Initializer;
 import dev.plca.ast.Network;
-import dev.plca.ast.QualifiedName;
 import dev.plca.ast.Sfc;
 import dev.plca.ast.Statement;
-import dev.plca.ast.TypeRef;
-import dev.plca.ast.VarBlock;
-import dev.plca.ast.VarDecl;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.SfcLowering;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -104,14 +99,111 @@ final class SfcTranslator {
             }
         }
         Span span = run.elementSpan(body);
-        Sfc chart = new Sfc(steps, transitions, span);
+        Sfc chart = new Sfc(steps, transitions, drawing(), span);
         List<Statement> lowered = new ArrayList<>();
         if (graphical != null) {
             lowered.addAll(graphical.statements());
         }
         lowered.addAll(lower(chart));
         return new Bodies.Translated(
-                List.of(new Statement.Chart(chart, lowered, span)), "SFC", List.of(stepVariables(steps, span)));
+                List.of(new Statement.Chart(chart, lowered, span)),
+                "SFC",
+                List.of(SfcLowering.stepVariables(steps, span)));
+    }
+
+    // ---- drawing (M10) -----------------------------------------------------------------------------
+
+    /** The chart's elements at the author's coordinates, with the links into them as drawn. */
+    private Sfc.Drawing drawing() {
+        List<Sfc.Element> out = new ArrayList<>();
+        for (XNode n : body.children) {
+            Sfc.Kind kind = switch (n.tag) {
+                case "step" -> Sfc.Kind.STEP;
+                case "macroStep" -> Sfc.Kind.MACRO_STEP;
+                case "transition" -> Sfc.Kind.TRANSITION;
+                case "selectionDivergence" -> Sfc.Kind.SELECTION_DIVERGENCE;
+                case "selectionConvergence" -> Sfc.Kind.SELECTION_CONVERGENCE;
+                case "simultaneousDivergence" -> Sfc.Kind.SIMULTANEOUS_DIVERGENCE;
+                case "simultaneousConvergence" -> Sfc.Kind.SIMULTANEOUS_CONVERGENCE;
+                case "jumpStep" -> Sfc.Kind.JUMP;
+                case "actionBlock" -> Sfc.Kind.ACTION_BLOCK;
+                default -> null;
+            };
+            if (kind == null) {
+                continue;
+            }
+            String name = switch (kind) {
+                case STEP, MACRO_STEP -> n.attr("name");
+                case JUMP -> n.attr("targetName");
+                default -> null;
+            };
+            List<String> lines = switch (kind) {
+                case TRANSITION -> List.of(conditionText(n));
+                case ACTION_BLOCK -> actionLines(n);
+                default -> List.of();
+            };
+            List<Sfc.Link> inputs = new ArrayList<>();
+            for (XNode in : n.children("connectionPointIn")) {
+                for (Network.Link l : NetworkBuilder.links(in)) {
+                    inputs.add(new Sfc.Link(l.source(), l.route()));
+                }
+            }
+            out.add(new Sfc.Element(
+                    localId(n),
+                    kind,
+                    name,
+                    n.flag("initialStep"),
+                    lines,
+                    n.x == Integer.MIN_VALUE ? 0 : n.x,
+                    n.y == Integer.MIN_VALUE ? 0 : n.y,
+                    NetworkBuilder.size(n, "width"),
+                    NetworkBuilder.size(n, "height"),
+                    inputs,
+                    run.elementSpan(n)));
+        }
+        return new Sfc.Drawing(out);
+    }
+
+    /** A transition's condition as text: the referenced transition, the inline ST, or that it is drawn. */
+    private String conditionText(XNode transition) {
+        XNode c = transition.child("condition");
+        if (c == null) {
+            return "";
+        }
+        XNode ref = c.child("reference");
+        if (ref != null) {
+            return PlcOpenFrontend.nonNull(ref.attr("name"));
+        }
+        XNode inline = c.child("inline");
+        XNode st = inline == null ? null : inline.child("ST");
+        if (st != null) {
+            return run.text(run.textElement(st)).strip().replaceAll("\\s+", " ");
+        }
+        // drawn: the expression of the variable wired to the condition, if that is what it is
+        XNode in = c.child("connectionPointIn");
+        XNode conn = in == null ? null : in.child("connection");
+        XNode source = conn == null ? null : byId.get(intAttr(conn, "refLocalId"));
+        XNode ex = source == null ? null : source.child("expression");
+        if (ex != null) {
+            String t = run.text(ex).strip().replaceAll("\\s+", " ");
+            if (!t.isEmpty()) {
+                return t;
+            }
+        }
+        return "(graphical condition)";
+    }
+
+    /** An action block's actions, one line each: qualifier, duration and the action's name (or "inline"). */
+    private static List<String> actionLines(XNode block) {
+        List<String> out = new ArrayList<>();
+        for (XNode a : block.children("action")) {
+            String q = PlcOpenFrontend.nonNull(a.attr("qualifier")).toUpperCase(Locale.ROOT);
+            String d = PlcOpenFrontend.nonNull(a.attr("duration"));
+            XNode ref = a.child("reference");
+            String what = ref != null ? PlcOpenFrontend.nonNull(ref.attr("name")) : "(inline)";
+            out.add(((q.isEmpty() ? "N" : q) + " " + (d.isEmpty() ? "" : d + " ") + what).strip());
+        }
+        return out;
     }
 
     // ---- topology -------------------------------------------------------------------------------
@@ -229,59 +321,7 @@ final class SfcTranslator {
     // ---- lowering -------------------------------------------------------------------------------
 
     private List<Statement> lower(Sfc chart) {
-        List<Statement> out = new ArrayList<>();
-        Map<String, List<Statement>> stored = new LinkedHashMap<>();
-        Map<String, Span> storedSpans = new HashMap<>();
-        for (Sfc.Step step : chart.steps()) {
-            Expression active = flag(step.name(), "X");
-            int index = 0;
-            for (Sfc.Action a : step.actions()) {
-                Span s = a.span();
-                List<Statement> action = actionBody(a);
-                index++;
-                // a referenced action is one flag wherever it is stored; an inline one belongs to its step
-                String key = a.reference() != null
-                        ? a.reference().key()
-                        : step.name().key() + "_" + index;
-                switch (a.qualifier()) {
-                    case "S", "SD", "DS", "SL" -> {
-                        Expression f = storedFlag(key, s);
-                        out.add(guard(active, assign(f, bool(true, s), s), s));
-                        stored.putIfAbsent(key, action);
-                        storedSpans.putIfAbsent(key, s);
-                    }
-                    case "R" -> out.add(guard(active, assign(storedFlag(key, s), bool(false, s), s), s));
-                    case "P", "P1" ->
-                        out.add(guard(NetworkLowering.edge(Network.Modifier.RISING, active, s), action, s));
-                    case "P0" -> out.add(guard(NetworkLowering.edge(Network.Modifier.FALLING, active, s), action, s));
-                    // N, none, and the timed L/D (timing not modelled: notes §9.3)
-                    default -> out.add(guard(active, action, s));
-                }
-            }
-        }
-        stored.forEach((key, action) -> {
-            Span s = storedSpans.get(key);
-            out.add(guard(storedFlag(key, s), action, s));
-        });
-        for (Sfc.Transition t : chart.transitions()) {
-            Span s = t.span();
-            Expression cond = null;
-            for (Identifier from : t.from()) {
-                Expression x = flag(from, "X");
-                cond = cond == null ? x : new Expression.Binary(BinaryOp.AND, cond, x, s);
-            }
-            Expression c = t.condition();
-            cond = cond == null ? c : new Expression.Binary(BinaryOp.AND, cond, c, s);
-            List<Statement> fire = new ArrayList<>();
-            for (Identifier from : t.from()) {
-                fire.add(assign(flag(from, "X"), bool(false, s), s));
-            }
-            for (Identifier to : t.to()) {
-                fire.add(assign(flag(to, "X"), bool(true, s), s));
-            }
-            out.add(new Statement.If(List.of(new Statement.Branch(cond, fire, s)), null, s));
-        }
-        return out;
+        return SfcLowering.lower(chart, this::actionBody);
     }
 
     private List<Statement> actionBody(Sfc.Action a) {
@@ -294,54 +334,6 @@ final class SfcTranslator {
             return List.of(new Statement.CallStatement(call, r.span()));
         }
         return List.of();
-    }
-
-    private Expression storedFlag(String key, Span s) {
-        String name = "act_" + key.replaceAll("[^A-Za-z0-9_]", "_");
-        return new Expression.NameRef(new Identifier(name, Identifier.Form.SYNTHETIC, s), false, s);
-    }
-
-    /** {@code S.X}: the step's implicit flag. */
-    private static Expression flag(Identifier step, String member) {
-        Expression s = new Expression.NameRef(step, false, step.span());
-        return new Expression.MemberAccess(s, new Identifier(member, step.span()), step.span());
-    }
-
-    /** Implicit step variables {@code S : STRUCT X : BOOL; T : TIME; END_STRUCT} (initial step: X := TRUE). */
-    private static VarBlock stepVariables(List<Sfc.Step> steps, Span span) {
-        List<VarDecl> vars = new ArrayList<>();
-        for (Sfc.Step st : steps) {
-            Span s = st.span();
-            List<VarDecl> members = List.of(member("X", "BOOL", s), member("T", "TIME", s));
-            Initializer init = st.initial()
-                    ? new Initializer.StructInit(
-                            List.of(new Initializer.FieldInit(
-                                    new Identifier("X", s),
-                                    new Expression.Literal(Expression.LiteralKind.BOOL, "TRUE", null, s),
-                                    s)),
-                            s)
-                    : null;
-            vars.add(new VarDecl(st.name(), null, null, new TypeRef.StructType(members, s), init, false, List.of(), s));
-        }
-        return new VarBlock(VarBlock.Section.VAR, Set.of(), vars, List.of(), span);
-    }
-
-    private static VarDecl member(String name, String type, Span s) {
-        TypeRef t = new TypeRef.Named(
-                new QualifiedName(List.of(new Identifier(type, s)), s), List.of(), null, null, null, s);
-        return new VarDecl(new Identifier(name, s), null, null, t, null, false, List.of(), s);
-    }
-
-    private static Statement guard(Expression cond, Statement s, Span span) {
-        return new Statement.If(List.of(new Statement.Branch(cond, List.of(s), span)), null, span);
-    }
-
-    private static Statement guard(Expression cond, List<Statement> body, Span span) {
-        return new Statement.If(List.of(new Statement.Branch(cond, body, span)), null, span);
-    }
-
-    private static Statement assign(Expression t, Expression v, Span s) {
-        return new Statement.Assignment(t, Statement.AssignOp.ASSIGN, v, s);
     }
 
     private static Expression bool(boolean v, Span s) {

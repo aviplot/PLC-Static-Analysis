@@ -24,6 +24,8 @@ SourceUnit dialect=ROCKWELL
     members:
       Pou kind=ROUTINE name=Graph bodyLanguage="FBD" @17:1-17:34
       Pou kind=ROUTINE name=Steps bodyLanguage="SFC" @22:1-22:34
+        body:
+          Chart chart="0 steps, 0 transitions" @22:1-22:34
       Pou kind=ROUTINE name=Secret bodyLanguage="Encrypted" @23:1-23:82
     body:
       CallStatement @15:50-15:55
@@ -41,5 +43,4 @@ SourceUnit dialect=ROCKWELL
 diagnostics:
   INFO PLC-L5X-003 @5:61 Add-On Instruction 'Drive_v3' is source-protected; only its parameters are analysed
   INFO PLC-L5X-002 @17:16 routine 'Graph' is written in FBD, which is not analysed yet
-  INFO PLC-L5X-002 @22:16 routine 'Steps' is written in SFC, which is not analysed yet
   INFO PLC-L5X-003 @23:42 routine 'Secret' is source-protected and not analysed

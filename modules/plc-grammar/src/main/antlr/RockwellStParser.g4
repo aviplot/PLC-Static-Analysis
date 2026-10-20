@@ -19,6 +19,11 @@ import StParser;
     }
 }
 
+/** An SFC transition's condition (M10): Studio 5000 accepts, and exports keep, a closing `;` (`Level >= 85;`). */
+conditionOnly
+    : expression SEMI? EOF
+    ;
+
 // ---- extension points ---------------------------------------------------------------------------
 
 assignmentTail

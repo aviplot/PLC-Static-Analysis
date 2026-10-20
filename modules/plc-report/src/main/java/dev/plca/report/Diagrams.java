@@ -8,8 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The graphical bodies of a source unit (Rockwell ladder routines, PLCopen LD/FBD bodies) and their drawings: one SVG
- * per rung or network ({@link LadderSvg}, {@link NetworkSvg}), so a viewer can show long routines lazily.
+ * The graphical bodies of a source unit (Rockwell ladder routines, PLCopen LD/FBD bodies, SFC charts) and their
+ * drawings: one SVG per rung or network ({@link LadderSvg}, {@link NetworkSvg}) or per chart ({@link SfcSvg}), so a
+ * viewer can show long routines lazily.
  */
 public final class Diagrams {
 
@@ -49,9 +50,11 @@ public final class Diagrams {
             List<Statement> parts = new ArrayList<>();
             collect(p.body(), parts);
             if (!parts.isEmpty()) {
-                String language = parts.getFirst() instanceof Statement.Network n
-                        ? n.network().language().name()
-                        : "RLL";
+                String language = switch (parts.getFirst()) {
+                    case Statement.Network n -> n.network().language().name();
+                    case Statement.Chart c -> "SFC";
+                    default -> "RLL";
+                };
                 out.add(new Diagram(name, p.kind().name(), language, parts));
             }
         }
@@ -65,7 +68,14 @@ public final class Diagrams {
             switch (s) {
                 case Statement.Rung r -> parts.add(r);
                 case Statement.Network n -> parts.add(n);
-                case Statement.Chart c -> collect(c.body(), parts);
+                case Statement.Chart c -> {
+                    if (c.chart().drawing() != null
+                            && !c.chart().drawing().elements().isEmpty()) {
+                        parts.add(c); // the chart, drawn as one part
+                    } else {
+                        collect(c.body(), parts);
+                    }
+                }
                 default -> {}
             }
         }
@@ -91,6 +101,7 @@ public final class Diagrams {
             switch (s) {
                 case Statement.Rung r -> out.add(new Part(r.number(), LadderSvg.rung(r, registry, width)));
                 case Statement.Network n -> out.add(new Part(n.number(), NetworkSvg.network(n, registry)));
+                case Statement.Chart c -> out.add(new Part(1, SfcSvg.chart(c, registry)));
                 default -> {}
             }
         }

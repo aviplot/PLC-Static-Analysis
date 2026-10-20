@@ -172,7 +172,7 @@ final class NetworkBuilder {
                 : new Network.Point(connectionPoint.x, connectionPoint.y);
     }
 
-    private static int size(XNode n, String name) {
+    static int size(XNode n, String name) {
         String v = n.attr(name);
         try {
             return v == null ? 0 : Math.max(0, (int) Math.round(Double.parseDouble(v.strip())));
@@ -181,7 +181,7 @@ final class NetworkBuilder {
         }
     }
 
-    private static List<Link> links(XNode connectionPointIn) {
+    static List<Link> links(XNode connectionPointIn) {
         List<Link> out = new ArrayList<>();
         if (connectionPointIn == null) {
             return out;

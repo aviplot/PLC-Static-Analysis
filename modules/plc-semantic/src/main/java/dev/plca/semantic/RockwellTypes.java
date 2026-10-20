@@ -41,6 +41,31 @@ final class RockwellTypes {
                         new Member(
                                 "DATA",
                                 new Type.Array(List.of(new Type.Dimension(0L, 81L)), Type.of(ElementaryKind.SINT)))));
+        // the tags of SFC elements (M10: SFC routines are analysed). TODO(verify-format): members from memory of the
+        // Logix 5000 SFC programming manual (1756-PM006), not checked against it
+        struct(
+                "SFC_STEP",
+                List.of(
+                        dint("Status"),
+                        bool("X"),
+                        bool("FS"),
+                        bool("SA"),
+                        bool("LS"),
+                        bool("DN"),
+                        bool("OV"),
+                        bool("AlarmEn"),
+                        bool("AlarmLow"),
+                        bool("AlarmHigh"),
+                        bool("Reset"),
+                        dint("PRE"),
+                        dint("T"),
+                        dint("TMax"),
+                        dint("TMin"),
+                        dint("LimitHigh"),
+                        dint("LimitLow"),
+                        dint("Count")));
+        struct("SFC_ACTION", List.of(dint("Status"), bool("Q"), bool("A"), dint("PRE"), dint("T"), dint("Count")));
+        struct("SFC_STOP", List.of(dint("Status"), bool("X"), bool("Reset"), dint("Count")));
     }
 
     private record Member(String name, Type type) {}

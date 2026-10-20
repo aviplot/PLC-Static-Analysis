@@ -1,4 +1,4 @@
-// Ladder rungs (L5X) and LD/FBD networks (PLCopen) drawn by the server (plca/diagram), loaded a page at a time.
+// Ladder rungs (L5X), LD/FBD networks (PLCopen) and SFC charts (both) drawn by the server (plca/diagram), loaded a page at a time.
 // Findings are drawn on the smallest element whose source range holds them; hover asks the language server, click
 // goes to the text.
 
@@ -259,7 +259,7 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
     return <p class="empty">Loading the drawings…</p>;
   }
   if (list.length === 0) {
-    return <p class="empty">This file has no ladder routines or LD/FBD bodies.</p>;
+    return <p class="empty">This file has no ladder routines, LD/FBD bodies or SFC charts.</p>;
   }
   return (
     <div class="diagrams">
@@ -280,7 +280,7 @@ export function Diagrams({ lsp, path, findings, onOpen }: Props) {
             class={d.name === selected ? 'active' : ''}
             aria-current={d.name === selected}
             onClick={() => (d.name === selected ? reopen(d.name) : setSelected(d.name))}
-            title={`${d.kind.toLowerCase()}, ${d.language}, ${d.parts} ${d.language === 'RLL' ? 'rungs' : 'networks'}`}
+            title={`${d.kind.toLowerCase()}, ${d.language}, ${d.language === 'SFC' ? 'chart' : `${d.parts} ${d.language === 'RLL' ? 'rungs' : 'networks'}`}`}
           >
             <span class="name">{d.name}</span>
             <CountLamps counts={stats.get(d.name)?.counts} compact />

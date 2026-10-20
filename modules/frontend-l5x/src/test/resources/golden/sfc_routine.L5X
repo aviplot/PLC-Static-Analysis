@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.01" TargetName="Filler" TargetType="Controller">
+<Controller Use="Target" Name="Filler">
+<Programs>
+<Program Name="Line" MainRoutineName="Sequence">
+<Tags>
+<Tag Name="Idle" TagType="Base" DataType="SFC_STEP"/>
+<Tag Name="Fill" TagType="Base" DataType="SFC_STEP"/>
+<Tag Name="Cap" TagType="Base" DataType="SFC_STEP"/>
+<Tag Name="Label" TagType="Base" DataType="SFC_STEP"/>
+<Tag Name="Done" TagType="Base" DataType="SFC_STEP"/>
+<Tag Name="Finished" TagType="Base" DataType="SFC_STOP"/>
+<Tag Name="Act_Idle" TagType="Base" DataType="SFC_ACTION"/>
+<Tag Name="Act_Fill" TagType="Base" DataType="SFC_ACTION"/>
+<Tag Name="Act_Cap" TagType="Base" DataType="SFC_ACTION"/>
+<Tag Name="T_Start" TagType="Base" DataType="BOOL"/>
+<Tag Name="T_Full" TagType="Base" DataType="BOOL"/>
+<Tag Name="T_Abort" TagType="Base" DataType="BOOL"/>
+<Tag Name="T_Both" TagType="Base" DataType="BOOL"/>
+<Tag Name="T_Again" TagType="Base" DataType="BOOL"/>
+<Tag Name="Start" TagType="Base" DataType="BOOL"/>
+<Tag Name="Level" TagType="Base" DataType="REAL"/>
+<Tag Name="Valve" TagType="Base" DataType="BOOL"/>
+<Tag Name="Capper" TagType="Base" DataType="BOOL"/>
+<Tag Name="Count" TagType="Base" DataType="DINT"/>
+</Tags>
+<Routines>
+<Routine Name="Sequence" Type="SFC">
+<SFCContent SheetSize="Letter - 8.5 x 11 in" SheetOrientation="Landscape" StepName="Step" TransitionName="Tran" ActionName="Action" StopName="Stop">
+<Step ID="0" X="300" Y="60" Operand="Idle" InitialStep="true" ShowActions="true">
+<Action ID="1" Operand="Act_Idle" Qualifier="NonStored" IsBoolean="false">
+<Body>
+<STContent>
+<Line Number="0">
+<![CDATA[Valve := 0;]]>
+</Line>
+</STContent>
+</Body>
+</Action>
+</Step>
+<Transition ID="2" X="300" Y="160" Operand="T_Start">
+<Condition>
+<STContent>
+<Line Number="0">
+<![CDATA[Start AND Count < 100]]>
+</Line>
+</STContent>
+</Condition>
+</Transition>
+<Branch ID="3" Y="200" BranchType="Simultaneous" BranchFlow="Diverge">
+<Leg ID="4"/>
+<Leg ID="5"/>
+</Branch>
+<Step ID="6" X="200" Y="260" Operand="Fill" InitialStep="false" ShowActions="true">
+<Action ID="7" Operand="Act_Fill" Qualifier="Stored" IsBoolean="false">
+<Body>
+<STContent>
+<Line Number="0">
+<![CDATA[Valve := 1;]]>
+</Line>
+</STContent>
+</Body>
+</Action>
+</Step>
+<Step ID="8" X="400" Y="260" Operand="Label" InitialStep="false" ShowActions="false"/>
+<Branch ID="9" Y="320" BranchType="Simultaneous" BranchFlow="Converge">
+<Leg ID="10"/>
+<Leg ID="11"/>
+</Branch>
+<Transition ID="12" X="300" Y="360" Operand="T_Both">
+<Condition>
+<STContent>
+<Line Number="0">
+<![CDATA[Level > 9.5;]]>
+</Line>
+</STContent>
+</Condition>
+</Transition>
+<Step ID="13" X="300" Y="440" Operand="Cap" InitialStep="false" ShowActions="true">
+<Action ID="14" Operand="Act_Cap" Qualifier="PulseRisingEdge" IsBoolean="false">
+<Body>
+<STContent>
+<Line Number="0">
+<![CDATA[Capper := 1;]]>
+</Line>
+<Line Number="1">
+<![CDATA[Count := Count + 1;]]>
+</Line>
+</STContent>
+</Body>
+</Action>
+</Step>
+<Branch ID="15" Y="480" BranchType="Selection" BranchFlow="Diverge">
+<Leg ID="16"/>
+<Leg ID="17"/>
+</Branch>
+<Transition ID="18" X="200" Y="520" Operand="T_Full">
+<Condition>
+<STContent>
+<Line Number="0">
+<![CDATA[NOT Capper]]>
+</Line>
+</STContent>
+</Condition>
+</Transition>
+<Transition ID="19" X="420" Y="520" Operand="T_Abort">
+<Condition>
+<STContent>
+<Line Number="0">
+<![CDATA[]]>
+</Line>
+</STContent>
+</Condition>
+</Transition>
+<Step ID="20" X="200" Y="600" Operand="Done" InitialStep="false" ShowActions="false"/>
+<Transition ID="21" X="200" Y="680" Operand="T_Again">
+<Condition>
+<STContent>
+<Line Number="0">
+<![CDATA[Start]]>
+</Line>
+</STContent>
+</Condition>
+</Transition>
+<Stop ID="22" X="420" Y="600" Operand="Finished"/>
+<DirectedLink FromID="0" ToID="2" Show="true"/>
+<DirectedLink FromID="2" ToID="3" Show="true"/>
+<DirectedLink FromID="4" ToID="6" Show="true"/>
+<DirectedLink FromID="5" ToID="8" Show="true"/>
+<DirectedLink FromID="6" ToID="10" Show="true"/>
+<DirectedLink FromID="8" ToID="11" Show="true"/>
+<DirectedLink FromID="9" ToID="12" Show="true"/>
+<DirectedLink FromID="12" ToID="13" Show="true"/>
+<DirectedLink FromID="13" ToID="15" Show="true"/>
+<DirectedLink FromID="16" ToID="18" Show="true"/>
+<DirectedLink FromID="17" ToID="19" Show="true"/>
+<DirectedLink FromID="18" ToID="20" Show="true"/>
+<DirectedLink FromID="19" ToID="22" Show="true"/>
+<DirectedLink FromID="20" ToID="21" Show="true"/>
+<DirectedLink FromID="21" ToID="0" Show="false"/>
+</SFCContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="Main" Type="CONTINUOUS" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="Line"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

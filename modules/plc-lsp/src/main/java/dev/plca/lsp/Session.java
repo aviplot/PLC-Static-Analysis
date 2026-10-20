@@ -604,10 +604,24 @@ final class Session {
             try {
                 r.run();
             } catch (Exception | StackOverflowError e) {
+                if (interrupted(e)) {
+                    // the session is shutting down (the editor or page closed) while a run was in progress
+                    LOG.log(Level.FINE, "plca analysis task stopped by shutdown", e);
+                    return;
+                }
                 LOG.log(Level.SEVERE, "plca analysis task failed", e);
                 log(MessageType.Error, "plca: internal error: " + e);
             }
         };
+    }
+
+    private static boolean interrupted(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof InterruptedException) {
+                return true;
+            }
+        }
+        return Thread.currentThread().isInterrupted();
     }
 
     @FunctionalInterface

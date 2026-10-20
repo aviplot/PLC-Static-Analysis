@@ -145,6 +145,11 @@ Graph elements, each with `localId`:
 - The chart becomes `Statement.Chart(sfc, lowered)`; the `Sfc` IR keeps steps, transitions and action blocks for M7
   rules and the viewer.
 
+- **Drawing (M10)**: `Sfc.drawing` keeps the chart as drawn — `step`, `macroStep`, `transition`, the four branch
+  elements, `jumpStep` and `actionBlock` with `position`, `width`/`height` and the `connection` routes — for
+  `SfcSvg`. A transition's text is its referenced name, its inline ST, or the expression of a variable wired to its
+  graphical condition.
+
 ## 7. Configurations and tasks
 `configuration` → `Configuration`, `resource` → `Resource`, `task name priority interval` → `Task` (`INTERVAL`,
 `PRIORITY`), `pouInstance name typeName` → `ProgramInstance`, resource/configuration `globalVars` → `GlobalVars`.

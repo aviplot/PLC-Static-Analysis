@@ -36,7 +36,8 @@ Without the bundle, `plca web` still starts and its page says how to build the a
    documentation. Click a finding to go to it. In the code: F12 or Ctrl+click for the definition, Shift+F12 for
    references, hover for declarations; the Outline tab lists the file's POUs, variables and types.
 3. **Ladder and diagrams** (L5X and PLCopen files): every routine or POU with a graphical body, rung by rung (pages of
-   40 as you scroll). Elements with a finding are outlined in the finding's colour; hover shows the finding and the
+   40 as you scroll); SFC charts (PLCopen and Rockwell, not TwinCAT) as one drawing with steps, transitions, branches,
+   action blocks and jumps. Elements with a finding are outlined in the finding's colour; hover shows the finding and the
    operand's declaration; click goes to the text. The list shows each routine's findings by severity, can hide the
    routines without findings or put the ones with most findings first, and opens a routine at the rung of its first
    finding (click it again to go back there; "Show earlier parts" loads the rungs above).

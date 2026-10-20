@@ -50,7 +50,8 @@ Points I have not checked against the manual text are marked `TODO(verify-format
 | Program | `Pou(PROGRAM)`. Tags → `VAR`, or `INPUT`/`OUTPUT`/`IN_OUT` by `Usage`; `Public` → `VAR PUBLIC`. Every routine → member of kind `ROUTINE`. Body = one synthetic `JSR(<MainRoutineName>);`, the program's scan. `FaultRoutineName`, `Class`, `Disabled` → attribute pragmas on the POU |
 | Routine (RLL) | `Pou(ROUTINE)`, body = one `Statement.Rung` per rung (§4); `bodyLanguage = "RLL"` |
 | Routine (ST) | `Pou(ROUTINE)`, body = the parsed statements; `bodyLanguage = "ST"` |
-| Routine (FBD, SFC, encrypted) | `Pou(ROUTINE)` with `body = null`, `bodyLanguage = "FBD"`/`"SFC"`/`"Encrypted"`, plus an info diagnostic (FBD/SFC wait for M6) |
+| Routine (FBD, encrypted) | `Pou(ROUTINE)` with `body = null`, `bodyLanguage = "FBD"`/`"Encrypted"`, plus an info diagnostic |
+| Routine (SFC, M10) | `Pou(ROUTINE)` whose body is one `Statement.Chart`: the `Sfc` semantics, its lowering, the drawing (§6a) |
 | Alias tag | `VarDecl.overlay` = the `AliasFor` path as written (`Local:2:O.Data.0`, `Arr[3].Run`, `Word.5`); the semantic model splits it into base tag + path |
 | Tasks | `Configuration(controller)` with one `Task` per task (`PRIORITY`, `INTERVAL := T#<Rate>ms` for PERIODIC, `TYPE`) and one `ProgramInstance(program, task)` per scheduled program |
 | Tag initial value | `Data Format="Decorated"` → `DataValue Value` for elementary tags; `Format="String"` CDATA for strings. Structures/arrays: no initializer in M5 |
@@ -160,6 +161,49 @@ invented nor hidden by a guess.
 
 The ST editor numbers lines from 1 while the export numbers them from 0 (TODO(verify-format)). Findings use the
 physical L5X line plus the logical location `Program:P/Routine:R/Line:n` with `n = Number + 1`.
+
+## 6a. SFC routines (M10)
+
+**TODO(verify-format)**: everything here is read from the corpus (31 files, Studio 5000 exports from about V20 to
+V33), not from the Import/Export manual (1756-RM084) or the SFC programming manual (1756-PM006). Please check against
+them.
+
+```xml
+<Routine Name="Sequence" Type="SFC">
+  <SFCContent SheetSize=… StepName="Step" TransitionName="Tran" …>
+    <Step ID="0" X="380" Y="60" Operand="Step_002" InitialStep="true" …>
+      <Action ID="1" Operand="Action_003" Qualifier="NonStored" IsBoolean="false" …>
+        <Body><STContent><Line Number="0"><![CDATA[banda_1 := 0;]]></Line>…</STContent></Body>
+      </Action>
+    </Step>
+    <Transition ID="22" X="380" Y="180" Operand="Tran_009" …>
+      <Condition><STContent><Line Number="0"><![CDATA[Start AND NOT Fault]]></Line></STContent></Condition>
+    </Transition>
+    <Branch ID="24" Y="2220" BranchType="Selection" BranchFlow="Converge"><Leg ID="25"/><Leg ID="26"/></Branch>
+    <Stop ID="30" X="320" Y="2300" Operand="Stop_001"/>
+    <DirectedLink FromID="0" ToID="22" Show="true"/>
+    <TextBox …/> <Attachment …/>
+  </SFCContent>
+</Routine>
+```
+
+- **Elements** (corpus counts): `Step` 219, `Transition` 199, `Branch` 48 with `Leg` 102, `Stop` 14, `Action` 78,
+  `DirectedLink` 321; `TextBox`/`Attachment` (comments) are not read.
+- **Links**: `DirectedLink FromID→ToID`; an ID may be a `Leg`, which stands for its branch. A transition leaves the
+  steps reached backwards through branches and enters those reached forwards (a link back to an earlier step is a jump).
+- **Operands** are tags: `SFC_STEP` (steps), `SFC_ACTION` (actions), `SFC_STOP` (stops), BOOL (transitions). The three
+  SFC types are predefined in `RockwellTypes` with members from memory of PM006 (`X`, `T`, `DN`, …): to verify.
+- **Qualifiers** seen: `NonStored` (N), `Stored` (S), `Reset` (R), `TimeLimited` (L), `TimeDelayed` (D),
+  `StoredTimeDelayed` (SD), `StoredTimeLimited` (SL), `Pulse` (P), `PulseRisingEdge` (P1), `PulseFallingEdge` (P0).
+  Others are read as N.
+- **Branch words**: `BranchType` Selection/Simultaneous, `BranchFlow` Diverge/Converge. Some exports carry placeholders
+  (`DUMMY_ID_09350`); then the type is read as selection and the direction from the links (more out than in: diverge).
+- **Semantics**: steps with their actions (ST bodies, parsed like ST routines), transitions with their condition (an
+  ST expression, entry rule `expressionOnly`; empty: always true), lowered as PLCopen charts (`SfcLowering`:
+  `IF step.X THEN action`, `IF from.X AND cond THEN from.X := FALSE; to.X := TRUE; END_IF`).
+- **Drawing**: `X`/`Y` are taken as an element's centre (steps and transitions line up whatever their size); a branch
+  has only `Y` and spans its links. Sizes are not in the export: steps 80×30, transitions 20×10. A step's actions are
+  drawn as an action block beside it.
 
 ## 7. Error recovery
 - XML: a well-formedness error ends reading. Everything read before it is analysed, plus one error diagnostic.

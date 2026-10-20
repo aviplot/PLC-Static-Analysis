@@ -1,0 +1,314 @@
+SourceUnit dialect=ROCKWELL
+  Pou kind=PROGRAM name=Line bodyLanguage="L5X" @5:1-5:49
+    varBlocks:
+      VarBlock section=VAR @7:1-25:51
+        variables:
+          VarDecl name=Idle referenceInit=false @7:1-7:54
+            type:
+              Named name=SFC_STEP @7:43-7:51
+          VarDecl name=Fill referenceInit=false @8:1-8:54
+            type:
+              Named name=SFC_STEP @8:43-8:51
+          VarDecl name=Cap referenceInit=false @9:1-9:53
+            type:
+              Named name=SFC_STEP @9:42-9:50
+          VarDecl name=Label referenceInit=false @10:1-10:55
+            type:
+              Named name=SFC_STEP @10:44-10:52
+          VarDecl name=Done referenceInit=false @11:1-11:54
+            type:
+              Named name=SFC_STEP @11:43-11:51
+          VarDecl name=Finished referenceInit=false @12:1-12:58
+            type:
+              Named name=SFC_STOP @12:47-12:55
+          VarDecl name=Act_Idle referenceInit=false @13:1-13:60
+            type:
+              Named name=SFC_ACTION @13:47-13:57
+          VarDecl name=Act_Fill referenceInit=false @14:1-14:60
+            type:
+              Named name=SFC_ACTION @14:47-14:57
+          VarDecl name=Act_Cap referenceInit=false @15:1-15:59
+            type:
+              Named name=SFC_ACTION @15:46-15:56
+          VarDecl name=T_Start referenceInit=false @16:1-16:53
+            type:
+              Named name=BOOL @16:46-16:50
+          VarDecl name=T_Full referenceInit=false @17:1-17:52
+            type:
+              Named name=BOOL @17:45-17:49
+          VarDecl name=T_Abort referenceInit=false @18:1-18:53
+            type:
+              Named name=BOOL @18:46-18:50
+          VarDecl name=T_Both referenceInit=false @19:1-19:52
+            type:
+              Named name=BOOL @19:45-19:49
+          VarDecl name=T_Again referenceInit=false @20:1-20:53
+            type:
+              Named name=BOOL @20:46-20:50
+          VarDecl name=Start referenceInit=false @21:1-21:51
+            type:
+              Named name=BOOL @21:44-21:48
+          VarDecl name=Level referenceInit=false @22:1-22:51
+            type:
+              Named name=REAL @22:44-22:48
+          VarDecl name=Valve referenceInit=false @23:1-23:51
+            type:
+              Named name=BOOL @23:44-23:48
+          VarDecl name=Capper referenceInit=false @24:1-24:52
+            type:
+              Named name=BOOL @24:45-24:49
+          VarDecl name=Count referenceInit=false @25:1-25:51
+            type:
+              Named name=DINT @25:44-25:48
+    members:
+      Pou kind=ROUTINE name=Sequence bodyLanguage="SFC" @28:1-28:37
+        body:
+          Chart chart="5 steps, 5 transitions" @28:1-28:37
+            body:
+              If @31:1-31:75
+                branches:
+                  Branch @31:1-31:75
+                    condition:
+                      MemberAccess member=X @30:38-30:42
+                        target:
+                          NameRef name=Idle globalScope=false @30:38-30:42
+                    body:
+                      Assignment op=ASSIGN @35:10-35:21
+                        target:
+                          NameRef name=Valve globalScope=false @35:10-35:15
+                        value:
+                          Literal kind=INTEGER text="0" @35:19-35:20
+              If @55:1-55:72
+                branches:
+                  Branch @55:1-55:72
+                    condition:
+                      MemberAccess member=X @54:39-54:43
+                        target:
+                          NameRef name=Fill globalScope=false @54:39-54:43
+                    body:
+                      Assignment op=ASSIGN @55:1-55:72
+                        target:
+                          NameRef name=$act_fill_1 globalScope=false @55:1-55:72
+                        value:
+                          Literal kind=BOOL text="TRUE" @55:1-55:72
+              If @80:1-80:81
+                branches:
+                  Branch @80:1-80:81
+                    condition:
+                      Call @80:1-80:81
+                        callee:
+                          NameRef name=$R_TRIG globalScope=false @80:1-80:81
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @79:40-79:43
+                            value:
+                              MemberAccess member=X @79:40-79:43
+                                target:
+                                  NameRef name=Cap globalScope=false @79:40-79:43
+                    body:
+                      Assignment op=ASSIGN @84:10-84:22
+                        target:
+                          NameRef name=Capper globalScope=false @84:10-84:16
+                        value:
+                          Literal kind=INTEGER text="1" @84:20-84:21
+                      Assignment op=ASSIGN @87:10-87:29
+                        target:
+                          NameRef name=Count globalScope=false @87:10-87:15
+                        value:
+                          Binary op=ADD @87:19-87:28
+                            left:
+                              NameRef name=Count globalScope=false @87:19-87:24
+                            right:
+                              Literal kind=INTEGER text="1" @87:27-87:28
+              If @55:1-55:72
+                branches:
+                  Branch @55:1-55:72
+                    condition:
+                      NameRef name=$act_fill_1 globalScope=false @55:1-55:72
+                    body:
+                      Assignment op=ASSIGN @59:10-59:21
+                        target:
+                          NameRef name=Valve globalScope=false @59:10-59:15
+                        value:
+                          Literal kind=INTEGER text="1" @59:19-59:20
+              If @41:1-41:54
+                branches:
+                  Branch @41:1-41:54
+                    condition:
+                      Binary op=AND @41:1-41:54
+                        left:
+                          MemberAccess member=X @30:38-30:42
+                            target:
+                              NameRef name=Idle globalScope=false @30:38-30:42
+                        right:
+                          Binary op=AND @45:10-45:31
+                            left:
+                              NameRef name=Start globalScope=false @45:10-45:15
+                            right:
+                              Binary op=LT @45:20-45:31
+                                left:
+                                  NameRef name=Count globalScope=false @45:20-45:25
+                                right:
+                                  Literal kind=INTEGER text="100" @45:28-45:31
+                    body:
+                      Assignment op=ASSIGN @41:1-41:54
+                        target:
+                          MemberAccess member=X @30:38-30:42
+                            target:
+                              NameRef name=Idle globalScope=false @30:38-30:42
+                        value:
+                          Literal kind=BOOL text="FALSE" @41:1-41:54
+                      Assignment op=ASSIGN @41:1-41:54
+                        target:
+                          MemberAccess member=X @54:39-54:43
+                            target:
+                              NameRef name=Fill globalScope=false @54:39-54:43
+                        value:
+                          Literal kind=BOOL text="TRUE" @41:1-41:54
+                      Assignment op=ASSIGN @41:1-41:54
+                        target:
+                          MemberAccess member=X @65:39-65:44
+                            target:
+                              NameRef name=Label globalScope=false @65:39-65:44
+                        value:
+                          Literal kind=BOOL text="TRUE" @41:1-41:54
+              If @70:1-70:54
+                branches:
+                  Branch @70:1-70:54
+                    condition:
+                      Binary op=AND @70:1-70:54
+                        left:
+                          Binary op=AND @70:1-70:54
+                            left:
+                              MemberAccess member=X @54:39-54:43
+                                target:
+                                  NameRef name=Fill globalScope=false @54:39-54:43
+                            right:
+                              MemberAccess member=X @65:39-65:44
+                                target:
+                                  NameRef name=Label globalScope=false @65:39-65:44
+                        right:
+                          Binary op=GT @74:10-74:21
+                            left:
+                              NameRef name=Level globalScope=false @74:10-74:15
+                            right:
+                              Literal kind=REAL text="9.5" @74:18-74:21
+                    body:
+                      Assignment op=ASSIGN @70:1-70:54
+                        target:
+                          MemberAccess member=X @54:39-54:43
+                            target:
+                              NameRef name=Fill globalScope=false @54:39-54:43
+                        value:
+                          Literal kind=BOOL text="FALSE" @70:1-70:54
+                      Assignment op=ASSIGN @70:1-70:54
+                        target:
+                          MemberAccess member=X @65:39-65:44
+                            target:
+                              NameRef name=Label globalScope=false @65:39-65:44
+                        value:
+                          Literal kind=BOOL text="FALSE" @70:1-70:54
+                      Assignment op=ASSIGN @70:1-70:54
+                        target:
+                          MemberAccess member=X @79:40-79:43
+                            target:
+                              NameRef name=Cap globalScope=false @79:40-79:43
+                        value:
+                          Literal kind=BOOL text="TRUE" @70:1-70:54
+              If @97:1-97:54
+                branches:
+                  Branch @97:1-97:54
+                    condition:
+                      Binary op=AND @97:1-97:54
+                        left:
+                          MemberAccess member=X @79:40-79:43
+                            target:
+                              NameRef name=Cap globalScope=false @79:40-79:43
+                        right:
+                          Unary op=NOT @101:10-101:20
+                            operand:
+                              NameRef name=Capper globalScope=false @101:14-101:20
+                    body:
+                      Assignment op=ASSIGN @97:1-97:54
+                        target:
+                          MemberAccess member=X @79:40-79:43
+                            target:
+                              NameRef name=Cap globalScope=false @79:40-79:43
+                        value:
+                          Literal kind=BOOL text="FALSE" @97:1-97:54
+                      Assignment op=ASSIGN @97:1-97:54
+                        target:
+                          MemberAccess member=X @115:40-115:44
+                            target:
+                              NameRef name=Done globalScope=false @115:40-115:44
+                        value:
+                          Literal kind=BOOL text="TRUE" @97:1-97:54
+              If @106:1-106:55
+                branches:
+                  Branch @106:1-106:55
+                    condition:
+                      Binary op=AND @106:1-106:55
+                        left:
+                          MemberAccess member=X @79:40-79:43
+                            target:
+                              NameRef name=Cap globalScope=false @79:40-79:43
+                        right:
+                          Literal kind=BOOL text="TRUE" @106:1-106:55
+                    body:
+                      Assignment op=ASSIGN @106:1-106:55
+                        target:
+                          MemberAccess member=X @79:40-79:43
+                            target:
+                              NameRef name=Cap globalScope=false @79:40-79:43
+                        value:
+                          Literal kind=BOOL text="FALSE" @106:1-106:55
+              If @116:1-116:55
+                branches:
+                  Branch @116:1-116:55
+                    condition:
+                      Binary op=AND @116:1-116:55
+                        left:
+                          MemberAccess member=X @115:40-115:44
+                            target:
+                              NameRef name=Done globalScope=false @115:40-115:44
+                        right:
+                          NameRef name=Start globalScope=false @120:10-120:15
+                    body:
+                      Assignment op=ASSIGN @116:1-116:55
+                        target:
+                          MemberAccess member=X @115:40-115:44
+                            target:
+                              NameRef name=Done globalScope=false @115:40-115:44
+                        value:
+                          Literal kind=BOOL text="FALSE" @116:1-116:55
+                      Assignment op=ASSIGN @116:1-116:55
+                        target:
+                          MemberAccess member=X @30:38-30:42
+                            target:
+                              NameRef name=Idle globalScope=false @30:38-30:42
+                        value:
+                          Literal kind=BOOL text="TRUE" @116:1-116:55
+    body:
+      CallStatement @5:39-5:47
+        call:
+          Call @5:39-5:47
+            callee:
+              NameRef name=JSR globalScope=false @5:39-5:47
+            arguments:
+              Argument kind=POSITIONAL negated=false @5:39-5:47
+                value:
+                  NameRef name=Sequence globalScope=false @5:39-5:47
+  Configuration name=Filler @3:32-3:38
+    elements:
+      Task name=Main @147:1-147:51
+        settings:
+          Argument kind=INPUT name=TYPE negated=false @147:13-147:17
+            value:
+              Literal kind=STRING text="'CONTINUOUS'" @147:13-147:17
+          Argument kind=INPUT name=PRIORITY negated=false @147:47-147:49
+            value:
+              Literal kind=INTEGER text="10" @147:47-147:49
+      ProgramInstance name=Line task=Main type=Line @149:25-149:29
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Controller" @2:99-2:109
+  comments: 0
+diagnostics:

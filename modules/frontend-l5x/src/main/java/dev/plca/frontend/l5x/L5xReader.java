@@ -188,6 +188,8 @@ final class L5xReader {
         final int offset;
         final List<RungDef> rungs = new ArrayList<>();
         final List<LineDef> lines = new ArrayList<>();
+        /** {@code <SFCContent>} of an SFC routine, else null. */
+        SfcDef sfc;
 
         RoutineDef(Attr name, String type, int offset) {
             this.name = name;
@@ -211,6 +213,63 @@ final class L5xReader {
     }
 
     record LineDef(int number, Range text) {}
+
+    /**
+     * An SFC routine's chart: its elements and {@code <DirectedLink>}s. Legs of a {@code <Branch>} are mapped to their
+     * branch. TODO(verify-format): element and attribute names are taken from corpus exports (Studio 5000 V20–V33), not
+     * checked against the Import/Export manual (1756-RM084); see {@code docs/grammar/rockwell.md} §SFC.
+     */
+    static final class SfcDef {
+        final List<SfcNode> nodes = new ArrayList<>();
+        /** {@code from → to} element IDs, legs already replaced by their branch. */
+        final List<int[]> links = new ArrayList<>();
+
+        final java.util.Map<Integer, Integer> legs = new java.util.HashMap<>();
+    }
+
+    /**
+     * {@code <Step>}, {@code <Transition>}, {@code <Stop>}, {@code <Branch>} or a step's {@code <Action>} (with the
+     * step's ID in {@code step}). {@code lines}: an action's body, a transition's condition (ST lines).
+     */
+    static final class SfcNode {
+        final String tag;
+        final int id;
+        final Attr operand;
+        final int x;
+        final int y;
+        final boolean initial;
+        final String qualifier;
+        final String branchType;
+        final String branchFlow;
+        final int step;
+        final int offset;
+        final List<LineDef> lines = new ArrayList<>();
+
+        SfcNode(
+                String tag,
+                int id,
+                Attr operand,
+                int x,
+                int y,
+                boolean initial,
+                String qualifier,
+                String branchType,
+                String branchFlow,
+                int step,
+                int offset) {
+            this.tag = tag;
+            this.id = id;
+            this.operand = operand;
+            this.x = x;
+            this.y = y;
+            this.initial = initial;
+            this.qualifier = qualifier;
+            this.branchType = branchType;
+            this.branchFlow = branchFlow;
+            this.step = step;
+            this.offset = offset;
+        }
+    }
 
     static final class TaskDef {
         final Attr name;
@@ -243,6 +302,11 @@ final class L5xReader {
     private ProgramDef program;
     private RoutineDef routine;
     private RungDef rung;
+    /** The SFC element whose ST lines are being read (an action's body, a transition's condition). */
+    private SfcNode sfcNode;
+
+    private SfcNode sfcStep;
+    private SfcNode sfcBranch;
     private TaskDef task;
     private Typed valueOwner;
     private int contentStart = -1;
@@ -404,6 +468,8 @@ final class L5xReader {
                     contentOf = "rungComment";
                 }
             }
+            case "SFCContent", "Step", "Transition", "Stop", "Branch", "Action", "Leg", "DirectedLink" ->
+                sfcStart(tag, at, parent);
             case "Line" -> {
                 if (routine != null && "STContent".equals(parent)) {
                     lineNumber = intValue("Number", routine.lines.size());
@@ -411,28 +477,7 @@ final class L5xReader {
                     contentOf = "line";
                 }
             }
-            case "Task" -> {
-                if ("Tasks".equals(parent)) {
-                    task = new TaskDef(
-                            attr(at, "Name"),
-                            nonNull(value("Type")),
-                            attr(at, "Rate"),
-                            attr(at, "Priority"),
-                            "true".equalsIgnoreCase(value("InhibitTask")),
-                            at);
-                    project.tasks.add(task);
-                }
-            }
-            case "ScheduledProgram" -> {
-                if (task != null) {
-                    task.programs.add(attr(at, "Name"));
-                }
-            }
-            case "EventInfo" -> {
-                if (task != null) {
-                    task.eventTrigger = value("EventTrigger");
-                }
-            }
+            case "Task", "ScheduledProgram", "EventInfo" -> taskStart(tag, at, parent);
             case "Module" -> {
                 String name = value("Name");
                 if (name != null && "Modules".equals(parent)) {
@@ -488,7 +533,8 @@ final class L5xReader {
                 }
                 case "line" -> {
                     if (tag.equals("Line")) {
-                        routine.lines.add(new LineDef(lineNumber, content));
+                        (routine.sfc != null && sfcNode != null ? sfcNode.lines : routine.lines)
+                                .add(new LineDef(lineNumber, content));
                         contentOf = null;
                     }
                 }
@@ -522,10 +568,98 @@ final class L5xReader {
                 }
             }
             case "Routine" -> routine = null;
+            case "Action" -> sfcNode = sfcStep;
+            case "Step", "Transition", "Stop", "Branch" -> {
+                sfcNode = null;
+                sfcStep = null;
+                sfcBranch = null;
+            }
             case "Rung" -> rung = null;
             case "Task" -> task = null;
             default -> {}
         }
+    }
+
+    /** A task and what it schedules. */
+    private void taskStart(String tag, int at, String parent) {
+        switch (tag) {
+            case "Task" -> {
+                if ("Tasks".equals(parent)) {
+                    task = new TaskDef(
+                            attr(at, "Name"),
+                            nonNull(value("Type")),
+                            attr(at, "Rate"),
+                            attr(at, "Priority"),
+                            "true".equalsIgnoreCase(value("InhibitTask")),
+                            at);
+                    project.tasks.add(task);
+                }
+            }
+            case "ScheduledProgram" -> {
+                if (task != null) {
+                    task.programs.add(attr(at, "Name"));
+                }
+            }
+            case "EventInfo" -> {
+                if (task != null) {
+                    task.eventTrigger = value("EventTrigger");
+                }
+            }
+            default -> {}
+        }
+    }
+
+    /** Elements of an SFC routine's {@code <SFCContent>} (M10). */
+    private void sfcStart(String tag, int at, String parent) {
+        switch (tag) {
+            case "SFCContent" -> {
+                if (routine != null) {
+                    routine.sfc = new SfcDef();
+                }
+            }
+            case "Step", "Transition", "Stop", "Branch" -> {
+                if (routine != null && routine.sfc != null && "SFCContent".equals(parent)) {
+                    SfcNode n = sfcNode(tag, at, -1);
+                    routine.sfc.nodes.add(n);
+                    sfcNode = n;
+                    sfcStep = tag.equals("Step") ? n : null;
+                    sfcBranch = tag.equals("Branch") ? n : null;
+                }
+            }
+            case "Action" -> {
+                if (routine != null && routine.sfc != null && sfcStep != null && "Step".equals(parent)) {
+                    SfcNode n = sfcNode(tag, at, sfcStep.id);
+                    routine.sfc.nodes.add(n);
+                    sfcNode = n;
+                }
+            }
+            case "Leg" -> {
+                if (routine != null && routine.sfc != null && sfcBranch != null) {
+                    routine.sfc.legs.put(intValue("ID", -1), sfcBranch.id);
+                }
+            }
+            case "DirectedLink" -> {
+                if (routine != null && routine.sfc != null) {
+                    routine.sfc.links.add(new int[] {intValue("FromID", -1), intValue("ToID", -1)});
+                }
+            }
+            default -> {}
+        }
+    }
+
+    private SfcNode sfcNode(String tag, int at, int step) {
+        return new SfcNode(
+                tag,
+                intValue("ID", -1),
+                attr(at, "Operand"),
+                intValue("X", 0),
+                intValue("Y", 0),
+                "true".equalsIgnoreCase(value("InitialStep")),
+                value("Qualifier"),
+                value("BranchType"),
+                value("BranchFlow"),
+                step,
+                at);
     }
 
     private TagDef tagDef(int at, String usage) {
