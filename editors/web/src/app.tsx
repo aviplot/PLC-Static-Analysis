@@ -1,7 +1,7 @@
 // The workbench: open a project export, read its findings, look at its code and ladder, compare two versions.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { type FileInfo, type ProjectInfo, type SessionInfo, api } from './api.ts';
+import { type FileInfo, type ProjectInfo, type Reencoded, type SessionInfo, api } from './api.ts';
 import { PLC_LANGUAGES, modelUri, monaco, registerFeatures, registerLanguages, setMarkers, themeName, toMonacoRange } from './editor.ts';
 import { CLIENT_CAPABILITIES, LspClient, lspUrl } from './lsp.ts';
 import {
@@ -24,7 +24,7 @@ import { Diagrams } from './ui/diagrams.tsx';
 import { Findings } from './ui/findings.tsx';
 import { CountLamps, Lamp } from './ui/lamps.tsx';
 import { FileTree } from './ui/tree.tsx';
-import { type Picked, fromDrop, fromFileList, save, zipTexts } from './upload.ts';
+import { type Picked, fromDrop, fromFileList, save } from './upload.ts';
 
 /** Files larger than this are shown read-only and analysed from the server's copy (the server's maxFileSizeMb). */
 const LARGE = 20 * 1024 * 1024;
@@ -57,7 +57,7 @@ export function App() {
   const [selected, setSelected] = useState<Finding | null>(null);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [upload, setUpload] = useState<{ name: string; fraction: number } | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; severity: 'error' | 'warning' } | null>(null);
   const [about, setAbout] = useState<string | null>(null);
 
   const lsp = useRef<LspClient | null>(null);
@@ -69,7 +69,7 @@ export function App() {
   const reveal = useRef<{ path: string; range: Range } | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-  const fail = useCallback((m: string) => setMessage(m), []);
+  const fail = useCallback((m: string) => setMessage({ text: m, severity: 'error' }), []);
 
   // ---- start ------------------------------------------------------------------------------
 
@@ -368,7 +368,15 @@ export function App() {
 
   const downloadEdited = async () => {
     const edited = [...dirty].map((path) => ({ path, text: opens.current.get(path)!.model.getValue() }));
-    save(await zipTexts(edited), `${project?.name ?? 'project'}-edited.zip`);
+    try {
+      const { zip, reencoded } = await api.exportEdited(project!.id, edited);
+      save(zip, `${project?.name ?? 'project'}-edited.zip`);
+      if (reencoded.length > 0) {
+        setMessage({ text: reencodedNotice(reencoded), severity: 'warning' });
+      }
+    } catch (e) {
+      fail(`Download failed: ${(e as Error).message}`);
+    }
   };
 
   const onOpenFinding = (path: string, range: Range) => {
@@ -595,13 +603,19 @@ export function App() {
 
       {message ? (
         <div class="toast" role="alert">
-          <Lamp severity="error" />
-          <span>{message}</span>
+          <Lamp severity={message.severity} />
+          <span>{message.text}</span>
           <button onClick={() => setMessage(null)}>Dismiss</button>
         </div>
       ) : null}
     </div>
   );
+}
+
+/** Files the server could not write in their original charset (see TextEncoder on the server). */
+export function reencodedNotice(files: Reencoded[]): string {
+  const list = files.map((f) => `${f.path} (${[...f.characters].join(' ')} not in ${f.original})`).join(', ');
+  return `Saved as UTF-8 with BOM, because the edits contain characters the original encoding cannot hold: ${list}.`;
 }
 
 function sessionStorageGet(k: string): string | null {

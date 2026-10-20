@@ -6,19 +6,23 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -29,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -650,5 +655,60 @@ class WebServerTest {
                     HttpResponse.BodyHandlers.ofString());
             assertThat(again.statusCode()).isEqualTo(304);
         }
+    }
+
+    @Test
+    void exportWritesEditedFilesInTheirOriginalEncoding() throws Exception {
+        Charset cp1252 = Charset.forName("windows-1252");
+        byte[] bom = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+        byte[] utf8 = "PROGRAM Q (* Größe *) END_PROGRAM".getBytes(StandardCharsets.UTF_8);
+        byte[] withBom = new byte[bom.length + utf8.length];
+        System.arraycopy(bom, 0, withBom, 0, bom.length);
+        System.arraycopy(utf8, 0, withBom, bom.length, utf8.length);
+        Browser b = new Browser();
+        String id = b.upload(
+                        "enc",
+                        zip(Map.of(
+                                "a.st", "PROGRAM A (* Größe *) END_PROGRAM".getBytes(cp1252),
+                                "q.st", withBom,
+                                "c.st", "PROGRAM C (* ä *) END_PROGRAM".getBytes(cp1252))))
+                .get("id")
+                .getAsString();
+        String body = "{\"files\": [{\"path\": \"a.st\", \"text\": \"PROGRAM A (* Höhe *) END_PROGRAM\"},"
+                + " {\"path\": \"q.st\", \"text\": \"PROGRAM Q (* Weiß *) END_PROGRAM\"},"
+                + " {\"path\": \"c.st\", \"text\": \"PROGRAM C (* a → b *) END_PROGRAM\"}]}";
+        HttpResponse<byte[]> r = b.http.send(
+                HttpRequest.newBuilder(URI.create(b.base() + "/api/projects/" + id + "/export"))
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .setHeader("Origin", b.base())
+                        .build(),
+                HttpResponse.BodyHandlers.ofByteArray());
+        assertThat(r.statusCode()).isEqualTo(200);
+        Map<String, byte[]> files = new HashMap<>();
+        try (ZipInputStream z = new ZipInputStream(new ByteArrayInputStream(r.body()))) {
+            for (ZipEntry e; (e = z.getNextEntry()) != null; ) {
+                files.put(e.getName(), z.readAllBytes());
+            }
+        }
+        assertThat(files.get("a.st")).isEqualTo("PROGRAM A (* Höhe *) END_PROGRAM".getBytes(cp1252));
+        assertThat(new String(files.get("q.st"), StandardCharsets.UTF_8))
+                .isEqualTo("\uFEFFPROGRAM Q (* Weiß *) END_PROGRAM");
+        assertThat(new String(files.get("c.st"), StandardCharsets.UTF_8))
+                .isEqualTo("\uFEFFPROGRAM C (* a → b *) END_PROGRAM");
+        String header = URLDecoder.decode(
+                r.headers().firstValue(WebServer.REENCODED_HEADER).orElseThrow(), StandardCharsets.UTF_8);
+        JsonArray reencoded = JsonParser.parseString(header).getAsJsonArray();
+        assertThat(reencoded).hasSize(1);
+        JsonObject c = reencoded.get(0).getAsJsonObject();
+        assertThat(c.get("path").getAsString()).isEqualTo("c.st");
+        assertThat(c.get("original").getAsString()).isEqualTo("windows-1252");
+        assertThat(c.get("characters").getAsString()).isEqualTo("→");
+
+        HttpResponse<String> unknown = b.send(
+                "POST",
+                "/api/projects/" + id + "/export",
+                "{\"files\": [{\"path\": \"../x.st\", \"text\": \"\"}]}".getBytes(StandardCharsets.UTF_8),
+                Map.of());
+        assertThat(unknown.statusCode()).isEqualTo(404);
     }
 }

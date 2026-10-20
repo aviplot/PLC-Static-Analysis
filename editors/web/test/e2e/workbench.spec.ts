@@ -2,7 +2,7 @@
 // privacy (no request leaves the server) and clean-up of uploads.
 
 import { type Page, expect, test } from '@playwright/test';
-import { zipSync } from 'fflate';
+import { unzipSync, zipSync } from 'fflate';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -106,6 +106,38 @@ test('editing: live diagnostics and download of edited files', async ({ page }) 
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download 1 edited file' }).click();
   expect((await download).suggestedFilename()).toBe('edit-edited.zip');
+});
+
+test('download: edited files keep their encoding and line endings', async ({ page }) => {
+  await page.goto('/');
+  // Windows-1252 with CRLF, as older CODESYS exports: "Größe" is 47 72 F6 DF 65
+  const text = 'PROGRAM Legacy (* Gr\u00f6\u00dfe *)\r\nVAR\r\n  x : INT;\r\nEND_VAR\r\nx := 1;\r\nEND_PROGRAM\r\n';
+  const cp1252 = Uint8Array.from([...text].map((c) => c.charCodeAt(0)));
+  await upload(page, 'legacy', Buffer.from(zipSync({ 'legacy/Legacy.st': cp1252 })));
+  await page.locator('.tree').getByRole('button', { name: /^Legacy\.st/ }).click();
+  await expect(page.locator('.code .view-lines')).toContainText('PROGRAM Legacy');
+  await page.locator('.code .view-line').nth(4).click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' // \u00e4');
+
+  const download = async () => {
+    const d = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download 1 edited file' }).click();
+    return unzipSync(readFileSync(await (await d).path()))['legacy/Legacy.st'];
+  };
+  const kept = await download();
+  const expected = text.replace('x := 1;', 'x := 1; // \u00e4');
+  expect([...kept]).toEqual([...expected].map((c) => c.charCodeAt(0)));
+  await expect(page.locator('.toast')).toHaveCount(0);
+
+  // an arrow does not exist in Windows-1252: UTF-8 with BOM, and the page says so
+  await page.locator('.code .view-line').nth(4).click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' \u2192');
+  const utf8 = await download();
+  expect([...utf8.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+  expect(new TextDecoder().decode(utf8.slice(3))).toBe(expected.replace('\u00e4', '\u00e4 \u2192'));
+  await expect(page.locator('.toast')).toContainText('legacy/Legacy.st (\u2192 not in windows-1252)');
 });
 
 test('ladder: rungs drawn, findings on the rung, hover and click to text', async ({ page }) => {

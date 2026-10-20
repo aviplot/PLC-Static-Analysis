@@ -2,16 +2,19 @@ package dev.plca.web;
 
 import dev.plca.analysis.ConfigFile;
 import dev.plca.core.source.SourceFile;
+import dev.plca.core.source.TextEncoder;
 import dev.plca.report.AnalysisResult;
 import dev.plca.report.Baseline;
 import dev.plca.report.ReportFormat;
 import dev.plca.report.ToolInfo;
 import dev.plca.rules.RuleDescriptor;
 import dev.plca.rules.RuleRegistry;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
@@ -63,6 +68,7 @@ import tools.jackson.databind.json.JsonMapper;
  * GET    /api/projects/{id}/tree          the project's files
  * GET    /api/projects/{id}/file?path=    a file's text, decoded as the analyzer decodes it
  * GET    /api/projects/{id}/report?format=json|sarif|html
+ * POST   /api/projects/{id}/export        {"files": [{"path", "text"}]}: a zip of edited files in their original encoding
  * DELETE /api/projects/{id}
  * POST   /api/compare                     {"base": id, "head": id}
  * GET    /api/about                       version and third-party notices
@@ -74,6 +80,7 @@ public final class WebServer implements AutoCloseable {
     private static final Logger LOG = Logger.getLogger(WebServer.class.getName());
     private static final String STATIC = "/dev/plca/web/static/";
     static final String NAME_HEADER = "X-Plca-Name";
+    static final String REENCODED_HEADER = "X-Plca-Reencoded";
 
     private final WebOptions options;
     private final Server server;
@@ -272,6 +279,10 @@ public final class WebServer implements AutoCloseable {
             case "GET rules" -> json(response, cb, rules());
             case "GET about" -> text(response, cb, 200, about());
             case "POST projects" -> {
+                if (parts.length == 4 && parts[3].equals("export")) {
+                    export(project(session, parts[2]), request, response, cb);
+                    return;
+                }
                 if (parts.length != 2) {
                     throw new ApiException(404, "not found");
                 }
@@ -327,6 +338,53 @@ public final class WebServer implements AutoCloseable {
             }
             default -> throw new ApiException(404, "not found");
         }
+    }
+
+    /** A file written in another charset than it came in, and the characters that made it so. */
+    record Reencoded(String path, String original, String written, String characters) {}
+
+    /**
+     * Edited texts back as the IDE exported them: each file in its original charset and BOM ({@link TextEncoder}), or
+     * UTF-8 with BOM when the text no longer fits; those files are listed in the {@code X-Plca-Reencoded} header (JSON,
+     * URL-encoded).
+     */
+    private void export(Projects.Project p, Request request, Response response, Callback cb) throws Exception {
+        JsonNode body;
+        try (InputStream in = Request.asInputStream(request)) {
+            byte[] data = in.readNBytes(
+                    (int) Math.min(Integer.MAX_VALUE - 8, options.limits().maxExtractedBytes() * 2 + 1));
+            if (data.length > options.limits().maxExtractedBytes() * 2) {
+                throw new ApiException(413, "edited files too large");
+            }
+            body = json.readTree(data);
+        } catch (RuntimeException e) {
+            throw new ApiException(400, "expected {\"files\": [{\"path\": …, \"text\": …}]}");
+        }
+        List<Reencoded> reencoded = new ArrayList<>();
+        ByteArrayOutputStream zip = new ByteArrayOutputStream();
+        try (ZipOutputStream z = new ZipOutputStream(zip, StandardCharsets.UTF_8)) {
+            for (JsonNode f : body.path("files")) {
+                String rel = f.path("path").asString(null);
+                String text = f.path("text").asString(null);
+                if (text == null) {
+                    throw new ApiException(400, "a file without text");
+                }
+                TextEncoder.Encoded e = TextEncoder.encodeLike(text, Files.readAllBytes(file(p, rel)));
+                if (e.fellBack()) {
+                    reencoded.add(
+                            new Reencoded(rel, e.requested().name(), e.charset().name(), e.unmappable()));
+                }
+                z.putNextEntry(new ZipEntry(rel));
+                z.write(e.data());
+                z.closeEntry();
+            }
+        }
+        response.getHeaders()
+                .put(
+                        REENCODED_HEADER,
+                        URLEncoder.encode(json.writeValueAsString(reencoded), StandardCharsets.UTF_8)
+                                .replace("+", "%20"));
+        bytes(response, cb, 200, "application/zip", zip.toByteArray());
     }
 
     private Projects.Project project(String session, String id) throws ApiException {

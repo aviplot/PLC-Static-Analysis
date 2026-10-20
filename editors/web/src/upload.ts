@@ -94,18 +94,6 @@ async function pack(entries: { path: string; file: File }[]): Promise<Picked> {
   };
 }
 
-/** A zip of edited files, for "Download changed files". */
-export async function zipTexts(files: { path: string; text: string }[]): Promise<Blob> {
-  const z: Zippable = {};
-  for (const f of files) {
-    z[f.path] = new TextEncoder().encode(f.text);
-  }
-  const data = await new Promise<Uint8Array>((resolve, reject) =>
-    zip(z, { level: 6 }, (err, out) => (err ? reject(err) : resolve(out))),
-  );
-  return new Blob([data as BlobPart], { type: 'application/zip' });
-}
-
 /** Saves a blob as a file through a temporary link. */
 export function save(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);

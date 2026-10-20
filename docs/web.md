@@ -39,7 +39,11 @@ Without the bundle, `plca web` still starts and its page says how to build the a
    40 as you scroll). Elements with a finding are outlined in the finding's colour; hover shows the finding and the
    operand's declaration; click goes to the text.
 4. **Edit to try a fix**: buffers are editable and analysed as you type. Edits are never written to the server;
-   "Download edited files" gives a zip of the changed files (UTF-8).
+   "Download edited files" gives a zip of the changed files, each in the encoding and with the BOM it was uploaded with
+   (UTF-8, UTF-16, Windows-1252), so the IDE imports it as it exported it; line endings are kept. A file whose edits
+   contain characters its encoding cannot hold (an arrow in a Windows-1252 file) is saved as UTF-8 with BOM, with an
+   XML declaration's `encoding` changed to match, and the page lists those files. A pure ASCII file that is no longer
+   ASCII also gets a BOM, so an IDE that assumes the ANSI code page reads it right.
 5. **Compare versions**: upload the older and the newer export, pick both, compare. You get new, fixed and unchanged
    findings per rule and per file (matched by the same line-independent fingerprints as baselines), and a side-by-side
    diff with fixed findings marked on the old text and new ones on the new text.

@@ -43,6 +43,14 @@ export interface Comparison {
   findings: CompareItem[];
 }
 
+/** An edited file written in another charset than it came in. */
+export interface Reencoded {
+  path: string;
+  original: string;
+  written: string;
+  characters: string;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -78,6 +86,19 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ base, head }),
     }),
+  /** Edited files as a zip, each in the encoding it was uploaded in (UTF-8 where that cannot hold the edits). */
+  async exportEdited(id: string, files: { path: string; text: string }[]): Promise<{ zip: Blob; reencoded: Reencoded[] }> {
+    const r = await check(
+      await fetch(`/api/projects/${id}/export`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files }),
+      }),
+    );
+    const header = r.headers.get('X-Plca-Reencoded');
+    return { zip: await r.blob(), reencoded: header ? JSON.parse(decodeURIComponent(header)) : [] };
+  },
   reportUrl: (id: string, format: 'html' | 'json' | 'sarif') => `/api/projects/${id}/report?format=${format}`,
 
   /** Uploads a zip; {@code progress} gets the sent fraction (0..1). XHR, as fetch reports no upload progress. */
