@@ -1,0 +1,42 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_A implementsTypes=[I_A] bodyLanguage="ST" @1:1-7:19
+    varBlocks:
+      VarBlock section=VAR @2:1-4:8
+        variables:
+          VarDecl name=x referenceInit=false @3:5-3:13
+            type:
+              Named name=INT @3:9-3:12
+    body:
+      Assignment op=ASSIGN @6:1-6:8
+        target:
+          NameRef name=x globalScope=false @6:1-6:2
+        value:
+          Literal kind=INTEGER text="1" @6:6-6:7
+  Pou kind=FUNCTION_BLOCK name=FB_B extendsTypes=[FB_A] bodyLanguage="ST" @9:1-17:19
+    varBlocks:
+      VarBlock section=VAR qualifiers=[CONSTANT] @10:1-12:8
+        variables:
+          VarDecl name=n referenceInit=false @11:5-11:18
+            type:
+              Named name=INT @11:9-11:12
+            init:
+              Literal kind=INTEGER text="1" @11:16-11:17
+      VarBlock section=VAR @13:1-15:8
+        variables:
+          VarDecl name=y referenceInit=false @14:5-14:13
+            type:
+              Named name=INT @14:9-14:12
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @19:1-24:12
+    varBlocks:
+      VarBlock section=VAR qualifiers=[CONSTANT] @20:1-22:8
+        variables:
+          VarDecl name=n referenceInit=false @21:5-21:18
+            type:
+              Named name=INT @21:9-21:12
+            init:
+              Literal kind=INTEGER text="1" @21:16-21:17
+  comments: 0
+diagnostics:
+  ERROR PLC-SYN-001 @23:1 unexpected 'IMPLEMENTS'
+  ERROR PLC-SYN-001 @5:1 'IMPLEMENTS' must follow the function block name or its leading VAR_GENERIC CONSTANT section
+  ERROR PLC-SYN-001 @16:1 'EXTENDS' must follow the function block name or its leading VAR_GENERIC CONSTANT section

@@ -36,6 +36,34 @@ libraryElement
     | configurationDeclaration
     ;
 
+/**
+ * Generic function blocks (CODESYS help "VAR_GENERIC CONSTANT"; TwinCAT 3.1.4026): the generic constants come
+ * before EXTENDS / IMPLEMENTS, as in `FUNCTION_BLOCK F VAR_GENERIC CONSTANT … END_VAR IMPLEMENTS I`. The grammar takes
+ * the clauses after any VAR section; the AST builder reports them unless they follow a leading VAR_GENERIC section.
+ */
+functionBlockDeclaration
+    : functionBlockHeader SEMI? (varSection (inheritanceClause SEMI?)*)* pouBody (END_FUNCTION_BLOCK | EOF)
+    ;
+
+/** TwinCAT `<Declaration>`: same as the core, plus inheritance clauses after a VAR_GENERIC section. */
+declarationItem
+    : dataTypeDeclaration
+    | pouHeader SEMI?
+    | varSection
+    | inheritanceClause SEMI?
+    | modifier
+    ;
+
+inheritance
+    : inheritanceClause*
+    ;
+
+/** Generic base: `EXTENDS FB_Base<maxlen>`. */
+inheritanceClause
+    : EXTENDS qualifiedName genericArguments?
+    | IMPLEMENTS qualifiedNameList
+    ;
+
 memberDeclaration
     : methodDeclaration
     | propertyDeclaration

@@ -1,0 +1,64 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_MyString implementsTypes=[IPrintable, IString] bodyLanguage="ST" @2:1-11:19
+    varBlocks:
+      VarBlock section=VAR qualifiers=[CONSTANT] @3:1-5:8
+        variables:
+          VarDecl name=maxlen referenceInit=false @4:5-4:25
+            type:
+              Named name=UDINT @4:14-4:19
+            init:
+              Literal kind=INTEGER text="1" @4:23-4:24
+      VarBlock section=VAR @7:1-9:8
+        variables:
+          VarDecl name=buffer referenceInit=false @8:5-8:39
+            type:
+              ArrayType @8:14-8:38
+                dimensions:
+                  Dimension @8:20-8:29
+                    low:
+                      Literal kind=INTEGER text="0" @8:20-8:21
+                    high:
+                      NameRef name=maxlen globalScope=false @8:23-8:29
+                element:
+                  Named name=BYTE @8:34-8:38
+    body:
+      Assignment op=ASSIGN @10:1-10:16
+        target:
+          Index @10:1-10:10
+            target:
+              NameRef name=buffer globalScope=false @10:1-10:7
+            indices:
+              Literal kind=INTEGER text="0" @10:8-10:9
+        value:
+          Literal kind=INTEGER text="0" @10:14-10:15
+  Pou kind=FUNCTION_BLOCK name=FB_MySpecialString extendsTypes=[FB_MyString] implementsTypes=[ISpecial] bodyLanguage="ST" @13:1-18:19
+    varBlocks:
+      VarBlock section=VAR qualifiers=[CONSTANT] @14:1-16:8
+        variables:
+          VarDecl name=maxlen2 referenceInit=false @15:5-15:26
+            type:
+              Named name=UDINT @15:15-15:20
+            init:
+              Literal kind=INTEGER text="1" @15:24-15:25
+  Pou kind=FUNCTION_BLOCK name=FB_LongString extendsTypes=[FB_MyString] bodyLanguage="ST" @20:1-21:19
+  Pou kind=PROGRAM name=MAIN bodyLanguage="ST" @23:1-28:12
+    varBlocks:
+      VarBlock section=VAR @24:1-26:8
+        variables:
+          VarDecl name=s referenceInit=false @25:5-25:30
+            type:
+              Named name=FB_MyString @25:9-25:29
+                genericArguments:
+                  Binary op=MUL @25:22-25:27
+                    left:
+                      Literal kind=INTEGER text="2" @25:22-25:23
+                    right:
+                      Literal kind=INTEGER text="5" @25:26-25:27
+    body:
+      CallStatement @27:1-27:5
+        call:
+          Call @27:1-27:4
+            callee:
+              NameRef name=s globalScope=false @27:1-27:2
+  comments: 1
+diagnostics:

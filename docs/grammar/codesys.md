@@ -136,7 +136,7 @@ the vendor documentation was not checked.
 | Construct | Example | Notes |
 |---|---|---|
 | FB_init constructor arguments | `fb : FB_X(1, b := 2);`, `ARRAY[1..2] OF FB_X[(a:=1), (a:=2)]` | CODESYS help "FB_init" |
-| Generic constants (TwinCAT 3.1.4026) | `VAR_GENERIC CONSTANT … END_VAR`, `fb : FB_Buffer<10>;` | *(verify)* exact syntax |
+| Generic constants (TwinCAT 3.1.4026) | `VAR_GENERIC CONSTANT … END_VAR`, `fb : FB_Buffer<10>;` | CODESYS help "VAR_GENERIC CONSTANT". The section comes before EXTENDS / IMPLEMENTS: `FUNCTION_BLOCK F VAR_GENERIC CONSTANT … END_VAR IMPLEMENTS I`, `… END_VAR EXTENDS FB_Base<n>`. Clauses after any other section are an error (`PLC-SYN-001`, still kept in the AST). Generic arguments of a base are not kept in `Pou.extendsTypes`, and the section is a `VAR CONSTANT` block in the AST |
 | Chained assignment | `a := b := FALSE;`, `a R= b R= c;` | AST: one `Assignment` per target, same value |
 | `REF=` in declarations | `r : REFERENCE TO T REF= x;` | `VarDecl.referenceInit` |
 | Global scope operator | `.gVar` | `NameRef.globalScope` |

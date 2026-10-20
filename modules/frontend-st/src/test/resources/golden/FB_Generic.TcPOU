@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4026.12">
+  <POU Name="FB_Generic" Id="{11111111-2222-3333-4444-666666666666}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Generic
+VAR_GENERIC CONSTANT
+	nMax : DINT := 10;
+END_VAR IMPLEMENTS I_Collection, I_Enumerator;
+VAR
+	aItems : ARRAY[0..nMax] OF INT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[aItems[0] := 1;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

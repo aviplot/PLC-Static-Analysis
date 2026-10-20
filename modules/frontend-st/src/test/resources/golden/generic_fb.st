@@ -1,0 +1,28 @@
+(* Generic function blocks (CODESYS help "VAR_GENERIC CONSTANT"): generic constants come before EXTENDS / IMPLEMENTS *)
+FUNCTION_BLOCK FB_MyString
+VAR_GENERIC CONSTANT
+    maxlen : UDINT := 1;
+END_VAR
+IMPLEMENTS IString, IPrintable
+VAR
+    buffer : ARRAY[0..maxlen] OF BYTE;
+END_VAR
+buffer[0] := 0;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK FB_MySpecialString
+VAR_GENERIC CONSTANT
+    maxlen2 : UDINT := 1;
+END_VAR
+EXTENDS FB_MyString<maxlen2> IMPLEMENTS ISpecial
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK FB_LongString EXTENDS FB_MyString<1000>
+END_FUNCTION_BLOCK
+
+PROGRAM MAIN
+VAR
+    s : FB_MyString<(2 * 5)>;
+END_VAR
+s();
+END_PROGRAM

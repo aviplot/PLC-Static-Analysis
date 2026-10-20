@@ -1,0 +1,35 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=FUNCTION_BLOCK name=FB_Generic implementsTypes=[I_Collection, I_Enumerator] bodyLanguage="ST" @4:27-10:8
+    varBlocks:
+      VarBlock section=VAR qualifiers=[CONSTANT] @5:1-7:8
+        variables:
+          VarDecl name=nMax referenceInit=false @6:2-6:20
+            type:
+              Named name=DINT @6:9-6:13
+            init:
+              Literal kind=INTEGER text="10" @6:17-6:19
+      VarBlock section=VAR @8:1-10:8
+        variables:
+          VarDecl name=aItems referenceInit=false @9:2-9:33
+            type:
+              ArrayType @9:11-9:32
+                dimensions:
+                  Dimension @9:17-9:24
+                    low:
+                      Literal kind=INTEGER text="0" @9:17-9:18
+                    high:
+                      NameRef name=nMax globalScope=false @9:20-9:24
+                element:
+                  Named name=INT @9:29-9:32
+    body:
+      Assignment op=ASSIGN @12:20-12:35
+        target:
+          Index @12:20-12:29
+            target:
+              NameRef name=aItems globalScope=false @12:20-12:26
+            indices:
+              Literal kind=INTEGER text="0" @12:27-12:28
+        value:
+          Literal kind=INTEGER text="1" @12:33-12:34
+  comments: 0
+diagnostics:

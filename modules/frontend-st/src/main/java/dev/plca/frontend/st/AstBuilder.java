@@ -97,17 +97,31 @@ final class AstBuilder extends BuilderSupport {
         List<Declaration.TypeDecl> types = new ArrayList<>();
         List<VarSectionContext> vars = new ArrayList<>();
         List<ModifierContext> loose = new ArrayList<>();
+        List<InheritanceClauseContext> late = new ArrayList<>();
         Header header = null;
+        boolean afterGeneric = false;
         for (DeclarationItemContext item : ctx.declarationItem()) {
+            if (item.inheritanceClause() != null) {
+                lateClause(item.inheritanceClause(), afterGeneric && header != null, late);
+                continue;
+            }
+            afterGeneric = false;
             if (item.dataTypeDeclaration() != null) {
                 types.addAll(dataTypeDeclaration(item.dataTypeDeclaration()));
             } else if (item.varSection() != null) {
+                afterGeneric = vars.isEmpty()
+                        && header != null
+                        && header.kind() == PouKind.FUNCTION_BLOCK
+                        && isGeneric(item.varSection());
                 vars.add(item.varSection());
             } else if (item.modifier() != null) {
                 loose.add(item.modifier());
             } else if (item.pouHeader() != null && header == null) {
                 header = pouHeader(item.pouHeader());
             }
+        }
+        if (header != null) {
+            header = withClauses(header, late);
         }
         return new DeclarationPart(header, modifiers(loose), varSections(vars), types, span(ctx));
     }
@@ -199,7 +213,18 @@ final class AstBuilder extends BuilderSupport {
     }
 
     private Pou functionBlock(FunctionBlockDeclarationContext ctx) {
-        return pou(header(ctx.functionBlockHeader()), ctx.varSection(), ctx.pouBody(), span(ctx));
+        List<InheritanceClauseContext> late = new ArrayList<>();
+        boolean afterGeneric = false;
+        int sections = 0;
+        for (ParseTree child : ctx.children == null ? List.<ParseTree>of() : ctx.children) {
+            if (child instanceof VarSectionContext v) {
+                afterGeneric = sections++ == 0 && isGeneric(v);
+            } else if (child instanceof InheritanceClauseContext c) {
+                lateClause(c, afterGeneric, late);
+            }
+        }
+        Header h = withClauses(header(ctx.functionBlockHeader()), late);
+        return pou(h, ctx.varSection(), ctx.pouBody(), span(ctx));
     }
 
     private Pou classDecl(ClassDeclarationContext ctx) {
@@ -429,15 +454,50 @@ final class AstBuilder extends BuilderSupport {
         List<QualifiedName> ext = new ArrayList<>();
         List<QualifiedName> impl = new ArrayList<>();
         if (inh != null) {
-            for (QualifiedNameContext q : inh.qualifiedName()) {
-                ext.add(qualifiedName(q));
-            }
-            for (QualifiedNameListContext l : inh.qualifiedNameList()) {
-                impl.addAll(qualifiedNames(l));
-            }
+            clauses(inh.inheritanceClause(), ext, impl);
         }
         return new Header(
                 kind, identifier(name), modifiers(mods), null, ext, impl, pragmasBefore(ctx.getStart()), span(ctx));
+    }
+
+    /** Generic arguments of a base ({@code EXTENDS FB_Base<n>}) are not kept: the AST has the base name only. */
+    private void clauses(List<InheritanceClauseContext> clauses, List<QualifiedName> ext, List<QualifiedName> impl) {
+        for (InheritanceClauseContext c : clauses) {
+            if (c.qualifiedName() != null) {
+                ext.add(qualifiedName(c.qualifiedName()));
+            } else if (c.qualifiedNameList() != null) {
+                impl.addAll(qualifiedNames(c.qualifiedNameList()));
+            }
+        }
+    }
+
+    /**
+     * EXTENDS / IMPLEMENTS after the VAR_GENERIC CONSTANT section of a generic FB (CODESYS: generic constants come
+     * first). Anywhere else after the header the compiler rejects them; they are reported but still kept.
+     */
+    private void lateClause(InheritanceClauseContext c, boolean afterGeneric, List<InheritanceClauseContext> out) {
+        if (!afterGeneric) {
+            sink.report(Diagnostic.error(
+                    SyntaxCodes.SYNTAX,
+                    "'" + c.getStart().getText() + "' must follow the function block name"
+                            + " or its leading VAR_GENERIC CONSTANT section",
+                    tokenSpan(c.getStart())));
+        }
+        out.add(c);
+    }
+
+    private static boolean isGeneric(VarSectionContext v) {
+        return v.varSectionKeyword() != null && v.varSectionKeyword().VAR_GENERIC() != null;
+    }
+
+    private Header withClauses(Header h, List<InheritanceClauseContext> late) {
+        if (late.isEmpty()) {
+            return h;
+        }
+        List<QualifiedName> ext = new ArrayList<>(h.extendsTypes());
+        List<QualifiedName> impl = new ArrayList<>(h.implementsTypes());
+        clauses(late, ext, impl);
+        return new Header(h.kind(), h.name(), h.modifiers(), h.type(), ext, impl, h.pragmas(), h.span());
     }
 
     private static Set<Modifier> modifiers(List<ModifierContext> mods) {
