@@ -99,6 +99,28 @@ class LanguageServerTest {
 
         @Override
         public void logMessage(MessageParams p) {}
+
+        /** Work-done progress as "kind: title or message (percentage)". */
+        final List<String> progress = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public java.util.concurrent.CompletableFuture<Void> createProgress(
+                org.eclipse.lsp4j.WorkDoneProgressCreateParams p) {
+            progress.add("create: " + p.getToken().getLeft());
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public void notifyProgress(org.eclipse.lsp4j.ProgressParams p) {
+            org.eclipse.lsp4j.WorkDoneProgressNotification n = p.getValue().getLeft();
+            switch (n) {
+                case org.eclipse.lsp4j.WorkDoneProgressBegin b -> progress.add("begin: " + b.getTitle());
+                case org.eclipse.lsp4j.WorkDoneProgressReport r ->
+                    progress.add("report: " + r.getMessage() + " (" + r.getPercentage() + ")");
+                case org.eclipse.lsp4j.WorkDoneProgressEnd e -> progress.add("end: " + e.getMessage());
+                default -> progress.add("other");
+            }
+        }
     }
 
     @BeforeEach
@@ -132,7 +154,11 @@ class LanguageServerTest {
         remote = clientLauncher.getRemoteProxy();
 
         InitializeParams init = new InitializeParams();
-        init.setCapabilities(new ClientCapabilities());
+        ClientCapabilities caps = new ClientCapabilities();
+        org.eclipse.lsp4j.WindowClientCapabilities window = new org.eclipse.lsp4j.WindowClientCapabilities();
+        window.setWorkDoneProgress(true);
+        caps.setWindow(window);
+        init.setCapabilities(caps);
         init.setWorkspaceFolders(List.of(new WorkspaceFolder(tmp.toUri().toString(), "tmp")));
         JsonObject options = new JsonObject();
         options.addProperty("fastDelayMs", 5);
@@ -392,5 +418,15 @@ class LanguageServerTest {
     @Test
     void messagesNeverIncludeInternalErrors() {
         assertThat(client.messages).noneMatch(m -> m.contains("internal error"));
+    }
+
+    @Test
+    void loadingReportsProgress() {
+        List<String> p = List.copyOf(client.progress);
+        assertThat(p.getFirst()).startsWith("create: plca-load-");
+        assertThat(p.get(1)).isEqualTo("begin: Loading the project");
+        assertThat(p).anyMatch(x -> x.matches("report: Reading files: \\d+ of \\d+ \\(\\d+\\)"));
+        assertThat(p).contains("report: Building the semantic model (85)", "report: Checking the rules (90)");
+        assertThat(p.getLast()).matches("end: Analysed \\d+ files");
     }
 }

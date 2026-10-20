@@ -18,6 +18,8 @@ import {
   pathOf,
   severityOf,
   uriOf,
+  type LoadProgress,
+  nextProgress,
 } from './model.ts';
 import { Compare } from './ui/compare.tsx';
 import { Diagrams } from './ui/diagrams.tsx';
@@ -53,6 +55,8 @@ export function App() {
   const [side, setSide] = useState<'files' | 'outline'>('files');
   const [connection, setConnection] = useState<Connection>('offline');
   const [analysing, setAnalysing] = useState(false);
+  /** The server's load progress ($/progress), from begin to end. */
+  const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null);
   const [filter, setFilter] = useState<Filter>(emptyFilter);
   const [selected, setSelected] = useState<Finding | null>(null);
   const [dirty, setDirty] = useState<Set<string>>(new Set());
@@ -168,12 +172,14 @@ export function App() {
   const connect = async (p: ProjectInfo) => {
     const client = new LspClient(lspUrl(p.id));
     setConnection('connecting');
+    setLoadProgress(null);
     client.onNotification('textDocument/publishDiagnostics', onDiagnostics);
     client.onNotification('window/logMessage', (m) => {
       if (/plca: analysed /.test(m.message)) {
         setAnalysing(false);
       }
     });
+    client.onNotification('$/progress', (p) => setLoadProgress((old) => nextProgress(old, p.value)));
     client.onNotification('window/showMessage', (m) => {
       if (m.type <= 2) {
         fail(m.message);
@@ -574,6 +580,7 @@ export function App() {
             onOpen={onOpenFinding}
             selected={selected}
             analysing={analysing}
+            progress={loadProgress}
           />
         </main>
       )}
@@ -593,6 +600,12 @@ export function App() {
         </span>
         {project ? <CountLamps counts={counts.get('')} /> : null}
         <span class="spacer" />
+        {loadProgress ? (
+          <span class="progress" title={loadProgress.title}>
+            {loadProgress.message ?? loadProgress.title}{' '}
+            <progress max={100} value={loadProgress.percentage} aria-label={loadProgress.title} />
+          </span>
+        ) : null}
         {upload ? (
           <span class="progress">
             Uploading {upload.name} <progress max={1} value={upload.fraction} />

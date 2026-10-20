@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
@@ -69,6 +70,8 @@ public final class L5xFrontend implements Frontend {
 
     private final RungParserDriver rungParser;
     private final RockwellStParserDriver stParser;
+    /** Drawing mode: the routines whose rungs are parsed (paths as {@code Diagrams} names them); null: a full parse. */
+    private final Predicate<String> drawn;
 
     public L5xFrontend() {
         this(true);
@@ -76,9 +79,27 @@ public final class L5xFrontend implements Frontend {
 
     /** {@code twoStage = false} parses with full LL only; results are identical (for benchmarks). */
     public L5xFrontend(boolean twoStage) {
+        this(twoStage, null);
+    }
+
+    private L5xFrontend(boolean twoStage, Predicate<String> drawn) {
         this.rungParser = new RungParserDriver(twoStage);
         this.stParser = new RockwellStParserDriver(twoStage);
+        this.drawn = drawn;
     }
+
+    /**
+     * A quick read for drawing one routine of a large export while the project still loads: rungs are parsed only for
+     * {@code routine} ({@code Program/Routine}, an AOI's name for its Logic, {@code Aoi/Routine}; null: the first
+     * ladder routine with rungs, the one a viewer shows first). Every other ladder routine keeps its rungs as
+     * placeholders (number and place, no drawing), ST bodies are left out. Not for analysis.
+     */
+    public static L5xFrontend forDrawing(String routine) {
+        return new L5xFrontend(true, routine == null ? FIRST : path -> path.equals(routine));
+    }
+
+    /** Drawing mode's "the first ladder routine with rungs", in the order {@code Diagrams} lists them. */
+    private static final Predicate<String> FIRST = path -> false;
 
     @Override
     public Set<String> extensions() {
@@ -110,6 +131,8 @@ public final class L5xFrontend implements Frontend {
         final List<Pragma> pragmas = new ArrayList<>();
         Stats stats = Stats.NONE;
         Map<String, AoiSignature> aois = Map.of();
+        /** The ladder routines whose rungs are parsed (drawing mode); null: all. */
+        Predicate<String> parsed = drawn;
 
         Run(SourceFile file, SourceRegistry registry, DiagnosticSink sink) {
             this.file = file;
@@ -136,6 +159,10 @@ public final class L5xFrontend implements Frontend {
             }
             // a partial export (one routine, rung, AOI…) refers to tags it does not contain: the model needs to know
             pragmas.add(attribute("TargetType", p.targetType.value(), nameSpan(p.targetType, 0)));
+            if (drawn == FIRST) {
+                String first = firstDrawn(p);
+                parsed = path -> path.equals(first);
+            }
             aois = signatures(p.aois);
             for (DataTypeDef d : p.dataTypes) {
                 declarations.add(dataType(d));
@@ -155,7 +182,7 @@ public final class L5xFrontend implements Frontend {
                 declarations.add(program(prog));
             }
             for (RoutineDef r : p.looseRoutines) {
-                declarations.add(routine(r));
+                declarations.add(routine(r, ""));
             }
             if (!p.tasks.isEmpty()) {
                 declarations.add(tasks(p));
@@ -221,8 +248,9 @@ public final class L5xFrontend implements Frontend {
             String language = a.encoded ? "Encrypted" : null;
             List<Pou> members = new ArrayList<>();
             for (RoutineDef r : a.routines) {
-                Pou routine = routine(r);
-                if (r.name.present() && r.name.value().equalsIgnoreCase("Logic")) {
+                boolean logic = r.name.present() && r.name.value().equalsIgnoreCase("Logic");
+                Pou routine = routine(r, logic ? "\0" + a.name.value() : a.name.value() + "/");
+                if (logic) {
                     body = routine.body();
                     language = routine.bodyLanguage();
                 } else {
@@ -261,7 +289,7 @@ public final class L5xFrontend implements Frontend {
         Pou program(ProgramDef p) {
             List<Pou> routines = new ArrayList<>();
             for (RoutineDef r : p.routines) {
-                routines.add(routine(r));
+                routines.add(routine(r, p.name.value() + "/"));
             }
             List<Statement> body = new ArrayList<>();
             if (p.mainRoutine.present() && !p.mainRoutine.value().isEmpty()) {
@@ -305,13 +333,18 @@ public final class L5xFrontend implements Frontend {
             return new Statement.CallStatement(call, s);
         }
 
-        Pou routine(RoutineDef r) {
+        /**
+         * {@code prefix}: the owner's path and {@code /} for {@link #drawn}, or {@code \0} and the AOI's name for its
+         * Logic routine (drawn under the AOI's name).
+         */
+        Pou routine(RoutineDef r, String prefix) {
             List<Statement> body = null;
             String type = r.type;
             String language = type.isEmpty() ? null : type;
+            String path = prefix.startsWith("\0") ? prefix.substring(1) : prefix + r.name.value();
             switch (type.toUpperCase(Locale.ROOT)) {
-                case "RLL" -> body = ladder(r);
-                case "ST" -> body = structuredText(r);
+                case "RLL" -> body = parsed == null || parsed.test(path) ? ladder(r) : placeholders(r);
+                case "ST" -> body = drawn == null ? structuredText(r) : null;
                 case "ENCRYPTED" ->
                     sink.report(Diagnostic.of(
                             L5xCodes.PROTECTED,
@@ -343,6 +376,49 @@ public final class L5xFrontend implements Frontend {
         }
 
         // ---- ladder ---------------------------------------------------------------------------------
+
+        /**
+         * The path of the first ladder routine with rungs as {@code Diagrams} lists them: AOIs (Logic first), programs.
+         */
+        String firstDrawn(L5xReader.Project p) {
+            for (AoiDef a : p.aois) {
+                for (boolean logicPass : new boolean[] {true, false}) {
+                    for (RoutineDef r : a.routines) {
+                        boolean logic = r.name.present() && r.name.value().equalsIgnoreCase("Logic");
+                        if (logic == logicPass && drawable(r)) {
+                            return logic ? a.name.value() : a.name.value() + "/" + r.name.value();
+                        }
+                    }
+                }
+            }
+            for (ProgramDef prog : p.programs) {
+                for (RoutineDef r : prog.routines) {
+                    if (drawable(r)) {
+                        return prog.name.value() + "/" + r.name.value();
+                    }
+                }
+            }
+            for (RoutineDef r : p.looseRoutines) {
+                if (drawable(r)) {
+                    return r.name.value();
+                }
+            }
+            return null;
+        }
+
+        private static boolean drawable(RoutineDef r) {
+            return r.type.equalsIgnoreCase("RLL") && !r.rungs.isEmpty();
+        }
+
+        /** Drawing mode: rungs with their number and place but not parsed. */
+        List<Statement> placeholders(RoutineDef r) {
+            List<Statement> body = new ArrayList<>(r.rungs.size());
+            for (RungDef d : r.rungs) {
+                Span at = d.text.present() ? whole.span(d.text.start(), d.text.end()) : elementSpan(d.offset);
+                body.add(new Statement.Rung(d.number, d.type, null, null, List.of(), at));
+            }
+            return body;
+        }
 
         /**
          * The routine's rungs as one text (rung texts joined with newlines through the source map), parsed once, then

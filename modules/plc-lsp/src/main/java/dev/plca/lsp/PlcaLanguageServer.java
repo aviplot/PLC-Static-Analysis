@@ -3,7 +3,9 @@ package dev.plca.lsp;
 import dev.plca.analysis.Snapshot;
 import dev.plca.analysis.nav.Navigator;
 import dev.plca.analysis.nav.Outline;
+import dev.plca.ast.SourceUnit;
 import dev.plca.core.source.SourceFile;
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.report.Diagrams;
 import dev.plca.report.ToolInfo;
 import dev.plca.rules.RuleRegistry;
@@ -16,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -145,29 +148,31 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
     public CompletableFuture<List<DiagramInfo>> diagrams(DiagramParams params) {
         return unit(
                 params,
-                (s, unit) -> Diagrams.of(unit).stream()
+                (registry, unit) -> Diagrams.of(unit).stream()
                         .map(d -> new DiagramInfo(
                                 d.name(),
                                 d.kind(),
                                 d.language(),
                                 d.parts().size(),
                                 Convert.cover(
-                                        Convert.range(s, d.parts().getFirst().span()),
-                                        Convert.range(s, d.parts().getLast().span()))))
+                                        Convert.range(
+                                                registry, d.parts().getFirst().span()),
+                                        Convert.range(
+                                                registry, d.parts().getLast().span()))))
                         .toList());
     }
 
     /** One page of a diagram's rungs or networks as SVG (default: the first 50). */
     @JsonRequest("plca/diagram")
     public CompletableFuture<DiagramPage> diagram(DiagramParams params) {
-        return unit(params, (s, unit) -> {
+        return unit(params, (registry, unit) -> {
             for (Diagrams.Diagram d : Diagrams.of(unit)) {
                 if (d.name().equals(params.name())) {
-                    int from =
-                            params.at() != null ? partAt(s, d, params.at()) : params.from() == null ? 0 : params.from();
+                    int from = params.at() != null
+                            ? partAt(registry, d, params.at())
+                            : params.from() == null ? 0 : params.from();
                     int count = params.count() == null ? 50 : Math.min(params.count(), 500);
-                    return new DiagramPage(
-                            d.name(), d.parts().size(), from, Diagrams.render(d, s.registry(), from, count));
+                    return new DiagramPage(d.name(), d.parts().size(), from, Diagrams.render(d, registry, from, count));
                 }
             }
             return null;
@@ -175,9 +180,9 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
     }
 
     /** The first part that ends at or after {@code at} (parts are in text order); the last part if none does. */
-    private static int partAt(Snapshot s, Diagrams.Diagram d, Position at) {
+    private static int partAt(SourceRegistry registry, Diagrams.Diagram d, Position at) {
         for (int i = 0; i < d.parts().size(); i++) {
-            Position end = Convert.range(s, d.parts().get(i).span()).getEnd();
+            Position end = Convert.range(registry, d.parts().get(i).span()).getEnd();
             if (end.getLine() > at.getLine()
                     || end.getLine() == at.getLine() && end.getCharacter() >= at.getCharacter()) {
                 return i;
@@ -186,20 +191,16 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
         return Math.max(0, d.parts().size() - 1);
     }
 
-    private <T> CompletableFuture<T> unit(
-            DiagramParams params, java.util.function.BiFunction<Snapshot, dev.plca.ast.SourceUnit, T> f) {
+    /**
+     * A drawing request on a document's unit; the list ({@code name} null) needs no rungs parsed, a page only those of
+     * its routine, which is what lets a quick read answer while the project loads.
+     */
+    private <T> CompletableFuture<T> unit(DiagramParams params, BiFunction<SourceRegistry, SourceUnit, T> f) {
         Path file = params == null ? null : uris.path(params.uri());
         if (file == null) {
             return CompletableFuture.completedFuture(null);
         }
-        return session.query(nav -> {
-            Snapshot s = nav.snapshot();
-            return s.file(session.displayPath(file))
-                    .map(dev.plca.analysis.Workspace.FileState::unit)
-                    .filter(java.util.Objects::nonNull)
-                    .map(u -> f.apply(s, u))
-                    .orElse(null);
-        });
+        return session.fileQuery(file, params.name(), f);
     }
 
     @Override
@@ -222,6 +223,9 @@ public final class PlcaLanguageServer implements LanguageServer, LanguageClientA
                             null)));
         }
         session.configure(Options.read(params.getInitializationOptions(), session.settings()));
+        session.progressSupported(params.getCapabilities() != null
+                && params.getCapabilities().getWindow() != null
+                && Boolean.TRUE.equals(params.getCapabilities().getWindow().getWorkDoneProgress()));
 
         ServerCapabilities caps = new ServerCapabilities();
         TextDocumentSyncOptions sync = new TextDocumentSyncOptions();

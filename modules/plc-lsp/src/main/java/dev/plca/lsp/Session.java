@@ -1,10 +1,14 @@
 package dev.plca.lsp;
 
 import dev.plca.analysis.ConfigFile;
+import dev.plca.analysis.QuickRead;
 import dev.plca.analysis.Snapshot;
 import dev.plca.analysis.Workspace;
 import dev.plca.analysis.nav.Navigator;
+import dev.plca.ast.SourceUnit;
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.report.Baseline;
+import dev.plca.report.Diagrams;
 import dev.plca.rules.Finding;
 import dev.plca.rules.RuleConfig;
 import dev.plca.rules.RuleRegistry;
@@ -26,6 +30,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -82,6 +87,35 @@ final class Session {
     private volatile LanguageClient client;
     private volatile Settings settings = Settings.defaults();
     private volatile Navigator navigator;
+    private volatile boolean progressSupported;
+    /** From {@link #open} until the files are parsed: drawings come from {@link QuickRead}s meanwhile. */
+    private volatile boolean loading;
+
+    private volatile Path root;
+    private final ExecutorService quick = Executors.newSingleThreadExecutor(r -> thread(r, "plca-quick-read"));
+    /** The last quick reads, by path and routine (a list and a routine's pages). Guarded by itself. */
+    private final Map<String, QuickRead.Result> quickReads = new java.util.LinkedHashMap<>(4, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, QuickRead.Result> eldest) {
+            return size() > 2;
+        }
+    };
+    /** The parsed files while the first model is built (drawings need no model). */
+    private volatile Loaded loaded;
+
+    /** An immutable view of the workspace's units right after loading. */
+    private record Loaded(SourceRegistry registry, Map<String, SourceUnit> units) {
+        static Loaded of(Workspace w) {
+            Map<String, SourceUnit> units = new HashMap<>();
+            for (String path : w.paths()) {
+                w.state(path).map(Workspace.FileState::unit).ifPresent(u -> units.put(path, u));
+            }
+            return new Loaded(w.registry(), units);
+        }
+    }
+
+    /** The load's progress, ended by the first project tier after it (analysis thread, then the project thread). */
+    private volatile LoadProgress loadProgress;
 
     // analysis thread only
     private Workspace workspace;
@@ -129,19 +163,41 @@ final class Session {
         return settings;
     }
 
+    /** The client shows work-done progress ({@code window.workDoneProgress}). */
+    void progressSupported(boolean supported) {
+        this.progressSupported = supported;
+    }
+
     /** Loads the workspace from disk and starts a full analysis; queued behind nothing, so call it first. */
     void open(Path root) {
+        this.root = root.toAbsolutePath().normalize();
+        loading = true;
         analysis.execute(guard(() -> {
-            workspace = new Workspace(root);
-            loadConfig();
-            long t0 = System.nanoTime();
-            workspace.loadAll(settings.threads());
-            log(
-                    MessageType.Log,
-                    "plca: loaded " + workspace.root() + " in " + (System.nanoTime() - t0) / 1_000_000 + " ms");
-            stale = true;
-            generation.incrementAndGet();
-            startFull();
+            LoadProgress progress = LoadProgress.begin(progressSupported ? client : null, "Loading the project");
+            loadProgress = progress;
+            try {
+                workspace = new Workspace(root);
+                loadConfig();
+                long t0 = System.nanoTime();
+                workspace.loadAll(
+                        settings.threads(),
+                        (done, total, bytes) ->
+                                progress.report("Reading files: " + done + " of " + total, done * 80 / total));
+                log(
+                        MessageType.Log,
+                        "plca: loaded " + workspace.root() + " in " + (System.nanoTime() - t0) / 1_000_000 + " ms");
+                // drawings from the parsed units while the first model is built
+                loaded = Loaded.of(workspace);
+                stale = true;
+                generation.incrementAndGet();
+                startFull();
+            } finally {
+                loading = false;
+                loaded = null;
+                synchronized (quickReads) {
+                    quickReads.clear();
+                }
+            }
         }));
     }
 
@@ -275,16 +331,27 @@ final class Session {
         if (workspace == null) {
             return;
         }
+        LoadProgress progress = loadProgress;
+        loadProgress = null;
+        if (progress != null) {
+            progress.phase("Building the semantic model", 85);
+        }
         Navigator nav = current();
         long g = generation.get();
         RuleConfig config = ruleConfig;
         Baseline base = baseline;
         project.execute(guard(() -> {
             if (generation.get() != g) {
+                if (progress != null) {
+                    progress.end("Interrupted by an edit");
+                }
                 return;
             }
             Snapshot s = nav.snapshot();
             try {
+                if (progress != null) {
+                    progress.phase("Checking the rules", 90);
+                }
                 long t0 = System.nanoTime();
                 Snapshot.Analysis a =
                         s.analyze(rules, config, base, null, settings.threads(), () -> generation.get() != g);
@@ -293,8 +360,14 @@ final class Session {
                         MessageType.Log,
                         "plca: analysed " + s.paths().size() + " files in " + (System.nanoTime() - t0) / 1_000_000
                                 + " ms");
+                if (progress != null) {
+                    progress.end("Analysed " + s.paths().size() + " files");
+                }
             } catch (CancellationException e) {
                 // a newer edit started its own run
+                if (progress != null) {
+                    progress.end("Interrupted by an edit");
+                }
             }
         }));
     }
@@ -367,6 +440,71 @@ final class Session {
                     }
                     try {
                         return q.apply(current());
+                    } catch (RuntimeException | StackOverflowError e) {
+                        LOG.log(Level.WARNING, "query failed", e);
+                        return null;
+                    }
+                },
+                analysis);
+    }
+
+    /**
+     * A query on one file's unit that needs no model (drawings). While the files are parsed it runs at once on a
+     * {@link QuickRead} of the file alone ({@code routine}: the ladder routine to parse, null for none), while the
+     * first model is built on the parsed unit, afterwards on the workspace's unit after every edit received before it.
+     * Null when the file has no unit.
+     */
+    <T> CompletableFuture<T> fileQuery(Path file, String routine, BiFunction<SourceRegistry, SourceUnit, T> q) {
+        if (loading && root != null) {
+            Path f = file.toAbsolutePath().normalize();
+            if (!f.startsWith(root)) {
+                return CompletableFuture.completedFuture(null);
+            }
+            String path = root.relativize(f).toString().replace('\\', '/');
+            return CompletableFuture.supplyAsync(
+                    () -> {
+                        try {
+                            Loaded l = loaded;
+                            if (l != null) {
+                                SourceUnit u = l.units().get(path);
+                                return u == null ? null : q.apply(l.registry(), u);
+                            }
+                            QuickRead.Result r;
+                            String key = path + "\0" + routine;
+                            synchronized (quickReads) {
+                                r = quickReads.get(key);
+                            }
+                            if (r == null) {
+                                r = QuickRead.read(f, path, routine);
+                                // the list's read also parsed the first routine: the page asked for next
+                                List<Diagrams.Diagram> ds = routine == null ? Diagrams.of(r.unit()) : List.of();
+                                synchronized (quickReads) {
+                                    quickReads.put(key, r);
+                                    if (!ds.isEmpty()) {
+                                        quickReads.put(
+                                                path + "\0" + ds.getFirst().name(), r);
+                                    }
+                                }
+                            }
+                            return r.unit() == null ? null : q.apply(r.registry(), r.unit());
+                        } catch (IOException | RuntimeException | StackOverflowError e) {
+                            LOG.log(Level.WARNING, "quick read failed", e);
+                            return null;
+                        }
+                    },
+                    quick);
+        }
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    if (workspace == null) {
+                        return null;
+                    }
+                    try {
+                        SourceUnit unit = workspace
+                                .state(workspace.displayPath(file))
+                                .map(Workspace.FileState::unit)
+                                .orElse(null);
+                        return unit == null ? null : q.apply(workspace.registry(), unit);
                     } catch (RuntimeException | StackOverflowError e) {
                         LOG.log(Level.WARNING, "query failed", e);
                         return null;
@@ -499,6 +637,7 @@ final class Session {
     }
 
     void shutdown() {
+        quick.shutdownNow();
         timers.shutdownNow();
         analysis.shutdownNow();
         project.shutdownNow();

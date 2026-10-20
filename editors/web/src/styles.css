@@ -165,6 +165,14 @@ input.search {
   margin: 0;
 }
 
+.empty.loading p {
+  margin: 0 0 8px;
+}
+
+.empty.loading progress {
+  width: min(320px, 100%);
+}
+
 /* ---- lamps and markers ---------------------------------------------------------------------- */
 
 .lamp {

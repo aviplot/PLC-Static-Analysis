@@ -10,6 +10,7 @@ import {
   emptyFilter,
   filterFiles,
   findingsIn,
+  nextProgress,
   formatBytes,
   group,
   languageOf,
@@ -125,6 +126,15 @@ test('findings in a diagram: counts by severity and the first in text order', ()
   assert.equal(got.total, 3);
   assert.equal(got.first?.message, 'i');
   assert.equal(findingsIn(list, r(40, 0, 50, 0)).first, null);
+});
+
+test('load progress: begin, reports that keep the title, end', () => {
+  let p = nextProgress(null, { kind: 'begin', title: 'Loading the project', percentage: 0 });
+  assert.deepEqual(p, { title: 'Loading the project', message: null, percentage: 0 });
+  p = nextProgress(p, { kind: 'report', message: 'Reading files: 3 of 9', percentage: 26 });
+  assert.deepEqual(p, { title: 'Loading the project', message: 'Reading files: 3 of 9', percentage: 26 });
+  assert.equal(nextProgress(null, { kind: 'report', message: 'x' }), null);
+  assert.equal(nextProgress(p, { kind: 'end', message: 'Analysed 9 files' }), null);
 });
 
 test('languages by extension; PLCopen by its namespace', () => {

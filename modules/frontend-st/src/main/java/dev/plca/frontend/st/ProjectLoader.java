@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Loads every source under a directory that one of the given {@link Frontends} reads, parsing files in parallel (one
@@ -41,6 +42,14 @@ public final class ProjectLoader {
     private static final Set<String> SKIP_DIRS =
             Set.of(".git", ".svn", "build", "_boot", "_compileinfo", "_libraries", "node_modules", ".vs");
 
+    /** Called from parser threads as files finish: {@code done} of {@code total}, and the file's size in bytes. */
+    @FunctionalInterface
+    public interface Progress {
+        Progress NONE = (done, total, bytes) -> {};
+
+        void parsed(int done, int total, long bytes);
+    }
+
     private ProjectLoader() {}
 
     public static Project load(Path root, Frontends frontends, int threads) {
@@ -49,37 +58,27 @@ public final class ProjectLoader {
 
     /** Loads {@code files} (files no frontend reads are skipped). */
     public static Project load(Path root, List<Path> files, Frontends frontends, int threads) {
+        return load(root, files, frontends, threads, Progress.NONE);
+    }
+
+    /** As {@link #load(Path, List, Frontends, int)}, reporting each parsed file to {@code progress}. */
+    public static Project load(Path root, List<Path> files, Frontends frontends, int threads, Progress progress) {
+        AtomicInteger done = new AtomicInteger();
         SourceRegistry registry = new SourceRegistry();
         ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, threads), r -> {
             Thread t = new Thread(r, "plca-parse");
             t.setDaemon(true);
             return t;
         });
-        record Parsed(SourceUnit unit, DiagnosticCollector diags, Frontend.Stats stats) {}
         try {
             List<Future<Parsed>> futures = new ArrayList<>();
             for (Path f : files) {
                 futures.add(pool.submit(() -> {
-                    String display = root.relativize(f).toString().replace('\\', '/');
-                    DiagnosticCollector diags = new DiagnosticCollector();
-                    Frontend frontend = frontends.forPath(display);
-                    if (frontend == null) {
-                        return new Parsed(null, diags, Frontend.Stats.NONE);
-                    }
-                    SourceFile sf;
                     try {
-                        sf = SourceFile.fromBytes(display, Files.readAllBytes(f));
-                    } catch (IOException e) {
-                        SourceFile empty = SourceFile.of(display, "");
-                        diags.report(Diagnostic.of(
-                                "PLC-IO-001",
-                                Severity.ERROR,
-                                "cannot read file: " + e.getMessage(),
-                                Span.at(registry.register(empty).id(), 0)));
-                        return new Parsed(null, diags, Frontend.Stats.NONE);
+                        return parse(root, f, frontends, registry);
+                    } finally {
+                        progress.parsed(done.incrementAndGet(), files.size(), sizeOf(f));
                     }
-                    Frontend.Result r = frontend.parse(sf, registry, diags);
-                    return new Parsed(r.unit(), diags, r.stats());
                 }));
             }
             List<SourceUnit> units = new ArrayList<>();
@@ -101,6 +100,39 @@ public final class ProjectLoader {
             throw new IllegalStateException("unexpected failure while loading " + root, e.getCause());
         } finally {
             pool.shutdownNow();
+        }
+    }
+
+    private record Parsed(SourceUnit unit, DiagnosticCollector diags, Frontend.Stats stats) {}
+
+    private static Parsed parse(Path root, Path f, Frontends frontends, SourceRegistry registry) {
+        String display = root.relativize(f).toString().replace('\\', '/');
+        DiagnosticCollector diags = new DiagnosticCollector();
+        Frontend frontend = frontends.forPath(display);
+        if (frontend == null) {
+            return new Parsed(null, diags, Frontend.Stats.NONE);
+        }
+        SourceFile sf;
+        try {
+            sf = SourceFile.fromBytes(display, Files.readAllBytes(f));
+        } catch (IOException e) {
+            SourceFile empty = SourceFile.of(display, "");
+            diags.report(Diagnostic.of(
+                    "PLC-IO-001",
+                    Severity.ERROR,
+                    "cannot read file: " + e.getMessage(),
+                    Span.at(registry.register(empty).id(), 0)));
+            return new Parsed(null, diags, Frontend.Stats.NONE);
+        }
+        Frontend.Result r = frontend.parse(sf, registry, diags);
+        return new Parsed(r.unit(), diags, r.stats());
+    }
+
+    private static long sizeOf(Path f) {
+        try {
+            return Files.size(f);
+        } catch (IOException e) {
+            return 0;
         }
     }
 

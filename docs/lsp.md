@@ -33,6 +33,11 @@ Requests beyond LSP: `plca/diagrams {uri}` lists a file's ladder routines and LD
 the part holding position `at` (used by the web workbench, [web.md](web.md)).
 Commands: `plca.analyzeWorkspace` (re-read everything from disk), `plca.ruleDoc` (server: a rule's Markdown), and in
 VS Code "Show documentation of PLCA-…" on every finding.
+**Loading.** When the client supports work-done progress (`window.workDoneProgress`; VS Code shows it in the status
+bar), loading a workspace reports "Reading files: n of N", "Building the semantic model" and "Checking the rules", and
+ends with the number of files analysed. Drawings do not wait for the load: while files are parsed, `plca/diagrams` and
+`plca/diagram` answer from a quick read of that one file (an L5X read parses the rungs of the requested routine only,
+under half a second for a 43 MB export once warm), and while the first model is built, from the parsed units.
 
 ## How an edit is processed
 

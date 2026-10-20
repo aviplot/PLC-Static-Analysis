@@ -5,6 +5,7 @@ import dev.plca.analysis.nav.Outline;
 import dev.plca.core.diag.Severity;
 import dev.plca.core.source.LineIndex;
 import dev.plca.core.source.Location;
+import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
 import dev.plca.rules.Finding;
 import java.net.URI;
@@ -42,7 +43,11 @@ final class Convert {
     }
 
     static Range range(Snapshot s, Span span) {
-        Location l = s.registry().resolve(span);
+        return range(s.registry(), span);
+    }
+
+    static Range range(SourceRegistry registry, Span span) {
+        Location l = registry.resolve(span);
         return new Range(
                 new Position(l.startLine() - 1, l.startColumn() - 1), new Position(l.endLine() - 1, l.endColumn() - 1));
     }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -83,7 +84,13 @@ public final class Workspace {
 
     /** Loads every source under the root from disk, replacing the current state; parses in parallel. */
     public void loadAll(int threads) {
-        ProjectLoader.Project p = ProjectLoader.load(root, ProjectLoader.sources(root, frontends), frontends, threads);
+        loadAll(threads, ProjectLoader.Progress.NONE);
+    }
+
+    /** As {@link #loadAll(int)}, reporting each parsed file (from parser threads). */
+    public void loadAll(int threads, ProjectLoader.Progress progress) {
+        ProjectLoader.Project p =
+                ProjectLoader.load(root, ProjectLoader.sources(root, frontends), frontends, threads, progress);
         registry = p.registry();
         files.clear();
         Map<String, List<Diagnostic>> diagnostics = new HashMap<>();
@@ -160,6 +167,21 @@ public final class Workspace {
                                     Span.at(registry.register(empty).id(), 0)))));
             return true;
         }
+    }
+
+    /** The loaded files' display paths, sorted. */
+    public List<String> paths() {
+        return List.copyOf(files.keySet());
+    }
+
+    /** A file's current state, without building any model (drawings need only the unit). */
+    public Optional<FileState> state(String path) {
+        return Optional.ofNullable(files.get(path));
+    }
+
+    /** The registry the current units' spans resolve in. */
+    public SourceRegistry registry() {
+        return registry;
     }
 
     /** Forgets {@code path}; returns false if it was not loaded. */

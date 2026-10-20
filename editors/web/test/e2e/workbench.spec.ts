@@ -49,6 +49,8 @@ async function upload(page: Page, name: string, zip: Buffer) {
 test('review: findings, navigation, definition, outline', async ({ page }) => {
   await page.goto('/');
   const foreign = watchRequests(page);
+  const frames: string[] = [];
+  page.on('websocket', (ws) => ws.on('framereceived', (f) => frames.push(String(f.payload))));
   await expect(page.getByRole('heading', { name: 'Review a PLC project' })).toBeVisible();
   // the folder button opens a folder picker, not a file picker
   expect(await page.locator('input[type=file]:not([accept])').first().evaluate((i: HTMLInputElement) => i.webkitdirectory)).toBe(true);
@@ -56,6 +58,10 @@ test('review: findings, navigation, definition, outline', async ({ page }) => {
 
   // the analysis arrives: the recursion error of functions.st among them
   const findings = page.getByRole('region', { name: 'Findings' });
+  // the server reported its load progress, from begin to end, and the page dropped it at the end
+  await expect.poll(() => frames.some((f) => f.includes('$/progress') && f.includes('"end"')), { timeout: 30_000 }).toBe(true);
+  expect(frames.some((f) => f.includes('$/progress') && f.includes('Loading the project'))).toBe(true);
+  await expect(page.locator('footer progress')).toHaveCount(0);
   await expect(findings.getByText(/Recursive call cycle/)).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('.status')).toContainText('Analysis up to date', { timeout: 30_000 });
 

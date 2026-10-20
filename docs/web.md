@@ -101,7 +101,9 @@ plc-analysis / plc-lsp / plc-report (LadderSvg, NetworkSvg)
 
 - **Drawings are made on the server** (`plc-report`: `LadderSvg`, `NetworkSvg`, `Diagrams`) and requested through the
   language server (`plca/diagrams`, `plca/diagram`), so they always show the current text, and the HTML report can use
-  them later. Every element carries `data-range` (LSP coordinates in the file), which the browser uses to place
+  them later. Drawings never wait for the semantic model; while a project loads they come from a quick read of the
+  file ([lsp.md](lsp.md), "Loading"), and the footer and the findings panel show the load's progress. Every element
+  carries `data-range` (LSP coordinates in the file), which the browser uses to place
   findings, ask for hovers and jump to the text.
 - **Rungs** are laid out from the series/parallel ladder IR: a series left to right, a branch's legs stacked, outputs
   against the right rail as Studio 5000 draws them; contacts and coils as symbols, other instructions as boxes with
@@ -129,7 +131,7 @@ plc-analysis / plc-lsp / plc-report (LadderSvg, NetworkSvg)
 |---|---|
 | Generated project, 203 files, 18k lines: upload to full analysis shown | 0.95 s |
 | Generated project, 2,003 files, 184k lines: upload to full analysis shown | 1.4 s |
-| 43 MB Rockwell controller export: upload to first routine drawn | 3.8 s (the server's first parse of the file) |
+| 43 MB Rockwell controller export: upload to first routine drawn | 2.1–2.5 s on a busy laptop (M9: 3.8 s); a quick read of the file, 0.3 s once warm, runs beside the full parse in a cold server |
 | Same file: switching routines, next page of rungs | < 10 ms |
 | Corpus: 3.08M rungs and networks drawn | p50 0.03 ms, p99 0.3 ms per part |
 

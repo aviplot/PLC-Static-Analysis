@@ -4,6 +4,7 @@ import { useMemo, useState } from 'preact/hooks';
 import {
   type Filter,
   type Finding,
+  type LoadProgress,
   type Range,
   type RuleInfo,
   type Severity,
@@ -25,11 +26,12 @@ interface Props {
   onOpen: (path: string, range: Range) => void;
   selected: Finding | null;
   analysing: boolean;
+  progress: LoadProgress | null;
 }
 
 const SEVERITY_LABEL: Record<Severity, string> = { error: 'Errors', warning: 'Warnings', info: 'Information', hint: 'Hints' };
 
-export function Findings({ findings, rules, filter, onFilter, onOpen, selected, analysing }: Props) {
+export function Findings({ findings, rules, filter, onFilter, onOpen, selected, analysing, progress }: Props) {
   const [by, setBy] = useState<'file' | 'rule'>('file');
   const [doc, setDoc] = useState<string | null>(null);
   const [folded, setFolded] = useState<Set<string>>(new Set());
@@ -152,7 +154,16 @@ export function Findings({ findings, rules, filter, onFilter, onOpen, selected, 
         </div>
       ) : null}
       {findings.length === 0 ? (
-        <p class="empty">{analysing ? 'Waiting for the first analysis.' : 'No findings in this project.'}</p>
+        progress ? (
+          <div class="empty loading">
+            <p>
+              {progress.title}: {progress.message ?? 'starting'}
+            </p>
+            <progress max={100} value={progress.percentage} aria-label={progress.title} />
+          </div>
+        ) : (
+          <p class="empty">{analysing ? 'Waiting for the first analysis.' : 'No findings in this project.'}</p>
+        )
       ) : shown.length === 0 ? (
         <p class="empty">No finding matches these filters.</p>
       ) : (

@@ -121,5 +121,5 @@ export const CLIENT_CAPABILITIES = {
     publishDiagnostics: { relatedInformation: true, versionSupport: true },
   },
   workspace: { workspaceFolders: true, symbol: {} },
-  window: { showMessage: {} },
+  window: { showMessage: {}, workDoneProgress: true },
 };

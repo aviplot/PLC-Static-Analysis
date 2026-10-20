@@ -350,3 +350,25 @@ export function formatBytes(n: number): string {
   const mb = n / 1024 / 1024;
   return `${mb >= 100 || Number.isInteger(mb) ? Math.round(mb) : mb.toFixed(1)} MB`;
 }
+
+/** The server's progress while it loads a project (LSP work-done progress). */
+export interface LoadProgress {
+  title: string;
+  message: string | null;
+  percentage: number;
+}
+
+/** Folds an LSP work-done progress value into the shown state; null after "end". */
+export function nextProgress(old: LoadProgress | null, v: any): LoadProgress | null {
+  switch (v?.kind) {
+    case 'begin':
+      return { title: v.title, message: v.message ?? null, percentage: v.percentage ?? 0 };
+    case 'report':
+      return old ? { ...old, message: v.message ?? old.message, percentage: v.percentage ?? old.percentage } : old;
+    case 'end':
+      return null;
+    default:
+      return old;
+  }
+}
+
