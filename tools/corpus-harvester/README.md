@@ -31,4 +31,4 @@ Failed repos are retried up to 3 times on later `fetch` runs.
 ## License policy
 `fixture-ok` (MIT, BSD, Apache-2.0, Unlicense, CC0 variants) may become small committed fixtures,
 listed in `corpus/SOURCES.md`. Everything else, including `NOASSERTION`, is `local-only`.
-`corpus/external/` is git-ignored.
+The whole `corpus/` directory (harvested files and the three reports) is git-ignored; never commit it.

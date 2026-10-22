@@ -150,9 +150,9 @@ def fetch_repo(rec: dict, external: Path, tmp_root: Path, max_file_bytes: int) -
 
 
 def _priority(rec: dict) -> int:
-    """High-signal discoveries first: code-search hits, then topic matches, then keyword matches."""
+    """High-signal discoveries first: seeds and code-search hits, then topic matches, then keyword matches."""
     by = rec["discovered_by"]
-    if any(q.startswith("gh-code:") for q in by):
+    if any(q.startswith(("gh-code:", "gh-seed")) for q in by):
         return 0
     if any(":topic" in q or "topic:" in q for q in by):
         return 1

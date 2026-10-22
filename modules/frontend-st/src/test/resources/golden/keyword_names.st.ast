@@ -1,0 +1,126 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_Axis bodyLanguage="ST" @2:1-20:19
+    varBlocks:
+      VarBlock section=INPUT @3:1-8:8
+        variables:
+          VarDecl name=Power referenceInit=false @4:5-4:18
+            type:
+              Named name=BOOL @4:13-4:17
+          VarDecl name=SingleStep referenceInit=false @5:5-5:23
+            type:
+              Named name=BOOL @5:18-5:22
+          VarDecl name=Continue referenceInit=false @6:5-6:21
+            type:
+              Named name=BOOL @6:16-6:20
+          VarDecl name=MoveInterrupted referenceInit=false @7:5-7:28
+            type:
+              Named name=BOOL @7:23-7:27
+      VarBlock section=VAR @9:1-11:8
+        variables:
+          VarDecl name=i referenceInit=false @10:5-10:13
+            type:
+              Named name=INT @10:9-10:12
+    body:
+      If @12:1-14:7
+        branches:
+          Branch @12:1-12:17
+            condition:
+              NameRef name=Continue globalScope=false @12:4-12:12
+            body:
+              Assignment op=ASSIGN @13:5-13:23
+                target:
+                  NameRef name=Continue globalScope=false @13:5-13:13
+                value:
+                  Literal kind=BOOL text="FALSE" @13:17-13:22
+      For @15:1-19:8
+        variable:
+          NameRef name=i globalScope=false @15:5-15:6
+        from:
+          Literal kind=INTEGER text="1" @15:10-15:11
+        to:
+          Literal kind=INTEGER text="10" @15:15-15:17
+        body:
+          If @16:5-18:11
+            branches:
+              Branch @16:5-16:18
+                condition:
+                  Binary op=EQ @16:8-16:13
+                    left:
+                      NameRef name=i globalScope=false @16:8-16:9
+                    right:
+                      Literal kind=INTEGER text="5" @16:12-16:13
+                body:
+                  Continue @17:9-17:18
+  Pou kind=PROGRAM name=MAIN bodyLanguage="ST" @22:1-33:12
+    varBlocks:
+      VarBlock section=VAR @23:1-26:8
+        variables:
+          VarDecl name=fbMy6Axis referenceInit=false @24:5-24:25
+            type:
+              Named name=FB_Axis @24:17-24:24
+          VarDecl name=bEnable referenceInit=false @25:5-25:20
+            type:
+              Named name=BOOL @25:15-25:19
+    body:
+      If @27:1-32:7
+        branches:
+          Branch @27:1-27:59
+            condition:
+              Binary op=AND @27:4-27:54
+                left:
+                  Binary op=EQ @27:4-27:24
+                    left:
+                      MemberAccess member=Power @27:4-27:19
+                        target:
+                          NameRef name=fbMy6Axis globalScope=false @27:4-27:13
+                    right:
+                      Literal kind=BOOL text="TRUE" @27:20-27:24
+                right:
+                  Binary op=EQ @27:29-27:54
+                    left:
+                      MemberAccess member=SingleStep @27:29-27:49
+                        target:
+                          NameRef name=fbMy6Axis globalScope=false @27:29-27:38
+                    right:
+                      Literal kind=BOOL text="TRUE" @27:50-27:54
+            body:
+              If @28:5-30:11
+                branches:
+                  Branch @28:5-28:71
+                    condition:
+                      Binary op=AND @28:8-28:66
+                        left:
+                          Binary op=EQ @28:8-28:31
+                            left:
+                              MemberAccess member=Continue @28:8-28:26
+                                target:
+                                  NameRef name=fbMy6Axis globalScope=false @28:8-28:17
+                            right:
+                              Literal kind=BOOL text="TRUE" @28:27-28:31
+                        right:
+                          Binary op=EQ @28:36-28:66
+                            left:
+                              MemberAccess member=MoveInterrupted @28:36-28:61
+                                target:
+                                  NameRef name=fbMy6Axis globalScope=false @28:36-28:45
+                            right:
+                              Literal kind=BOOL text="TRUE" @28:62-28:66
+                    body:
+                      Assignment op=ASSIGN @29:9-29:35
+                        target:
+                          MemberAccess member=Continue @29:9-29:27
+                            target:
+                              NameRef name=fbMy6Axis globalScope=false @29:9-29:18
+                        value:
+                          Literal kind=BOOL text="FALSE" @29:29-29:34
+              CallStatement @31:5-31:36
+                call:
+                  Call @31:5-31:35
+                    callee:
+                      NameRef name=fbMy6Axis globalScope=false @31:5-31:14
+                    arguments:
+                      Argument kind=INPUT name=Continue negated=false @31:15-31:34
+                        value:
+                          NameRef name=bEnable globalScope=false @31:27-31:34
+  comments: 1
+diagnostics:

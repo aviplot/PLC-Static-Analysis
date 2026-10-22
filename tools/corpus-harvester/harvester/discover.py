@@ -38,6 +38,11 @@ TOPICS = ["twincat", "codesys", "plc", "structured-text", "iec-61131-3", "tia-po
 KEYWORDS = ["twincat", "codesys", "\"structured text\" plc", "\"iec 61131\"", "\"tia portal\"",
             "\"studio 5000\"", "plcopen", "oscat", "scl siemens", "l5x"]
 
+# Repos added by name: they contain PLC code but no search above finds them.
+SEED_REPOS = [
+    "Open-Industry-Project/Open-Industry-Project",  # browser simulator; example ST programs
+]
+
 SEARCH_CAP = 1000          # GitHub returns at most 1000 results per query
 CODE_SEARCH_INTERVAL = 6.5  # 10 requests/min for authenticated code search
 REPO_SEARCH_INTERVAL = 2.1  # 30 requests/min
@@ -140,6 +145,19 @@ def github_repo_search(client: Client, state: State, q: str) -> None:
     log.info("%-45s total=%-6s new repos=%d (known: %d)", q, total, new, len(state.repos))
 
 
+def github_seeds(client: Client, state: State) -> None:
+    for full_name in SEED_REPOS:
+        key = "github:" + full_name
+        if key in state.repos and "gh-seed" in state.repos[key]["discovered_by"]:
+            continue
+        data, _ = client.get(f"/repos/{full_name}", interval=0.75)
+        rec = _github_repo_record(data)
+        rec["license"] = licenses.from_github(data.get("license"))
+        state.add_repo(key, rec, "gh-seed")
+        log.info("seed %s (%s)", full_name, rec["license"])
+    state.save()
+
+
 def github_enrich(client: Client, state: State) -> None:
     """Fill license/size for repos found via code search (whose payload lacks them)."""
     todo = [k for k, r in state.repos.items() if r["host"] == "github" and "license" not in r]
@@ -204,6 +222,7 @@ def gitlab_search(client: Client, state: State) -> None:
 def run(state: State, github_token: str | None, gitlab_token: str | None, skip_code_search: bool = False) -> None:
     if github_token:
         gh = github_client(github_token)
+        github_seeds(gh, state)
         for t in TOPICS:
             github_repo_search(gh, state, f"topic:{t}")
         for k in KEYWORDS:

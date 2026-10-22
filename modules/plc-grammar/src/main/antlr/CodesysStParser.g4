@@ -100,15 +100,19 @@ pouBody
     : (memberDeclaration | statement | labelDefinition)*
     ;
 
+/**
+ * `continueStatement` comes first: `CONTINUE;` also matches a designator statement now that `Continue` is a name
+ * (see `identifier`), and ANTLR resolves that ambiguity to the lowest alternative.
+ */
 statement
-    : designatorStatement
+    : continueStatement
+    | designatorStatement
     | ifStatement
     | caseStatement
     | forStatement
     | whileStatement
     | repeatStatement
     | exitStatement
-    | continueStatement
     | returnStatement
     | jmpStatement
     | tryStatement
@@ -178,6 +182,13 @@ typeArgument
     : pointerType
     | referenceType
     | stringType
+    ;
+
+/** `Continue` is a variable name in real code (`fbAxis.Continue := FALSE;`, motion FB inputs). */
+identifier
+    : IDENT
+    | softKeyword
+    | CONTINUE
     ;
 
 softKeyword

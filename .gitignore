@@ -1,7 +1,6 @@
-# Harvested third-party code: local analysis only, never committed (see CLAUDE.md license policy)
-corpus/external/
-# Large generated manifest stays local for now (decision in docs/plans/M0.md)
-corpus/MANIFEST.csv
+# Corpus: nothing under corpus/ is committed (harvested code, MANIFEST.csv, STATS.md, SOURCES.md).
+# The harvester in tools/corpus-harvester/ regenerates it.
+corpus/
 
 # Jazzer working corpus (seeds and crash reproducers live under src/test/resources)
 .cifuzz-corpus/

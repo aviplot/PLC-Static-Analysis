@@ -11,6 +11,8 @@ decisions: [plans/M8.md](plans/M8.md).
 code --install-extension editors/vscode/plca.vsix
 ```
 
+Step by step, with checks, updating and troubleshooting: [vscode.md](vscode.md).
+
 The server needs Java 21+: the setting `plca.java.home`, else `JAVA_HOME`, else `java` on the PATH. Other editors start
 `plca lsp` (from `./gradlew :plc-cli:installDist`) as a stdio server; `--stdio` is accepted.
 
@@ -36,10 +38,10 @@ bar), loading a workspace reports "Reading files: n of N", "Building the semanti
 ends with the number of files analysed. Drawings do not wait for the load: while files are parsed, `plca/diagrams` and
 `plca/diagram` answer from a quick read of that one file (an L5X read parses the rungs of the requested routine only,
 under half a second for a 43 MB export once warm), and while the first model is built, from the parsed units.
-
-## How an edit is processed
 Commands: `plca.analyzeWorkspace` (re-read everything from disk), `plca.ruleDoc` (server: a rule's Markdown), and in
 VS Code "Show documentation of PLCA-…" on every finding.
+
+## How an edit is processed
 
 1. The client sends the full text (full sync). The analysis thread parses that file only, with a frontend per thread,
    into a new `SourceRegistry` derived from the previous one (`without(path)`): ids are never reused, so older
@@ -47,8 +49,6 @@ VS Code "Show documentation of PLCA-…" on every finding.
 2. **Fast tier**, 100 ms after the last edit: a snapshot (`Workspace.snapshot()`) rebuilds the semantic model of the
    edited file's model group (other groups keep theirs), and the POU rules run on the POUs of the edited files. The
    file's parse, model and rule diagnostics are published with the document version.
-3. **Project tier**, 750 ms after the last edit, on save and after loading: all rules on the snapshot, on their own
-   thread; diagnostics of every file whose set changed are published. Project-rule findings of an edited file are
    The model is rebuilt **incrementally** (M10, `SemanticBuilder.buildForEditing`): each unit's declarations,
    bindings and dependencies are kept, and an edit declares again only the edited file and the files whose
    declarations use its symbols (an FB holding an instance of it, a type built on it, transitively), and binds again
@@ -59,6 +59,8 @@ VS Code "Show documentation of PLCA-…" on every finding.
    Rockwell controller, or more than a third of the group is affected. Either way the model equals a full build;
    `-Dplca.model.verify=true` checks that on every edit (slow), `./gradlew :plc-devtools:modelCheck` on corpus
    projects.
+3. **Project tier**, 750 ms after the last edit, on save and after loading: all rules on the snapshot, on their own
+   thread; diagnostics of every file whose set changed are published. Project-rule findings of an edited file are
    withdrawn by the fast tier and come back here.
 4. Every edit increments a generation. Runs check it between POUs and rules, and results of an older generation are
    never published.

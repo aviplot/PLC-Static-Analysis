@@ -146,8 +146,9 @@ License policy — enforce in the harvester, not by hand:
   fixtures, with attribution in `corpus/SOURCES.md`.
 - **Copyleft (GPL, LGPL, etc.) or no license:** local analysis and benchmarking only. Never commit to
   this repo, never bundle, never copy into fixtures or rule examples.
-- The raw harvested corpus lives in `corpus/external/`, which is **git-ignored**. Only `MANIFEST.csv`,
-  `STATS.md`, `SOURCES.md` and the harvester code are committed.
+- The whole `corpus/` directory is **git-ignored**: nothing from the corpus is committed, not the
+  harvested code in `corpus/external/` and not the generated `MANIFEST.csv`, `STATS.md`, `SOURCES.md`.
+  Only the harvester code is committed; it regenerates the corpus.
 - Do not scrape sites whose terms forbid it, and do not touch login-protected vendor portals or forums.
 
 ## Corpus
