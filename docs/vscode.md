@@ -70,7 +70,7 @@ Rule configuration comes from `plca.yaml` in the workspace folder, as for `plca 
 
 - **Update**: build the `.vsix` again and run the same `code --install-extension` command; it replaces the installed
   version. Then reload the window.
-- **Uninstall**: `code --uninstall-extension plca.plca`, or the gear icon on the extension in the Extensions view.
+- **Uninstall**: `code --uninstall-extension AvrahamPlotnitzky.plca`, or the gear icon on the extension in the Extensions view.
 
 ## Development: use a server you are working on
 

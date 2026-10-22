@@ -3,7 +3,16 @@
   "displayName": "plca — PLC static analysis",
   "description": "Diagnostics, navigation and highlighting for IEC 61131-3 Structured Text (CODESYS, TwinCAT), Siemens SCL, Rockwell L5X/L5K and PLCopen XML, from the plca language server.",
   "version": "0.1.0",
-  "publisher": "plca",
+  "publisher": "AvrahamPlotnitzky",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aviplot/PLC-Static-Analysis.git",
+    "directory": "editors/vscode"
+  },
+  "homepage": "https://github.com/aviplot/PLC-Static-Analysis#readme",
+  "bugs": {
+    "url": "https://github.com/aviplot/PLC-Static-Analysis/issues"
+  },
   "license": "GPL-3.0-or-later",
   "private": true,
   "engines": {
@@ -151,7 +160,7 @@
     "typecheck": "tsc --noEmit -p .",
     "test:grammar": "vscode-tmgrammar-test -g syntaxes/iec-st.tmLanguage.json -g syntaxes/siemens-scl.tmLanguage.json -g syntaxes/rockwell-rll.tmLanguage.json -g syntaxes/l5k.tmLanguage.json \"test/grammar/*.test.*\"",
     "test:e2e": "npm run build && tsc -p test/e2e && node out/test/e2e/run.js",
-    "package": "npm run typecheck && npm run build && vsce package --no-dependencies --allow-missing-repository --out plca.vsix"
+    "package": "npm run typecheck && npm run build && vsce package --no-dependencies --out plca.vsix"
   },
   "dependencies": {
     "vscode-languageclient": "10.1.2"
