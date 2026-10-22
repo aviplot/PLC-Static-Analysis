@@ -22,6 +22,7 @@ import dev.plca.core.source.Span;
 import dev.plca.frontend.st.kit.ArchiveReader;
 import dev.plca.frontend.st.kit.Frontend;
 import dev.plca.frontend.st.kit.GraphContext;
+import dev.plca.frontend.st.kit.IlTranslator;
 import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.grammar.CodesysStParser.CompilationUnitContext;
 import dev.plca.grammar.CodesysStParser.DeclarationPartContext;
@@ -123,6 +124,21 @@ public final class StFrontend implements Frontend {
             List<Comment> comments,
             List<Pragma> pragmas) {
         SourceText text = registry.register(file);
+        List<int[]> il = ilPous(text.text());
+        if (!il.isEmpty()) {
+            parseWithIl(text, il, registry, sink, out, comments, pragmas);
+            return;
+        }
+        parseSt(text, file, sink, out, comments, pragmas);
+    }
+
+    private void parseSt(
+            SourceText text,
+            SourceFile file,
+            DiagnosticSink sink,
+            List<Declaration> out,
+            List<Comment> comments,
+            List<Pragma> pragmas) {
         Parsed p = parse(text, StParserDriver.Entry.AUTO, sink);
         AstBuilder b = new AstBuilder(text, p.tokens(), sink);
         if (p.tree() instanceof CompilationUnitContext cu) {
@@ -146,6 +162,115 @@ public final class StFrontend implements Frontend {
                     all));
         }
         b.collectHidden(comments, pragmas);
+    }
+
+    // ---- IL in .st files (M11) -------------------------------------------------------------------
+
+    private static final java.util.regex.Pattern POU_START =
+            java.util.regex.Pattern.compile("(?im)^[ \\t]*(PROGRAM|FUNCTION_BLOCK|FUNCTION)\\b");
+    private static final java.util.regex.Pattern POU_END =
+            java.util.regex.Pattern.compile("(?i)\\b(END_PROGRAM|END_FUNCTION_BLOCK|END_FUNCTION)\\b");
+    private static final java.util.regex.Pattern END_VAR = java.util.regex.Pattern.compile("(?i)\\bEND_VAR\\b");
+
+    /**
+     * POUs of a text file whose body is Instruction List: {@code [start, bodyStart, bodyEnd, end)} each, where the body
+     * runs from the last {@code END_VAR} (or the end of the header line) to the {@code END_…} keyword.
+     */
+    static List<int[]> ilPous(String text) {
+        String code = IlTranslator.blankComments(text);
+        List<int[]> out = new ArrayList<>();
+        java.util.regex.Matcher start = POU_START.matcher(code);
+        int from = 0;
+        while (start.find(from)) {
+            java.util.regex.Matcher end = POU_END.matcher(code);
+            if (!end.find(start.end())) {
+                break;
+            }
+            int bodyStart = -1;
+            java.util.regex.Matcher v = END_VAR.matcher(code).region(start.end(), end.start());
+            while (v.find()) {
+                bodyStart = v.end();
+            }
+            if (bodyStart < 0) {
+                int nl = code.indexOf('\n', start.end());
+                bodyStart = nl < 0 || nl > end.start() ? end.start() : nl;
+            }
+            if (IlTranslator.looksLikeIl(code.substring(bodyStart, end.start()))) {
+                out.add(new int[] {start.start(), bodyStart, end.start(), end.end()});
+            }
+            from = end.end();
+        }
+        return out;
+    }
+
+    /** A file with IL POUs: those read as declarations plus IL, the text around them as ST. */
+    private void parseWithIl(
+            SourceText text,
+            List<int[]> il,
+            SourceRegistry registry,
+            DiagnosticSink sink,
+            List<Declaration> out,
+            List<Comment> comments,
+            List<Pragma> pragmas) {
+        int at = 0;
+        for (int[] pou : il) {
+            stPart(text, at, pou[0], registry, sink, out, comments, pragmas);
+            SourceText decl = part(text, pou[0], pou[1], registry);
+            Parsed p = parse(decl, StParserDriver.Entry.DECLARATION_PART, sink);
+            AstBuilder b = new AstBuilder(decl, p.tokens(), sink);
+            AstBuilder.DeclarationPart d = b.declarationPart((DeclarationPartContext) p.tree());
+            b.collectHidden(comments, pragmas);
+            SourceText body = part(text, pou[1], pou[2], registry);
+            List<Statement> statements = new IlTranslator(body, registry, sink, t -> {
+                        Parsed e = parse(t, StParserDriver.Entry.EXPRESSION, sink);
+                        return new AstBuilder(t, e.tokens(), sink).expressionOnly((ExpressionOnlyContext) e.tree());
+                    })
+                    .translate();
+            AstBuilder.Header h = d.header();
+            Span span = text.span(pou[0], pou[3]);
+            out.add(new Pou(
+                    h != null ? h.kind() : PouKind.PROGRAM,
+                    h != null ? h.name() : new Identifier("<unnamed>", text.span(pou[0], pou[0])),
+                    h != null ? h.modifiers() : Set.of(),
+                    h != null ? h.type() : null,
+                    h != null ? h.extendsTypes() : List.of(),
+                    h != null ? h.implementsTypes() : List.of(),
+                    d.varBlocks(),
+                    List.of(),
+                    statements,
+                    "IL",
+                    h != null ? h.pragmas() : List.of(),
+                    span));
+            at = pou[3];
+        }
+        stPart(text, at, text.text().length(), registry, sink, out, comments, pragmas);
+    }
+
+    /** ST between IL POUs (other POUs, types, globals), when there is any. */
+    private void stPart(
+            SourceText text,
+            int s,
+            int e,
+            SourceRegistry registry,
+            DiagnosticSink sink,
+            List<Declaration> out,
+            List<Comment> comments,
+            List<Pragma> pragmas) {
+        if (IlTranslator.blankComments(text.text().substring(s, e)).isBlank()) {
+            return;
+        }
+        SourceText part = part(text, s, e, registry);
+        Parsed p = parse(part, StParserDriver.Entry.COMPILATION_UNIT, sink);
+        AstBuilder b = new AstBuilder(part, p.tokens(), sink);
+        if (p.tree() instanceof CompilationUnitContext cu) {
+            out.addAll(b.compilationUnit(cu));
+        }
+        b.collectHidden(comments, pragmas);
+    }
+
+    private static SourceText part(SourceText text, int s, int e, SourceRegistry registry) {
+        return registry.registerFragment(
+                text.file(), text.text().substring(s, e), dev.plca.core.source.SourceMap.verbatim(s, e - s));
     }
 
     private Parsed parse(SourceText text, StParserDriver.Entry entry, DiagnosticSink sink) {

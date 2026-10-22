@@ -263,3 +263,33 @@ are `Attributes`: `SFCAttribute` objects with an `AttributeId` GUID and a `Value
 - Lowered by the shared `SfcLowering` (plcopen.md §6) with the implicit step variables `S.X`/`S.T`. `SFCMacro` (6)
   is read as a plain step with an info diagnostic. No coordinates: the drawing is laid out by the viewer.
 
+
+## 10. Instruction List (M11)
+IEC 61131-3 2nd ed. §3.2 (IL was deprecated in the 3rd edition and removed in the 4th). In the corpus: 21 PLCopen
+`<IL>` bodies in 16 repos and IL POUs in 15 `.st` files in 9 repos (some written with a `;` after each instruction);
+no TwinCAT IL. Read by `kit/IlTranslator` for both.
+
+- **Scanning**: one instruction per line, `[label:] operator[N][C][(] [operand] [;]`, comments `(* *)` and `//`. A
+  `CAL fb(` with formal arguments may continue over lines until its parentheses close. A line `)` closes a deferred
+  operation. No grammar file: the line shape is fixed, and the operands are ST expressions, parsed by the CODESYS ST
+  grammar (entry `expressionOnly`) with spans in the file. Unknown lines give `PLC-IL-001` (warning) and are skipped.
+- **Lowering** by following the current result (CR) as an expression:
+
+| IL | ST |
+|---|---|
+| `LD x` / `LDN x` | CR := `x` / `NOT x` |
+| `ST y` / `STN y` | `y := CR;` / `y := NOT CR;` |
+| `S y` / `R y` | `IF CR THEN y := TRUE;` / `… FALSE;` |
+| `AND x`, `ANDN x`, `&`, `OR`, `XOR`, `ADD` … `LT` | CR := `CR op x` (`N`: `NOT x`) |
+| `op( x … )` | deferred: CR := `CR op (x …)` at the `)` |
+| `NOT` | CR := `NOT CR` |
+| `JMP L` / `JMPC L` / `JMPCN L` | `JMP L;` / `IF CR THEN JMP L;` / `IF NOT CR …` |
+| `CAL fb(…)` / `CALC` / `CALCN` | `fb(…);`, conditional as above |
+| `RET` / `RETC` / `RETCN` | `RETURN;`, conditional |
+| `S1 fb`, `R1`, `CLK`, `CU`, `CD`, `PV`, `IN`, `PT` | `fb.S1 := CR;` |
+| `F a, b` (any other name) | CR := `F(CR, a, b)` |
+
+- Where the CR crosses a label or a jump (another path may arrive with its own CR), it is stored in the synthetic
+  variable `cr` first and read back from it after the label.
+- **`.st` files**: a POU whose body (after its last `END_VAR`) has at least four IL lines for every other line is read
+  as declarations (ST grammar) plus IL; everything else in the file is parsed as ST as before.

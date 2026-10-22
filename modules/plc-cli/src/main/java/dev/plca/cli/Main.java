@@ -9,7 +9,8 @@ import picocli.CommandLine.Command;
         name = "plca",
         mixinStandardHelpOptions = true,
         versionProvider = Main.Version.class,
-        description = "Static analysis for PLC programs (CODESYS / TwinCAT Structured Text).",
+        description =
+                "Static analysis for PLC programs: CODESYS/TwinCAT (ST, LD, FBD, CFC, SFC, IL), Siemens SCL, Rockwell L5X/L5K and PLCopen XML.",
         subcommands = {
             AnalyzeCommand.class,
             RulesCommand.class,

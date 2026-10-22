@@ -4,6 +4,7 @@ import dev.plca.ast.Network;
 import dev.plca.ast.Statement;
 import dev.plca.ast.VarBlock;
 import dev.plca.core.source.SourceText;
+import dev.plca.frontend.st.kit.IlTranslator;
 import dev.plca.frontend.st.kit.NetworkLowering;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ final class Bodies {
             case "ST" -> new Translated(st(run, lang), "ST", List.of());
             case "LD", "FBD" -> new Translated(networks(run, lang), lang.tag, List.of());
             case "SFC" -> SfcTranslator.translate(run, lang, ownerName);
+            case "IL" -> new Translated(il(run, lang), "IL", List.of());
             default -> {
                 run.info(
                         PlcOpenCodes.UNPARSED_BODY,
@@ -60,6 +62,24 @@ final class Bodies {
         }
         SourceText t = run.registry.registerXmlContent(run.file, text.contentStart, text.contentEnd);
         return run.st().statements(t, run.sink, run.comments, run.pragmas);
+    }
+
+    /** An IL body: the text of its {@code xhtml}/{@code p} element, lowered through the current result. */
+    static List<Statement> il(PlcOpenFrontend.Run run, XNode lang) {
+        XNode text = run.textElement(lang);
+        if (text.contentStart < 0) {
+            return List.of();
+        }
+        SourceText t = run.registry.registerXmlContent(run.file, text.contentStart, text.contentEnd);
+        if (!t.text().isBlank() && !IlTranslator.looksLikeIl(t.text())) {
+            // placeholder text in an IL body (generators write lorem ipsum): not worth a diagnostic per word
+            run.info(
+                    PlcOpenCodes.UNPARSED_BODY,
+                    "this IL body does not read as Instruction List; not analysed",
+                    run.elementSpan(lang));
+            return null;
+        }
+        return new IlTranslator(t, run.registry, run.sink, x -> run.st().expression(x, run.sink)).translate();
     }
 
     /** The {@code <CFC>} element of a CODESYS {@code …/plcopenxml/cfc} addData of {@code body}, or null. */

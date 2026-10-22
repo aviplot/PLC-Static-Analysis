@@ -1,0 +1,13 @@
+== FUNCTION Il_Limit (IL)
+  $cr := nIn > nMax;
+  IF $cr THEN
+    JMP Clip;
+  END_IF
+  Il_Limit := nIn;
+  RETURN;
+  $cr := Il_Limit;
+  Clip:
+  Il_Limit := nMax;
+== PROGRAM Cfc_Pump (CFC)
+  // network 1 (FBD 4 elements)
+  bMotor := bRun AND bOk;

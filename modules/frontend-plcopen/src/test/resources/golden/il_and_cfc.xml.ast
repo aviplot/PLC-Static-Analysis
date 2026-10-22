@@ -1,0 +1,76 @@
+SourceUnit dialect=PLCOPEN
+  Pou kind=FUNCTION name=Il_Limit bodyLanguage="IL" @10:7-10:47
+    returnType:
+      Named name=INT @12:23-12:30
+    varBlocks:
+      VarBlock section=INPUT @13:11-13:22
+        variables:
+          VarDecl name=nIn referenceInit=false @14:13-14:34
+            type:
+              Named name=INT @14:40-14:47
+          VarDecl name=nMax referenceInit=false @15:13-15:35
+            type:
+              Named name=INT @15:41-15:48
+    body:
+      Assignment op=ASSIGN @22:1-22:10
+        target:
+          NameRef name=$cr globalScope=false @22:1-22:10
+        value:
+          Binary op=GT @21:1-21:10
+            left:
+              NameRef name=nIn globalScope=false @20:62-20:65
+            right:
+              NameRef name=nMax globalScope=false @21:6-21:10
+      If @22:1-22:10
+        branches:
+          Branch @22:1-22:10
+            condition:
+              NameRef name=$cr globalScope=false @22:1-22:10
+            body:
+              Jump label=Clip @22:1-22:10
+      Assignment op=ASSIGN @24:1-24:14
+        target:
+          NameRef name=Il_Limit globalScope=false @24:6-24:14
+        value:
+          NameRef name=nIn globalScope=false @23:6-23:9
+      Return @25:1-25:4
+      Assignment op=ASSIGN @26:1-26:5
+        target:
+          NameRef name=$cr globalScope=false @26:1-26:5
+        value:
+          NameRef name=Il_Limit globalScope=false @24:6-24:14
+      Label name=Clip @26:1-26:5
+      Assignment op=ASSIGN @28:1-28:14
+        target:
+          NameRef name=Il_Limit globalScope=false @28:6-28:14
+        value:
+          NameRef name=nMax globalScope=false @27:6-27:10
+  Pou kind=PROGRAM name=Cfc_Pump bodyLanguage="CFC" @32:7-32:46
+    varBlocks:
+      VarBlock section=VAR @34:11-34:22
+        variables:
+          VarDecl name=bRun referenceInit=false @35:13-35:35
+            type:
+              Named name=BOOL @35:41-35:49
+          VarDecl name=bOk referenceInit=false @36:13-36:34
+            type:
+              Named name=BOOL @36:40-36:48
+          VarDecl name=bMotor referenceInit=false @37:13-37:37
+            type:
+              Named name=BOOL @37:43-37:51
+    body:
+      Network number=1 network="FBD 4 elements" @47:17-68:63
+        body:
+          Assignment op=ASSIGN @68:17-68:63
+            target:
+              NameRef name=bMotor globalScope=false @71:31-71:37
+            value:
+              Binary op=AND @57:17-57:72
+                left:
+                  NameRef name=bRun globalScope=false @50:31-50:35
+                right:
+                  NameRef name=bOk globalScope=false @55:31-55:34
+  pragmas:
+    Pragma kind=ATTRIBUTE name="Producer" value="CODESYS" @3:3-3:128
+  comments: 0
+diagnostics:
