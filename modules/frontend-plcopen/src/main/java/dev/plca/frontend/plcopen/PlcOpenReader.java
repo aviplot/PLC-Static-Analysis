@@ -33,7 +33,8 @@ final class PlcOpenReader {
             "tasksettings",
             "globalvars",
             "accessmodifiers",
-            "cfc");
+            "cfc",
+            "cfcelementtype");
 
     private static final Set<String> SKIPPED = Set.of("documentation", "comment", "vendorElement");
 
@@ -104,7 +105,9 @@ final class PlcOpenReader {
                 return; // structure around the units: project, types, pous, instances, …
             }
         } else {
-            if (SKIPPED.contains(tag) || tag.equals("data") && !kept(r.getAttributeValue(null, "name"))) {
+            // CODESYS CFC connection marks are vendor elements (plcopen.md §5a); elsewhere they are network titles
+            boolean cfcMark = tag.equals("vendorElement") && parent.tag.equals("CFC");
+            if (SKIPPED.contains(tag) && !cfcMark || tag.equals("data") && !kept(r.getAttributeValue(null, "name"))) {
                 skipDepth = 1;
                 return;
             }

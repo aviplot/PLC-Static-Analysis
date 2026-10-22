@@ -41,7 +41,74 @@ final class NetworkBuilder {
         return out;
     }
 
+    /**
+     * A CODESYS CFC connection mark (plcopen.md §5a): {@code sourceConnectionMark} takes a value under a name like a
+     * connector, {@code sinkConnectionMark} continues it; other vendor elements (network titles, selectors) are not
+     * read.
+     */
+    private static Element connectionMark(PlcOpenFrontend.Run run, XNode n) {
+        String type = "";
+        XNode add = n.child("addData");
+        for (XNode d : add == null ? List.<XNode>of() : add.children("data")) {
+            XNode et = d.child("ElementType");
+            if (et != null && et.contentStart >= 0) {
+                type = run.file.text().substring(et.contentStart, et.contentEnd).strip();
+            }
+        }
+        boolean source = type.equals("sourceConnectionMark");
+        if (!source && !type.equals("sinkConnectionMark")) {
+            return null;
+        }
+        XNode v = n.path(source ? "inputVariables" : "outputVariables", "variable");
+        String name = v == null ? null : v.attr("formalParameter");
+        int id = intAttr(n, "localId", -1);
+        int x = n.x == Integer.MIN_VALUE ? 0 : n.x;
+        int y = n.y == Integer.MIN_VALUE ? 0 : n.y;
+        Span span = run.elementSpan(n);
+        if (source) {
+            Pin in = in(null, false, v == null ? null : v.child("connectionPointIn"));
+            return new Element(
+                    id,
+                    Kind.CONNECTOR,
+                    name,
+                    null,
+                    null,
+                    false,
+                    Modifier.NONE,
+                    Modifier.NONE,
+                    null,
+                    x,
+                    y,
+                    0,
+                    0,
+                    List.of(in),
+                    List.of(),
+                    span);
+        }
+        Pin out = out(null, false, v == null ? null : v.child("connectionPointOut"));
+        return new Element(
+                id,
+                Kind.CONTINUATION,
+                name,
+                null,
+                null,
+                false,
+                Modifier.NONE,
+                Modifier.NONE,
+                null,
+                x,
+                y,
+                0,
+                0,
+                List.of(),
+                List.of(out),
+                span);
+    }
+
     static Element element(PlcOpenFrontend.Run run, XNode n) {
+        if (n.tag.equals("vendorElement")) {
+            return connectionMark(run, n);
+        }
         Kind kind = switch (n.tag) {
             case "leftPowerRail" -> Kind.LEFT_RAIL;
             case "rightPowerRail" -> Kind.RIGHT_RAIL;

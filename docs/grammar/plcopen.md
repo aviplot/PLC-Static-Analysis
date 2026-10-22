@@ -123,6 +123,9 @@ Graph elements, each with `localId`:
 CODESYS exports a CFC body as an empty `<ST>` placeholder plus `addData/data name="…/plcopenxml/cfc"` holding a
 `<CFC>` element whose children are the standard FBD elements above (36 bodies in 6 repos). It is read like an FBD body
 (connected components as networks, `executionOrderId` as order) with body language `CFC`.
+Connection marks are `vendorElement`s with a `…/plcopenxml/cfcelementtype` addData: `sourceConnectionMark` (an input
+variable named by `formalParameter`) is read as a connector, `sinkConnectionMark` (an output variable) as the
+continuation of that name. Other vendor elements in a CFC (`networktitle`, 97; struct `selector`, 2) are not read.
 
 ## 6. SFC (TC6 §6.6; IEC 61131-3 §6.7; decision 3: IR + lowering)
 | Element | |

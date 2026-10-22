@@ -59,11 +59,11 @@ SourceUnit dialect=PLCOPEN
             type:
               Named name=BOOL @37:43-37:51
     body:
-      Network number=1 network="FBD 4 elements" @47:17-68:63
+      Network number=1 network="FBD 6 elements" @47:17-90:63
         body:
-          Assignment op=ASSIGN @68:17-68:63
+          Assignment op=ASSIGN @90:17-90:63
             target:
-              NameRef name=bMotor globalScope=false @71:31-71:37
+              NameRef name=bMotor globalScope=false @93:31-93:37
             value:
               Binary op=AND @57:17-57:72
                 left:

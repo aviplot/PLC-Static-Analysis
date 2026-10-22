@@ -9,5 +9,5 @@
   Clip:
   Il_Limit := nMax;
 == PROGRAM Cfc_Pump (CFC)
-  // network 1 (FBD 4 elements)
+  // network 1 (FBD 6 elements)
   bMotor := bRun AND bOk;

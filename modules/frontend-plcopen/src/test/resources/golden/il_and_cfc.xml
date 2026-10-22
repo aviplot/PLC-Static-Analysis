@@ -65,9 +65,31 @@ ST   Il_Limit</xhtml>
                     <variable formalParameter="Out"><connectionPointOut /></variable>
                   </outputVariables>
                 </block>
+                <vendorElement localId="5">
+                  <position x="60" y="10" />
+                  <inputVariables>
+                    <variable formalParameter="RunOk"><connectionPointIn><connection refLocalId="3" formalParameter="Out" /></connectionPointIn></variable>
+                  </inputVariables>
+                  <addData>
+                    <data name="http://www.3s-software.com/plcopenxml/cfcelementtype" handleUnknown="implementation">
+                      <ElementType xmlns="">sourceConnectionMark</ElementType>
+                    </data>
+                  </addData>
+                </vendorElement>
+                <vendorElement localId="6">
+                  <position x="70" y="10" />
+                  <outputVariables>
+                    <variable formalParameter="RunOk"><connectionPointOut><expression /></connectionPointOut></variable>
+                  </outputVariables>
+                  <addData>
+                    <data name="http://www.3s-software.com/plcopenxml/cfcelementtype" handleUnknown="implementation">
+                      <ElementType xmlns="">sinkConnectionMark</ElementType>
+                    </data>
+                  </addData>
+                </vendorElement>
                 <outVariable localId="4" executionOrderId="1">
                   <position x="80" y="10" />
-                  <connectionPointIn><connection refLocalId="3" formalParameter="Out" /></connectionPointIn>
+                  <connectionPointIn><connection refLocalId="6" /></connectionPointIn>
                   <expression>bMotor</expression>
                 </outVariable>
               </CFC>
