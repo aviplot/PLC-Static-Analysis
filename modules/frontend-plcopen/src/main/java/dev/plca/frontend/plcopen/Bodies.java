@@ -23,6 +23,11 @@ final class Bodies {
         if (body == null) {
             return new Translated(null, null, List.of());
         }
+        XNode cfc = cfc(body);
+        if (cfc != null) {
+            // CODESYS CFC: standard FBD elements in addData, next to an empty placeholder body (plcopen.md §5a)
+            return new Translated(networks(run, cfc, Network.Language.FBD), "CFC", List.of());
+        }
         XNode lang = null;
         for (XNode c : body.children) {
             if (LANGUAGES.contains(c.tag)) {
@@ -57,9 +62,27 @@ final class Bodies {
         return run.st().statements(t, run.sink, run.comments, run.pragmas);
     }
 
+    /** The {@code <CFC>} element of a CODESYS {@code …/plcopenxml/cfc} addData of {@code body}, or null. */
+    private static XNode cfc(XNode body) {
+        XNode add = body.child("addData");
+        if (add == null) {
+            return null;
+        }
+        for (XNode d : add.children("data")) {
+            String name = d.attr("name");
+            if (name != null && name.endsWith("/cfc")) {
+                return d.child("CFC");
+            }
+        }
+        return null;
+    }
+
     /** The networks of an LD/FBD body, each with its lowering. */
     static List<Statement> networks(PlcOpenFrontend.Run run, XNode lang) {
-        Network.Language language = lang.tag.equals("LD") ? Network.Language.LD : Network.Language.FBD;
+        return networks(run, lang, lang.tag.equals("LD") ? Network.Language.LD : Network.Language.FBD);
+    }
+
+    static List<Statement> networks(PlcOpenFrontend.Run run, XNode lang, Network.Language language) {
         List<Network> networks = NetworkBuilder.build(run, lang, language);
         List<Statement> out = new ArrayList<>(networks.size());
         int number = 0;

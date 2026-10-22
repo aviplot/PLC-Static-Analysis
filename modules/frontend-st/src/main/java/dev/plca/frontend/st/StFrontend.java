@@ -4,11 +4,13 @@ import dev.plca.ast.Comment;
 import dev.plca.ast.Declaration;
 import dev.plca.ast.Declaration.Pou;
 import dev.plca.ast.Declaration.PouKind;
+import dev.plca.ast.Expression;
 import dev.plca.ast.Identifier;
 import dev.plca.ast.Pragma;
 import dev.plca.ast.SourceUnit;
 import dev.plca.ast.Statement;
 import dev.plca.ast.VarBlock;
+import dev.plca.ast.VarDecl;
 import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.diag.DiagnosticSink;
@@ -17,13 +19,18 @@ import dev.plca.core.source.SourceFile;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.SourceText;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.ArchiveReader;
 import dev.plca.frontend.st.kit.Frontend;
+import dev.plca.frontend.st.kit.GraphContext;
 import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.grammar.CodesysStParser.CompilationUnitContext;
 import dev.plca.grammar.CodesysStParser.DeclarationPartContext;
+import dev.plca.grammar.CodesysStParser.ExpressionOnlyContext;
 import dev.plca.grammar.CodesysStParser.StatementsOnlyContext;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -37,6 +44,9 @@ import java.util.Set;
  * <p>Not thread-safe: use one instance per thread (it reuses lexer and parser objects).
  */
 public final class StFrontend implements Frontend {
+
+    /** TwinCAT implementation languages read from their {@code XmlArchive} ({@code docs/grammar/codesys.md} §9). */
+    private static final Set<String> GRAPHICAL = Set.of("NWL", "CFC", "SFC");
 
     private static final Set<String> TWINCAT_EXTENSIONS = Set.of(".tcpou", ".tcdut", ".tcgvl", ".tcio", ".tctto");
 
@@ -161,6 +171,12 @@ public final class StFrontend implements Frontend {
         private final List<Comment> comments;
         private final List<Pragma> pragmas;
         private final SourceText whole;
+        private GraphContext graphs;
+        private ArchiveReader archives;
+        /** The POU being assembled and its declaration (SFC step actions and conditions refer to them). */
+        private TwinCatReader.Element owner;
+
+        private AstBuilder.DeclarationPart ownerDecl;
 
         TwinCatAssembler(
                 SourceFile file,
@@ -196,6 +212,8 @@ public final class StFrontend implements Frontend {
 
         private Pou pou(TwinCatReader.Element e, PouKind forcedKind) {
             AstBuilder.DeclarationPart decl = declaration(e);
+            owner = e;
+            ownerDecl = decl;
             AstBuilder.Header h = decl == null ? null : decl.header();
             PouKind kind = forcedKind != null ? forcedKind : h != null ? h.kind() : defaultKind(e.tag);
             boolean prototype = forcedKind == PouKind.INTERFACE || kind == PouKind.INTERFACE;
@@ -215,7 +233,7 @@ public final class StFrontend implements Frontend {
                     h != null ? h.type() : null,
                     h != null ? h.extendsTypes() : List.of(),
                     h != null ? h.implementsTypes() : List.of(),
-                    decl != null ? decl.varBlocks() : List.of(),
+                    blocks(decl, e),
                     members,
                     body,
                     prototype ? null : language(e),
@@ -260,6 +278,7 @@ public final class StFrontend implements Frontend {
             AstBuilder.DeclarationPart decl = declaration(e);
             AstBuilder.Header h = decl == null ? null : decl.header();
             List<Statement> body = prototype ? null : body(e);
+            List<VarBlock> blocks = blocks(decl, e);
             return new Pou(
                     kind,
                     h != null ? h.name() : attributeName(e),
@@ -267,7 +286,7 @@ public final class StFrontend implements Frontend {
                     h != null ? h.type() : null,
                     List.of(),
                     List.of(),
-                    decl != null ? decl.varBlocks() : List.of(),
+                    blocks,
                     List.of(),
                     body,
                     prototype ? null : language(e),
@@ -300,6 +319,12 @@ public final class StFrontend implements Frontend {
         }
 
         private List<Statement> body(TwinCatReader.Element e) {
+            if (!e.hasStImplementation() && e.graphStart >= 0 && GRAPHICAL.contains(e.implLanguage)) {
+                List<Statement> graphical = graphical(e);
+                if (graphical != null) {
+                    return graphical;
+                }
+            }
             if (!e.hasStImplementation()) {
                 if (e.implLanguage != null) {
                     sink.report(Diagnostic.of(
@@ -312,6 +337,14 @@ public final class StFrontend implements Frontend {
                 return null;
             }
             SourceText t = registry.registerXmlContent(file, e.implStart, e.implEnd);
+            if (e.tag.equals("Transition") && isBareCondition(t.text())) {
+                // a transition written as its condition: `NOT fb.BUSY` means `Trans := NOT fb.BUSY;`
+                Expression condition = expression(t);
+                Span s = condition.span();
+                Expression target = new Expression.NameRef(
+                        new Identifier(e.name == null ? "<unnamed>" : e.name, Identifier.Form.SYNTHETIC, s), false, s);
+                return List.of(new Statement.Assignment(target, Statement.AssignOp.ASSIGN, condition, s));
+            }
             Parsed p = parse(t, StParserDriver.Entry.STATEMENTS, sink);
             AstBuilder b = new AstBuilder(t, p.tokens(), sink);
             List<Statement> body = b.statementsOnly((StatementsOnlyContext) p.tree());
@@ -319,8 +352,97 @@ public final class StFrontend implements Frontend {
             return body;
         }
 
+        /** No statement in the text: no {@code ;} and no {@code :=} outside comments and strings. */
+        private static boolean isBareCondition(String text) {
+            String code = text.replaceAll("(?s)\\(\\*.*?\\*\\)|//[^\\n]*|'[^']*'|\"[^\"]*\"", " ");
+            return !code.isBlank() && !code.contains(";") && !code.contains(":=");
+        }
+
+        /** A graphical body read from its {@code XmlArchive}; null when the archive is unreadable (reported). */
+        private List<Statement> graphical(TwinCatReader.Element e) {
+            if (graphs == null) {
+                archives = new ArchiveReader(file.text());
+                graphs = new GraphContext(file, registry, whole, sink, this::expression);
+            }
+            ArchiveReader.Result r = archives.read(e.graphStart, e.graphEnd);
+            if (r.root() == null) {
+                if (r.error() == null) {
+                    return null;
+                }
+                sink.report(Diagnostic.error(
+                        SyntaxCodes.MALFORMED_XML,
+                        e.tag + " '" + e.name + "': unreadable " + e.implLanguage + " body: " + r.error(),
+                        Span.at(whole.id(), r.errorOffset())));
+                return null;
+            }
+            switch (e.implLanguage) {
+                case "NWL" -> {
+                    e.language = archives.string(r.root(), "DefaultViewMode").equalsIgnoreCase("Ld") ? "LD" : "FBD";
+                    return new NwlTranslator(graphs, archives).translate(r.root());
+                }
+                case "CFC" -> {
+                    e.language = "CFC";
+                    return new CfcTranslator(graphs, archives).translate(r.root());
+                }
+                case "SFC" -> {
+                    e.language = "SFC";
+                    SfcArchiveTranslator.Result sfc = new SfcArchiveTranslator(
+                                    graphs, archives, memberNames("Action"), memberNames("Transition"), variables())
+                            .translate(r.root());
+                    e.extraBlock = sfc.stepVariables();
+                    return sfc.body();
+                }
+                default -> {
+                    return null;
+                }
+            }
+        }
+
+        /** The declaration's VAR blocks plus the implicit ones of a graphical body (SFC step variables). */
+        private List<VarBlock> blocks(AstBuilder.DeclarationPart decl, TwinCatReader.Element e) {
+            List<VarBlock> own = decl != null ? decl.varBlocks() : List.of();
+            if (e.extraBlock == null) {
+                return own;
+            }
+            List<VarBlock> all = new ArrayList<>(own);
+            all.add(e.extraBlock);
+            return all;
+        }
+
+        private Set<String> memberNames(String tag) {
+            Set<String> out = new HashSet<>();
+            if (owner != null) {
+                for (TwinCatReader.Element c : owner.children) {
+                    if (c.tag.equals(tag) && c.name != null) {
+                        out.add(c.name.toLowerCase(Locale.ROOT));
+                    }
+                }
+            }
+            return out;
+        }
+
+        private Set<String> variables() {
+            Set<String> out = new HashSet<>();
+            if (ownerDecl != null) {
+                for (VarBlock b : ownerDecl.varBlocks()) {
+                    for (VarDecl v : b.variables()) {
+                        out.add(v.name().name().toLowerCase(Locale.ROOT));
+                    }
+                }
+            }
+            return out;
+        }
+
+        private Expression expression(SourceText t) {
+            Parsed p = parse(t, StParserDriver.Entry.EXPRESSION, sink);
+            AstBuilder b = new AstBuilder(t, p.tokens(), sink);
+            Expression ex = b.expressionOnly((ExpressionOnlyContext) p.tree());
+            b.collectHidden(comments, pragmas);
+            return ex;
+        }
+
         private String language(TwinCatReader.Element e) {
-            return e.hasStImplementation() ? "ST" : e.implLanguage;
+            return e.hasStImplementation() ? "ST" : e.language != null ? e.language : e.implLanguage;
         }
 
         private Identifier attributeName(TwinCatReader.Element e) {

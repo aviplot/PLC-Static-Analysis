@@ -1,0 +1,55 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=FUNCTION_BLOCK name=FB_Blocks bodyLanguage="FBD" @4:27-9:1
+    varBlocks:
+      VarBlock section=VAR @5:1-8:8
+        variables:
+          VarDecl name=nA referenceInit=false @6:5-6:31
+            type:
+              Named name=INT @6:27-6:30
+          VarDecl name=nB referenceInit=false @6:5-6:31
+            type:
+              Named name=INT @6:27-6:30
+          VarDecl name=nSum referenceInit=false @6:5-6:31
+            type:
+              Named name=INT @6:27-6:30
+          VarDecl name=nCopy referenceInit=false @6:5-6:31
+            type:
+              Named name=INT @6:27-6:30
+          VarDecl name=bHigh referenceInit=false @7:5-7:18
+            type:
+              Named name=BOOL @7:13-7:17
+    body:
+      Network number=1 network="FBD 5 elements" @18:17-155:17
+        body:
+          Assignment op=ASSIGN @31:25-31:40
+            target:
+              NameRef name=$fbd1 globalScope=false @31:25-31:40
+            value:
+              Binary op=ADD @31:25-31:40
+                left:
+                  NameRef name=nA globalScope=false @54:47-54:49
+                right:
+                  NameRef name=nB globalScope=false @68:47-68:49
+          Assignment op=ASSIGN @100:45-100:49
+            target:
+              NameRef name=nSum globalScope=false @100:45-100:49
+            value:
+              NameRef name=$fbd1 globalScope=false @31:25-31:40
+          Assignment op=ASSIGN @128:45-128:50
+            target:
+              NameRef name=nCopy globalScope=false @128:45-128:50
+            value:
+              NameRef name=$fbd1 globalScope=false @31:25-31:40
+      Network number=2 network="FBD 4 elements" @156:17-256:17
+        body:
+          Assignment op=ASSIGN @170:45-170:50
+            target:
+              NameRef name=bHigh globalScope=false @170:45-170:50
+            value:
+              Binary op=GT @188:25-188:40
+                left:
+                  NameRef name=nSum globalScope=false @211:47-211:51
+                right:
+                  Literal kind=INTEGER text="10" @225:47-225:49
+  comments: 0
+diagnostics:

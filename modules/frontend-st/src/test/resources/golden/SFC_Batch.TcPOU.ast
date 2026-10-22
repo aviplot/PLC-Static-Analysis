@@ -1,0 +1,391 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=FUNCTION_BLOCK name=FB_Batch bodyLanguage="SFC" @4:27-10:1
+    varBlocks:
+      VarBlock section=VAR @5:1-9:8
+        variables:
+          VarDecl name=bStart referenceInit=false @6:5-6:47
+            type:
+              Named name=BOOL @6:42-6:46
+          VarDecl name=bAbort referenceInit=false @6:5-6:47
+            type:
+              Named name=BOOL @6:42-6:46
+          VarDecl name=bValveOpen referenceInit=false @6:5-6:47
+            type:
+              Named name=BOOL @6:42-6:46
+          VarDecl name=bLevel referenceInit=false @6:5-6:47
+            type:
+              Named name=BOOL @6:42-6:46
+          VarDecl name=rTemp referenceInit=false @7:5-7:18
+            type:
+              Named name=REAL @7:13-7:17
+          VarDecl name=fbMixer referenceInit=false @8:5-8:24
+            type:
+              Named name=FB_Mixer @8:15-8:23
+      VarBlock section=VAR @15:13-601:13
+        variables:
+          VarDecl name=Init referenceInit=false @19:21-19:36
+            type:
+              StructType @19:21-19:36
+                members:
+                  VarDecl name=X referenceInit=false @19:21-19:36
+                    type:
+                      Named name=BOOL @19:21-19:36
+                  VarDecl name=T referenceInit=false @19:21-19:36
+                    type:
+                      Named name=TIME @19:21-19:36
+            init:
+              StructInit @19:21-19:36
+                fields:
+                  FieldInit name=X @19:21-19:36
+                    value:
+                      Literal kind=BOOL text="TRUE" @19:21-19:36
+          VarDecl name=Fill referenceInit=false @111:21-111:36
+            type:
+              StructType @111:21-111:36
+                members:
+                  VarDecl name=X referenceInit=false @111:21-111:36
+                    type:
+                      Named name=BOOL @111:21-111:36
+                  VarDecl name=T referenceInit=false @111:21-111:36
+                    type:
+                      Named name=TIME @111:21-111:36
+          VarDecl name=Heat referenceInit=false @230:33-230:48
+            type:
+              StructType @230:33-230:48
+                members:
+                  VarDecl name=X referenceInit=false @230:33-230:48
+                    type:
+                      Named name=BOOL @230:33-230:48
+                  VarDecl name=T referenceInit=false @230:33-230:48
+                    type:
+                      Named name=TIME @230:33-230:48
+          VarDecl name=Stir referenceInit=false @408:33-408:48
+            type:
+              StructType @408:33-408:48
+                members:
+                  VarDecl name=X referenceInit=false @408:33-408:48
+                    type:
+                      Named name=BOOL @408:33-408:48
+                  VarDecl name=T referenceInit=false @408:33-408:48
+                    type:
+                      Named name=TIME @408:33-408:48
+          VarDecl name=Drain referenceInit=false @481:33-481:48
+            type:
+              StructType @481:33-481:48
+                members:
+                  VarDecl name=X referenceInit=false @481:33-481:48
+                    type:
+                      Named name=BOOL @481:33-481:48
+                  VarDecl name=T referenceInit=false @481:33-481:48
+                    type:
+                      Named name=TIME @481:33-481:48
+    members:
+      Pou kind=ACTION name=A_Reset bodyLanguage="ST" @607:5-607:72
+        body:
+          Assignment op=ASSIGN @609:22-609:42
+            target:
+              NameRef name=bValveOpen globalScope=false @609:22-609:32
+            value:
+              Literal kind=BOOL text="FALSE" @609:36-609:41
+      Pou kind=ACTION name=A_Heat bodyLanguage="ST" @612:5-612:71
+        body:
+          Assignment op=ASSIGN @614:22-614:43
+            target:
+              NameRef name=rTemp globalScope=false @614:22-614:27
+            value:
+              Binary op=ADD @614:31-614:42
+                left:
+                  NameRef name=rTemp globalScope=false @614:31-614:36
+                right:
+                  Literal kind=REAL text="0.5" @614:39-614:42
+      Pou kind=ACTION name=Fill_entry bodyLanguage="ST" @617:5-617:75
+        body:
+          Assignment op=ASSIGN @619:22-619:38
+            target:
+              NameRef name=bLevel globalScope=false @619:22-619:28
+            value:
+              Literal kind=BOOL text="FALSE" @619:32-619:37
+      Pou kind=ACTION name=Drain_exit bodyLanguage="ST" @622:5-622:75
+        body:
+          Assignment op=ASSIGN @624:22-624:42
+            target:
+              NameRef name=bValveOpen globalScope=false @624:22-624:32
+            value:
+              Literal kind=BOOL text="FALSE" @624:36-624:41
+      Pou kind=TRANSITION name=Full bodyLanguage="ST" @627:5-627:73
+        body:
+          Assignment op=ASSIGN @629:22-629:43
+            target:
+              NameRef name=$Full globalScope=false @629:22-629:43
+            value:
+              Binary op=AND @629:22-629:43
+                left:
+                  NameRef name=bLevel globalScope=false @629:22-629:28
+                right:
+                  Unary op=NOT @629:33-629:43
+                    operand:
+                      NameRef name=bAbort globalScope=false @629:37-629:43
+    body:
+      Chart chart="5 steps, 5 transitions" @15:13-601:13
+        body:
+          If @22:27-22:30
+            branches:
+              Branch @22:27-22:30
+                condition:
+                  MemberAccess member=X @49:43-49:47
+                    target:
+                      NameRef name=Init globalScope=false @49:43-49:47
+                body:
+                  CallStatement @27:49-27:56
+                    call:
+                      Call @27:49-27:56
+                        callee:
+                          NameRef name=A_Reset globalScope=false @27:49-27:56
+          If @186:29-186:42
+            branches:
+              Branch @186:29-186:42
+                condition:
+                  Call @186:29-186:42
+                    callee:
+                      NameRef name=$R_TRIG globalScope=false @186:29-186:42
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @162:43-162:47
+                        value:
+                          MemberAccess member=X @162:43-162:47
+                            target:
+                              NameRef name=Fill globalScope=false @162:43-162:47
+                body:
+                  CallStatement @186:43-186:53
+                    call:
+                      Call @186:43-186:53
+                        callee:
+                          NameRef name=Fill_entry globalScope=false @186:43-186:53
+          If @114:27-114:30
+            branches:
+              Branch @114:27-114:30
+                condition:
+                  MemberAccess member=X @162:43-162:47
+                    target:
+                      NameRef name=Fill globalScope=false @162:43-162:47
+                body:
+                  Assignment op=ASSIGN @119:49-119:59
+                    target:
+                      NameRef name=bValveOpen globalScope=false @119:49-119:59
+                    value:
+                      Literal kind=BOOL text="TRUE" @119:49-119:59
+          If @135:27-135:30
+            branches:
+              Branch @135:27-135:30
+                condition:
+                  MemberAccess member=X @162:43-162:47
+                    target:
+                      NameRef name=Fill globalScope=false @162:43-162:47
+                body:
+                  Assignment op=ASSIGN @135:27-135:30
+                    target:
+                      NameRef name=$act_fill_3 globalScope=false @135:27-135:30
+                    value:
+                      Literal kind=BOOL text="TRUE" @135:27-135:30
+          If @233:39-233:42
+            branches:
+              Branch @233:39-233:42
+                condition:
+                  MemberAccess member=X @260:55-260:59
+                    target:
+                      NameRef name=Heat globalScope=false @260:55-260:59
+                body:
+                  CallStatement @238:61-238:67
+                    call:
+                      Call @238:61-238:67
+                        callee:
+                          NameRef name=A_Heat globalScope=false @238:61-238:67
+          If @529:41-529:54
+            branches:
+              Branch @529:41-529:54
+                condition:
+                  Call @529:41-529:54
+                    callee:
+                      NameRef name=$F_TRIG globalScope=false @529:41-529:54
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @489:55-489:60
+                        value:
+                          MemberAccess member=X @489:55-489:60
+                            target:
+                              NameRef name=Drain globalScope=false @489:55-489:60
+                body:
+                  CallStatement @529:55-529:65
+                    call:
+                      Call @529:55-529:65
+                        callee:
+                          NameRef name=Drain_exit globalScope=false @529:55-529:65
+          If @135:27-135:30
+            branches:
+              Branch @135:27-135:30
+                condition:
+                  NameRef name=$act_fill_3 globalScope=false @135:27-135:30
+                body:
+                  CallStatement @140:49-140:60
+                    call:
+                      Call @140:49-140:60
+                        callee:
+                          MemberAccess member=Run @140:49-140:60
+                            target:
+                              NameRef name=fbMixer globalScope=false @140:49-140:56
+          If @97:21-97:42
+            branches:
+              Branch @97:21-97:42
+                condition:
+                  Binary op=AND @97:21-97:42
+                    left:
+                      MemberAccess member=X @49:43-49:47
+                        target:
+                          NameRef name=Init globalScope=false @49:43-49:47
+                    right:
+                      NameRef name=bStart globalScope=false @103:43-103:49
+                body:
+                  Assignment op=ASSIGN @97:21-97:42
+                    target:
+                      MemberAccess member=X @49:43-49:47
+                        target:
+                          NameRef name=Init globalScope=false @49:43-49:47
+                    value:
+                      Literal kind=BOOL text="FALSE" @97:21-97:42
+                  Assignment op=ASSIGN @97:21-97:42
+                    target:
+                      MemberAccess member=X @162:43-162:47
+                        target:
+                          NameRef name=Fill globalScope=false @162:43-162:47
+                    value:
+                      Literal kind=BOOL text="TRUE" @97:21-97:42
+          If @216:33-216:54
+            branches:
+              Branch @216:33-216:54
+                condition:
+                  Binary op=AND @216:33-216:54
+                    left:
+                      MemberAccess member=X @162:43-162:47
+                        target:
+                          NameRef name=Fill globalScope=false @162:43-162:47
+                    right:
+                      NameRef name=Full globalScope=false @222:55-222:59
+                body:
+                  Assignment op=ASSIGN @216:33-216:54
+                    target:
+                      MemberAccess member=X @162:43-162:47
+                        target:
+                          NameRef name=Fill globalScope=false @162:43-162:47
+                    value:
+                      Literal kind=BOOL text="FALSE" @216:33-216:54
+                  Assignment op=ASSIGN @216:33-216:54
+                    target:
+                      MemberAccess member=X @260:55-260:59
+                        target:
+                          NameRef name=Heat globalScope=false @260:55-260:59
+                    value:
+                      Literal kind=BOOL text="TRUE" @216:33-216:54
+          If @325:33-325:54
+            branches:
+              Branch @325:33-325:54
+                condition:
+                  Binary op=AND @325:33-325:54
+                    left:
+                      MemberAccess member=X @162:43-162:47
+                        target:
+                          NameRef name=Fill globalScope=false @162:43-162:47
+                    right:
+                      NameRef name=bAbort globalScope=false @331:55-331:61
+                body:
+                  Assignment op=ASSIGN @325:33-325:54
+                    target:
+                      MemberAccess member=X @162:43-162:47
+                        target:
+                          NameRef name=Fill globalScope=false @162:43-162:47
+                    value:
+                      Literal kind=BOOL text="FALSE" @325:33-325:54
+                  Assignment op=ASSIGN @325:33-325:54
+                    target:
+                      MemberAccess member=X @344:55-344:59
+                        target:
+                          NameRef name=Init globalScope=false @344:55-344:59
+                    value:
+                      Literal kind=BOOL text="TRUE" @325:33-325:54
+          If @388:21-388:42
+            branches:
+              Branch @388:21-388:42
+                condition:
+                  Binary op=AND @388:21-388:42
+                    left:
+                      MemberAccess member=X @260:55-260:59
+                        target:
+                          NameRef name=Heat globalScope=false @260:55-260:59
+                    right:
+                      Binary op=GT @394:43-394:58
+                        left:
+                          NameRef name=rTemp globalScope=false @394:43-394:48
+                        right:
+                          Literal kind=REAL text="80.0" @394:54-394:58
+                body:
+                  Assignment op=ASSIGN @388:21-388:42
+                    target:
+                      MemberAccess member=X @260:55-260:59
+                        target:
+                          NameRef name=Heat globalScope=false @260:55-260:59
+                    value:
+                      Literal kind=BOOL text="FALSE" @388:21-388:42
+                  Assignment op=ASSIGN @388:21-388:42
+                    target:
+                      MemberAccess member=X @416:55-416:59
+                        target:
+                          NameRef name=Stir globalScope=false @416:55-416:59
+                    value:
+                      Literal kind=BOOL text="TRUE" @388:21-388:42
+                  Assignment op=ASSIGN @388:21-388:42
+                    target:
+                      MemberAccess member=X @489:55-489:60
+                        target:
+                          NameRef name=Drain globalScope=false @489:55-489:60
+                    value:
+                      Literal kind=BOOL text="TRUE" @388:21-388:42
+          If @573:21-573:42
+            branches:
+              Branch @573:21-573:42
+                condition:
+                  Binary op=AND @573:21-573:42
+                    left:
+                      Binary op=AND @573:21-573:42
+                        left:
+                          MemberAccess member=X @416:55-416:59
+                            target:
+                              NameRef name=Stir globalScope=false @416:55-416:59
+                        right:
+                          MemberAccess member=X @489:55-489:60
+                            target:
+                              NameRef name=Drain globalScope=false @489:55-489:60
+                    right:
+                      Unary op=NOT @579:43-579:53
+                        operand:
+                          NameRef name=bLevel globalScope=false @579:47-579:53
+                body:
+                  Assignment op=ASSIGN @573:21-573:42
+                    target:
+                      MemberAccess member=X @416:55-416:59
+                        target:
+                          NameRef name=Stir globalScope=false @416:55-416:59
+                    value:
+                      Literal kind=BOOL text="FALSE" @573:21-573:42
+                  Assignment op=ASSIGN @573:21-573:42
+                    target:
+                      MemberAccess member=X @489:55-489:60
+                        target:
+                          NameRef name=Drain globalScope=false @489:55-489:60
+                    value:
+                      Literal kind=BOOL text="FALSE" @573:21-573:42
+                  Assignment op=ASSIGN @573:21-573:42
+                    target:
+                      MemberAccess member=X @49:43-49:47
+                        target:
+                          NameRef name=Init globalScope=false @49:43-49:47
+                    value:
+                      Literal kind=BOOL text="TRUE" @573:21-573:42
+  comments: 0
+diagnostics:

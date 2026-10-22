@@ -27,9 +27,9 @@ import java.util.function.Function;
 
 /**
  * Lowers one LD/FBD {@link Network} to statements ({@code docs/grammar/plcopen.md} §5), for every frontend that reads
- * graphical networks (PLCopen XML, TwinCAT NWL/CFC, L5X FBD). Sinks (coils, output variables,
- * FB calls, jumps, returns) are emitted in execution order; each pulls the values it needs, so every element is
- * evaluated after what it reads and exactly once:
+ * graphical networks (PLCopen XML, TwinCAT NWL/CFC, L5X FBD). Sinks (coils, output variables, FB calls, jumps, returns)
+ * are emitted in execution order; each pulls the values it needs, so every element is evaluated after what it reads and
+ * exactly once:
  *
  * <ul>
  *   <li>power flow: a contact ANDs its term onto the flow, parallel wires OR, a coil assigns from the flow;
@@ -335,7 +335,8 @@ public final class NetworkLowering {
                     .findFirst()
                     .orElse("Q");
         }
-        return new Expression.MemberAccess(e.value(), new Identifier(p, e.span()), e.span());
+        Expression target = e.value() != null ? e.value() : new Expression.Invalid(e.span());
+        return new Expression.MemberAccess(target, new Identifier(p, e.span()), e.span());
     }
 
     /** An FB call, once: {@code inst(IN1 := …)}, under {@code IF en} when EN is wired to anything but the rail. */

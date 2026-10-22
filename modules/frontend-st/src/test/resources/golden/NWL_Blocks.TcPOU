@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Blocks" Id="{00000000-0000-0000-0000-000000000001}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Blocks
+VAR
+    nA, nB, nSum, nCopy : INT;
+    bHigh : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <NWL>
+        <XmlArchive>
+          <Data>
+            <o xml:space="preserve" t="NWLImplementationObject">
+              <v n="NetworkListComment">""</v>
+              <v n="DefaultViewMode">"Fbd"</v>
+              <l2 n="NetworkList" cet="Network">
+                <o>
+                  <v n="ILActive">false</v>
+                  <v n="FBDValid">false</v>
+                  <v n="ILValid">false</v>
+                  <l2 n="ILLines"/>
+                  <v n="Comment">""</v>
+                  <v n="Title">""</v>
+                  <v n="Label">""</v>
+                  <v n="OutCommented">false</v>
+                  <l2 n="NetworkItems">
+                    <o t="BoxTreeDemux">
+                      <v n="VarId">1</v>
+                      <o n="Input" t="BoxTreeBox">
+                        <v n="BoxType">"ADD"</v>
+                        <o n="Instance" t="Operand">
+                          <n n="Operand"/>
+                          <v n="Type">""</v>
+                          <o n="Flags" t="Flags">
+                            <v n="Flags">0</v>
+                            <v n="Fixed">false</v>
+                            <v n="Extensible">false</v>
+                          </o>
+                          <v n="Id">152L</v>
+                        </o>
+                        <o n="OutputItems" t="OutputItemList">
+                          <l2 n="OutputItems"/>
+                        </o>
+                        <o n="Flags" t="Flags">
+                          <v n="Flags">0</v>
+                          <v n="Fixed">false</v>
+                          <v n="Extensible">false</v>
+                        </o>
+                        <n n="InputFlags"/>
+                        <l2 n="InputItems">
+                          <o t="BoxTreeOperand">
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"nA"</v>
+                              <v n="Type">"INT"</v>
+                              <v n="Comment">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="Id">148L</v>
+                            </o>
+                            <v n="Id">149L</v>
+                          </o>
+                          <o t="BoxTreeOperand">
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"nB"</v>
+                              <v n="Type">"INT"</v>
+                              <v n="Comment">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="Id">150L</v>
+                            </o>
+                            <v n="Id">151L</v>
+                          </o>
+                        </l2>
+                        <o n="InputParam" t="ParamList">
+                          <l2 n="Names" cet="String"/>
+                          <l2 n="Types" cet="String"/>
+                        </o>
+                        <o n="OutputParam" t="ParamList">
+                          <l2 n="Names" cet="String"/>
+                          <l2 n="Types" cet="String"/>
+                        </o>
+                        <v n="CallType" t="Operator">Add</v>
+                        <v n="EN">false</v>
+                        <v n="ENO">false</v>
+                        <v n="Id">153L</v>
+                      </o>
+                      <v n="Id">154L</v>
+                    </o>
+                    <o t="BoxTreeAssign">
+                      <o n="OutputItems" t="OutputItemList">
+                        <l2 n="OutputItems" cet="Operand">
+                          <o>
+                            <v n="Operand">"nSum"</v>
+                            <v n="Type">"BOOL"</v>
+                            <v n="Comment">""</v>
+                            <o n="Flags" t="Flags">
+                              <v n="Flags">0</v>
+                              <v n="Fixed">false</v>
+                              <v n="Extensible">false</v>
+                            </o>
+                            <v n="Id">156L</v>
+                          </o>
+                        </l2>
+                      </o>
+                      <o n="Flags" t="Flags">
+                        <v n="Flags">0</v>
+                        <v n="Fixed">false</v>
+                        <v n="Extensible">false</v>
+                      </o>
+                      <o n="RValue" t="BoxTreeDemux">
+                        <v n="VarId">1</v>
+                        <n n="Input"/>
+                        <v n="Id">155L</v>
+                      </o>
+                      <v n="Id">157L</v>
+                    </o>
+                    <o t="BoxTreeAssign">
+                      <o n="OutputItems" t="OutputItemList">
+                        <l2 n="OutputItems" cet="Operand">
+                          <o>
+                            <v n="Operand">"nCopy"</v>
+                            <v n="Type">"BOOL"</v>
+                            <v n="Comment">""</v>
+                            <o n="Flags" t="Flags">
+                              <v n="Flags">0</v>
+                              <v n="Fixed">false</v>
+                              <v n="Extensible">false</v>
+                            </o>
+                            <v n="Id">159L</v>
+                          </o>
+                        </l2>
+                      </o>
+                      <o n="Flags" t="Flags">
+                        <v n="Flags">0</v>
+                        <v n="Fixed">false</v>
+                        <v n="Extensible">false</v>
+                      </o>
+                      <o n="RValue" t="BoxTreeDemux">
+                        <v n="VarId">1</v>
+                        <n n="Input"/>
+                        <v n="Id">158L</v>
+                      </o>
+                      <v n="Id">160L</v>
+                    </o>
+                  </l2>
+                  <l2 n="Connectors"/>
+                  <v n="Id">161L</v>
+                </o>
+                <o>
+                  <v n="ILActive">false</v>
+                  <v n="FBDValid">false</v>
+                  <v n="ILValid">false</v>
+                  <l2 n="ILLines"/>
+                  <v n="Comment">""</v>
+                  <v n="Title">""</v>
+                  <v n="Label">""</v>
+                  <v n="OutCommented">false</v>
+                  <l2 n="NetworkItems">
+                    <o t="BoxTreeAssign">
+                      <o n="OutputItems" t="OutputItemList">
+                        <l2 n="OutputItems" cet="Operand">
+                          <o>
+                            <v n="Operand">"bHigh"</v>
+                            <v n="Type">"BOOL"</v>
+                            <v n="Comment">""</v>
+                            <o n="Flags" t="Flags">
+                              <v n="Flags">0</v>
+                              <v n="Fixed">false</v>
+                              <v n="Extensible">false</v>
+                            </o>
+                            <v n="Id">168L</v>
+                          </o>
+                        </l2>
+                      </o>
+                      <o n="Flags" t="Flags">
+                        <v n="Flags">0</v>
+                        <v n="Fixed">false</v>
+                        <v n="Extensible">false</v>
+                      </o>
+                      <o n="RValue" t="BoxTreeBox">
+                        <v n="BoxType">"GT"</v>
+                        <o n="Instance" t="Operand">
+                          <n n="Operand"/>
+                          <v n="Type">""</v>
+                          <o n="Flags" t="Flags">
+                            <v n="Flags">0</v>
+                            <v n="Fixed">false</v>
+                            <v n="Extensible">false</v>
+                          </o>
+                          <v n="Id">166L</v>
+                        </o>
+                        <o n="OutputItems" t="OutputItemList">
+                          <l2 n="OutputItems"/>
+                        </o>
+                        <o n="Flags" t="Flags">
+                          <v n="Flags">0</v>
+                          <v n="Fixed">false</v>
+                          <v n="Extensible">false</v>
+                        </o>
+                        <n n="InputFlags"/>
+                        <l2 n="InputItems">
+                          <o t="BoxTreeOperand">
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"nSum"</v>
+                              <v n="Type">"INT"</v>
+                              <v n="Comment">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="Id">162L</v>
+                            </o>
+                            <v n="Id">163L</v>
+                          </o>
+                          <o t="BoxTreeOperand">
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"10"</v>
+                              <v n="Type">"INT"</v>
+                              <v n="Comment">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="Id">164L</v>
+                            </o>
+                            <v n="Id">165L</v>
+                          </o>
+                        </l2>
+                        <o n="InputParam" t="ParamList">
+                          <l2 n="Names" cet="String"/>
+                          <l2 n="Types" cet="String"/>
+                        </o>
+                        <o n="OutputParam" t="ParamList">
+                          <l2 n="Names" cet="String"/>
+                          <l2 n="Types" cet="String"/>
+                        </o>
+                        <v n="CallType" t="Operator">Gt</v>
+                        <v n="EN">false</v>
+                        <v n="ENO">false</v>
+                        <v n="Id">167L</v>
+                      </o>
+                      <v n="Id">169L</v>
+                    </o>
+                  </l2>
+                  <l2 n="Connectors"/>
+                  <v n="Id">170L</v>
+                </o>
+              </l2>
+              <v n="BranchCounter">0</v>
+              <v n="ValidIds">true</v>
+            </o>
+          </Data>
+          <TypeList>
+            <Type n="Network">{d9a99d73-b633-47db-b876-a752acb25871}</Type>
+          </TypeList>
+        </XmlArchive>
+      </NWL>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,138 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=PROGRAM name=PRG_Ladder bodyLanguage="LD" @4:27-10:1
+    varBlocks:
+      VarBlock section=VAR @5:1-9:8
+        variables:
+          VarDecl name=bStart referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bStop referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bMotor referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bButton referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bClear referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bLamp referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bSkip referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bRunning referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bAlarm referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=bReady referenceInit=false @6:5-6:91
+            type:
+              Named name=BOOL @6:86-6:90
+          VarDecl name=tonRun referenceInit=false @7:5-7:18
+            type:
+              Named name=TON @7:14-7:17
+          VarDecl name=tElapsed referenceInit=false @8:5-8:21
+            type:
+              Named name=TIME @8:16-8:20
+    body:
+      Network number=1 network="LD 5 elements" @19:17-140:17
+        body:
+          Assignment op=ASSIGN @33:45-33:51
+            target:
+              NameRef name=bMotor globalScope=false @33:45-33:51
+            value:
+              Binary op=AND @109:47-109:52
+                left:
+                  Binary op=OR @91:51-91:57
+                    left:
+                      NameRef name=bStart globalScope=false @77:51-77:57
+                    right:
+                      NameRef name=bMotor globalScope=false @91:51-91:57
+                right:
+                  Unary op=NOT @109:47-109:52
+                    operand:
+                      NameRef name=bStop globalScope=false @109:47-109:52
+      Network number=2 network="LD 3 elements" @141:17-191:17
+        body:
+          If @155:45-155:50
+            branches:
+              Branch @155:45-155:50
+                condition:
+                  Call @174:43-174:50
+                    callee:
+                      NameRef name=$R_TRIG globalScope=false @174:43-174:50
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @174:43-174:50
+                        value:
+                          NameRef name=bButton globalScope=false @174:43-174:50
+                body:
+                  Assignment op=ASSIGN @155:45-155:50
+                    target:
+                      NameRef name=bLamp globalScope=false @155:45-155:50
+                    value:
+                      Literal kind=BOOL text="TRUE" @155:45-155:50
+      Network number=3 network="LD 3 elements" @192:17-242:17
+        body:
+          If @206:45-206:50
+            branches:
+              Branch @206:45-206:50
+                condition:
+                  NameRef name=bClear globalScope=false @225:43-225:49
+                body:
+                  Assignment op=ASSIGN @206:45-206:50
+                    target:
+                      NameRef name=bLamp globalScope=false @206:45-206:50
+                    value:
+                      Literal kind=BOOL text="FALSE" @206:45-206:50
+      Network number=4 network="LD 6 elements" @243:17-368:17
+        body:
+          CallStatement @277:43-277:49
+            call:
+              Call @277:43-277:49
+                callee:
+                  NameRef name=tonRun globalScope=false @277:43-277:49
+                arguments:
+                  Argument kind=INPUT name=IN negated=false @277:43-277:49
+                    value:
+                      NameRef name=bMotor globalScope=false @311:47-311:53
+                  Argument kind=INPUT name=PT negated=false @277:43-277:49
+                    value:
+                      Literal kind=TIME text="5S" typePrefix="T" @325:47-325:51
+          Assignment op=ASSIGN @290:47-290:55
+            target:
+              NameRef name=tElapsed globalScope=false @290:47-290:55
+            value:
+              MemberAccess member=ET @277:43-277:49
+                target:
+                  NameRef name=tonRun globalScope=false @277:43-277:49
+          Assignment op=ASSIGN @257:45-257:53
+            target:
+              NameRef name=bRunning globalScope=false @257:45-257:53
+            value:
+              MemberAccess member=Q @277:43-277:49
+                target:
+                  NameRef name=tonRun globalScope=false @277:43-277:49
+      Network number=5 network="LD 3 elements" @369:17-419:17
+        body:
+          If @383:29-383:44
+            branches:
+              Branch @383:29-383:44
+                condition:
+                  NameRef name=bSkip globalScope=false @402:43-402:48
+                body:
+                  Jump label=Done @383:29-383:44
+      Network number=7 network="LD 4 elements" @471:17-521:17
+        body:
+          Label name=Done @478:19-478:32
+          Assignment op=ASSIGN @485:45-485:51
+            target:
+              NameRef name=bReady globalScope=false @485:45-485:51
+            value:
+              Literal kind=BOOL text="TRUE" @504:43-504:47
+  comments: 0
+diagnostics:

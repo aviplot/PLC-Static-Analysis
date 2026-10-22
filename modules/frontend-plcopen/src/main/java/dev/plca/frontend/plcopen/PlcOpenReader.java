@@ -32,7 +32,8 @@ final class PlcOpenReader {
             "attributes",
             "tasksettings",
             "globalvars",
-            "accessmodifiers");
+            "accessmodifiers",
+            "cfc");
 
     private static final Set<String> SKIPPED = Set.of("documentation", "comment", "vendorElement");
 

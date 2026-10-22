@@ -119,6 +119,11 @@ Graph elements, each with `localId`:
 - Each network becomes `Statement.Network(number, network, lowered)`; the `Network` IR keeps every node with its pins,
   connections and coordinates for the viewer. Spans of lowered statements are their node's XML element.
 
+### 5a. CODESYS CFC (M11)
+CODESYS exports a CFC body as an empty `<ST>` placeholder plus `addData/data name="…/plcopenxml/cfc"` holding a
+`<CFC>` element whose children are the standard FBD elements above (36 bodies in 6 repos). It is read like an FBD body
+(connected components as networks, `executionOrderId` as order) with body language `CFC`.
+
 ## 6. SFC (TC6 §6.6; IEC 61131-3 §6.7; decision 3: IR + lowering)
 | Element | |
 |---|---|

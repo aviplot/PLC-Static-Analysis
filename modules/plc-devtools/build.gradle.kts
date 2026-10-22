@@ -81,6 +81,15 @@ tasks.register<JavaExec>("parseDebug") {
     workingDir = rootProject.projectDir
 }
 
+// ./gradlew :plc-devtools:astDump --args="<file> ..." prints each file's AST, lowerings included, and diagnostics.
+tasks.register<JavaExec>("astDump") {
+    group = "verification"
+    description = "Prints the AST and diagnostics of the given files (--args)."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "dev.plca.devtools.AstDump"
+    workingDir = rootProject.projectDir
+}
+
 // ---- JMH benchmarks (src/jmh). No plugin: the Gradle JMH plugin's last release predates Gradle 9. ----
 val jmh: SourceSet by sourceSets.creating {
     compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath

@@ -33,6 +33,14 @@ final class TwinCatReader {
         int implEnd = -1;
         /** Child element of {@code <Implementation>}: {@code ST}, {@code NWL}, {@code SFC}, … */
         String implLanguage;
+        /** Content of a graphical implementation element ({@code <NWL>}, {@code <CFC>}, {@code <SFC>}), else -1. */
+        int graphStart = -1;
+
+        int graphEnd = -1;
+        /** The body language once a graphical body is read ({@code LD}/{@code FBD} for NWL), else null. */
+        String language;
+        /** Implicit variables a graphical body adds to its POU (SFC step flags), else null. */
+        dev.plca.ast.VarBlock extraBlock;
 
         final List<Element> children = new ArrayList<>();
         final int offset;
@@ -68,6 +76,8 @@ final class TwinCatReader {
         Deque<String> path = new ArrayDeque<>();
         int contentStart = -1;
         String contentOf = null; // "decl" or "impl"
+        int graphDepth = -1; // depth of the open graphical implementation element
+        int graphStart = -1;
         XMLStreamReader2 r = null;
         try {
             r = (XMLStreamReader2) FACTORY.createXMLStreamReader(new StringReader(xml));
@@ -99,6 +109,10 @@ final class TwinCatReader {
                         if (owner.implLanguage == null) {
                             owner.implLanguage = tag;
                         }
+                        if (!tag.equals("ST") && owner.implLanguage.equals(tag) && !r.isEmptyElement()) {
+                            graphDepth = path.size();
+                            graphStart = endOfStartTag(xml, at);
+                        }
                         if (tag.equals("ST")) {
                             contentStart = endOfStartTag(xml, at);
                             contentOf = "impl";
@@ -110,8 +124,14 @@ final class TwinCatReader {
                         }
                     }
                 } else if (ev == XMLStreamConstants.END_ELEMENT) {
+                    int depth = path.size();
                     String tag = path.pop();
                     int at = (int) r.getLocationInfo().getStartingCharOffset();
+                    if (depth == graphDepth && !owners.isEmpty()) {
+                        owners.peek().graphStart = graphStart;
+                        owners.peek().graphEnd = Math.max(graphStart, at);
+                        graphDepth = -1;
+                    }
                     if (contentOf != null && (tag.equals("Declaration") || tag.equals("ST"))) {
                         Element owner = owners.peek();
                         if (contentOf.equals("decl")) {

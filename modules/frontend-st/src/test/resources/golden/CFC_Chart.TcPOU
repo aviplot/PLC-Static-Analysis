@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="PRG_Chart" Id="{00000000-0000-0000-0000-000000000001}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_Chart
+VAR
+    bEnable, bIdle, bDone : BOOL;
+    tonDelay : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <CFC>
+        <XmlArchive>
+          <Data>
+            <o xml:space="preserve" t="CFCImplementationObject">
+              <o n="Items" t="CFCItemList">
+                <l2 n="InnerList">
+                  <o t="CFCInputElement">
+                    <o n="Output" t="CFCOutputPin">
+                      <v n="Negated">false</v>
+                      <v n="Id">11L</v>
+                    </o>
+                    <o n="Text" t="CFCText">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Text">"bEnable"</v>
+                      <v n="Id">171L</v>
+                    </o>
+                    <v n="Bounds">"2, 2, 0, 0"</v>
+                    <v n="Id">10L</v>
+                  </o>
+                  <o t="CFCInputElement">
+                    <o n="Output" t="CFCOutputPin">
+                      <v n="Negated">false</v>
+                      <v n="Id">21L</v>
+                    </o>
+                    <o n="Text" t="CFCText">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Text">"T#2S"</v>
+                      <v n="Id">172L</v>
+                    </o>
+                    <v n="Bounds">"2, 4, 0, 0"</v>
+                    <v n="Id">20L</v>
+                  </o>
+                  <o t="CFCBoxElement">
+                    <o n="Inputs" t="CFCItemList">
+                      <l2 n="InnerList" cet="CFCInputPin">
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">31L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">32L</v>
+                        </o>
+                      </l2>
+                    </o>
+                    <o n="Outputs" t="CFCItemList">
+                      <l2 n="InnerList" cet="CFCOutputPin">
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">33L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">34L</v>
+                        </o>
+                      </l2>
+                    </o>
+                    <o n="Texts" t="CFCItemList">
+                      <l2 n="InnerList" cet="CFCText">
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"IN"</v>
+                          <v n="Id">173L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"PT"</v>
+                          <v n="Id">174L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"Q"</v>
+                          <v n="Id">175L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"ET"</v>
+                          <v n="Id">176L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"TON"</v>
+                          <v n="Id">177L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"tonDelay"</v>
+                          <v n="Id">178L</v>
+                        </o>
+                      </l2>
+                    </o>
+                    <v n="Bounds">"10, 2, 0, 0"</v>
+                    <v n="EnEno">false</v>
+                    <v n="KindOfCall" t="KindOfCall">FunctionBlock</v>
+                    <v n="Id">30L</v>
+                  </o>
+                  <o t="CFCOutputElement">
+                    <o n="Input" t="CFCInputPinWithSetReset">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Negated">true</v>
+                      <v n="SetReset" t="SetReset">None</v>
+                      <v n="Id">41L</v>
+                    </o>
+                    <o n="Text" t="CFCText">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Text">"bIdle"</v>
+                      <v n="Id">179L</v>
+                    </o>
+                    <v n="Bounds">"20, 2, 0, 0"</v>
+                    <v n="Id">40L</v>
+                  </o>
+                  <o t="CFCBoxElement">
+                    <o n="Inputs" t="CFCItemList">
+                      <l2 n="InnerList" cet="CFCInputPin">
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">51L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">52L</v>
+                        </o>
+                      </l2>
+                    </o>
+                    <o n="Outputs" t="CFCItemList">
+                      <l2 n="InnerList" cet="CFCOutputPin">
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Negated">false</v>
+                          <v n="SetReset" t="SetReset">None</v>
+                          <v n="Id">53L</v>
+                        </o>
+                      </l2>
+                    </o>
+                    <o n="Texts" t="CFCItemList">
+                      <l2 n="InnerList" cet="CFCText">
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">""</v>
+                          <v n="Id">180L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">""</v>
+                          <v n="Id">181L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">""</v>
+                          <v n="Id">182L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">"AND"</v>
+                          <v n="Id">183L</v>
+                        </o>
+                        <o>
+                          <v n="Bounds">"0, 0, 0, 0"</v>
+                          <v n="Text">""</v>
+                          <v n="Id">184L</v>
+                        </o>
+                      </l2>
+                    </o>
+                    <v n="Bounds">"20, 6, 0, 0"</v>
+                    <v n="EnEno">false</v>
+                    <v n="KindOfCall" t="KindOfCall">Operator</v>
+                    <v n="Id">50L</v>
+                  </o>
+                  <o t="CFCOutputElement">
+                    <o n="Input" t="CFCInputPinWithSetReset">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Negated">false</v>
+                      <v n="SetReset" t="SetReset">None</v>
+                      <v n="Id">61L</v>
+                    </o>
+                    <o n="Text" t="CFCText">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Text">"bDone"</v>
+                      <v n="Id">185L</v>
+                    </o>
+                    <v n="Bounds">"28, 6, 0, 0"</v>
+                    <v n="Id">60L</v>
+                  </o>
+                  <o t="CFCCommentElement">
+                    <o n="Text" t="CFCText">
+                      <v n="Bounds">"0, 0, 0, 0"</v>
+                      <v n="Text">"delay, then done"</v>
+                      <v n="Id">186L</v>
+                    </o>
+                    <v n="Id">70L</v>
+                  </o>
+                  <o t="CFCConnection">
+                    <v n="SourcePinId">11L</v>
+                    <v n="DestPinId">31L</v>
+                    <v n="Id">80L</v>
+                  </o>
+                  <o t="CFCConnection">
+                    <v n="SourcePinId">21L</v>
+                    <v n="DestPinId">32L</v>
+                    <v n="Id">81L</v>
+                  </o>
+                  <o t="CFCConnection">
+                    <v n="SourcePinId">33L</v>
+                    <v n="DestPinId">41L</v>
+                    <v n="Id">82L</v>
+                  </o>
+                  <o t="CFCConnection">
+                    <v n="SourcePinId">33L</v>
+                    <v n="DestPinId">51L</v>
+                    <v n="Id">83L</v>
+                  </o>
+                  <o t="CFCConnection">
+                    <v n="SourcePinId">11L</v>
+                    <v n="DestPinId">52L</v>
+                    <v n="Id">84L</v>
+                  </o>
+                  <o t="CFCConnection">
+                    <v n="SourcePinId">53L</v>
+                    <v n="DestPinId">61L</v>
+                    <v n="Id">85L</v>
+                  </o>
+                </l2>
+              </o>
+              <v n="AutoSizeCanvas">true</v>
+            </o>
+          </Data>
+          <TypeList/>
+        </XmlArchive>
+      </CFC>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -489,7 +489,9 @@ public final class CorpusCheck {
                 r[3].equals("Siemens") && CLASSIC_HEADER.matcher(sf.text()).find() ? r[4] + "-classic" : r[4];
         Parts parts = r[3].equals("Rockwell")
                 ? parts("L5X", result.unit(), diags)
-                : r[3].equals("PlcOpen") ? parts("PlcOpen", result.unit(), diags) : Parts.NONE;
+                : r[3].equals("PlcOpen")
+                        ? parts("PlcOpen", result.unit(), diags)
+                        : r[4].equals("TcPOU") ? parts("TwinCat", result.unit(), diags) : Parts.NONE;
         return Map.entry(
                 new FileResult(repoUrl, r[2], format, lines, errors.isEmpty(), result.stats(), errors, first, parts),
                 result.unit());
@@ -513,7 +515,7 @@ public final class CorpusCheck {
     }
 
     private static void countParts(Declaration.Pou p, java.util.Set<Integer> failedTexts, int[] n) {
-        if (p.body() != null && List.of("LD", "FBD", "SFC").contains(p.bodyLanguage())) {
+        if (p.body() != null && List.of("LD", "FBD", "SFC", "CFC").contains(p.bodyLanguage())) {
             // PLCopen graphics: a network or chart fails when its lowering holds an Invalid node
             for (Statement s : p.body()) {
                 if (s instanceof Statement.Network || s instanceof Statement.Chart) {
@@ -657,7 +659,7 @@ public final class CorpusCheck {
 
     /** Rockwell rungs and ST routines: error-free share overall and repo-weighted. */
     private static void partsReport(List<FileResult> results, Map<String, Double> rates, StringBuilder md) {
-        for (String family : List.of("L5X", "PlcOpen")) {
+        for (String family : List.of("L5X", "PlcOpen", "TwinCat")) {
             partsReport(family, results, rates, md);
         }
     }
@@ -677,9 +679,11 @@ public final class CorpusCheck {
         if (perRepo.isEmpty()) {
             return;
         }
-        String[] names = family.equals("L5X")
-                ? new String[] {"L5X-rungs", "L5X-st"}
-                : new String[] {"PlcOpen-graphical", "PlcOpen-st"};
+        String[] names = switch (family) {
+            case "L5X" -> new String[] {"L5X-rungs", "L5X-st"};
+            case "TwinCat" -> new String[] {"TcPOU-graphical", "TcPOU-st"};
+            default -> new String[] {"PlcOpen-graphical", "PlcOpen-st"};
+        };
         for (int k = 0; k < 2; k++) {
             int i = 2 * k;
             long total = perRepo.values().stream().mapToLong(a -> a[i]).sum();

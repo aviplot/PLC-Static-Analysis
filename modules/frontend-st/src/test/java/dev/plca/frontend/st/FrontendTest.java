@@ -162,10 +162,10 @@ class FrontendTest {
     @Test
     void graphicalBodiesAreReportedAsInfo() {
         String xml = "<TcPlcObject><POU Name=\"L\"><Declaration>PROGRAM L</Declaration>"
-                + "<Implementation><NWL><XmlArchive/></NWL></Implementation></POU></TcPlcObject>";
+                + "<Implementation><StateChart><XmlArchive/></StateChart></Implementation></POU></TcPlcObject>";
         Pou p = onlyPou(parse("L.TcPOU", xml));
         assertThat(p.body()).isNull();
-        assertThat(p.bodyLanguage()).isEqualTo("NWL");
+        assertThat(p.bodyLanguage()).isEqualTo("StateChart");
         assertThat(diags.diagnostics()).singleElement().satisfies(d -> {
             assertThat(d.code()).isEqualTo(SyntaxCodes.UNPARSED_LANGUAGE);
             assertThat(d.severity()).isEqualTo(Severity.INFO);

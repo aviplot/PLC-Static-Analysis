@@ -164,6 +164,102 @@ Measured on the corpus (`./gradlew :plc-devtools:corpusCheck`): TwinCAT POU/DUT/
 - **Generated or broken files**: LLM output with `? :` or `{}`, double-escaped `&gt;` inside CDATA, merge-conflict
   markers, truncated XML.
 - Conditional pragmas are not evaluated; both branches are parsed.
-- IL (Instruction List) bodies are rejected with a syntax diagnostic.
-- `// TODO(verify-format)`: TwinCAT `<Implementation>` children other than `ST` that embed ST text (SFC step actions
-  inside `XmlArchive`) are not extracted.
+- IL (Instruction List) bodies: see §10 (M11).
+- TwinCAT graphical bodies (NWL, CFC, SFC): read since M11, see §9. `StateChart` (7 bodies) and the TwinCAT 2
+  `LADDER`/`FBD` forms (6) still give `PLC-TC-001`.
+
+## 9. TwinCAT graphical bodies (M11)
+Beckhoff does not document these formats; everything below is read from the corpus (2026-10-22: 1,975 NWL bodies in
+130 repos, 418 CFC in 36, 196 SFC in 33). Each guess is marked `TODO(verify-format)` in the code; exports from a
+TwinCAT XAE or CODESYS install (free) would turn them into tests.
+
+### 9.1 `XmlArchive`
+`<Implementation><NWL|CFC|SFC>` holds `<XmlArchive><Data><o t="…ImplementationObject">…</o></Data><TypeList/>`, a
+serialised .NET object graph (`kit/ArchiveReader`, one body at a time with file offsets):
+
+| Element | Meaning |
+|---|---|
+| `<o n="Member" t="Type">` | an object; `t` is a name from `TypeList` (a .NET type or a GUID) |
+| `<v n="Member" t="…">` | a value: strings quoted (`"IO.Switch"`, no escaping of `\`; XML entities for `<`, `>`, `&`), numbers (`12`, `70L`), booleans, enum names |
+| `<l2 n="Member" cet="Type">` | a list; items are `<o>` (type `cet` unless they have their own `t`), `<v>` or `<n/>` |
+| `<n n="Member"/>` | null |
+| `<d2 …>` | a dictionary (only CFC routing paths; ignored) |
+
+Expressions (operands, transition conditions, CFC texts) are the quoted string's characters, parsed as ST with spans in
+the `.TcPOU` file.
+
+### 9.2 NWL: LD and FBD networks
+`NWLImplementationObject` with `DefaultViewMode` (`Ld` 1,416 / `Fbd` 558) and `NetworkList` of `Network` objects
+(`Title`, `Comment`, `Label`, `OutCommented`, `ILActive`, `NetworkItems`). A network is a list of **box trees**
+(the CODESYS LD/FBD/IL editor model):
+
+| Object | Meaning |
+|---|---|
+| `BoxTreeAssign` | `OutputItems` (list of `Operand`) are written from `RValue` (a tree) |
+| `BoxTreeBox` | a box: `BoxType` (`AND`, `TON`, `FB_X`), `CallType` (`And`, `Or`, `Eq`, `Move`, `FunctionBlock`, `Function`, `Program`, `Action`, `Method`, `Conversion`, …), `Instance` (operand), `InputItems` (trees), `InputParam/OutputParam` (`Names`, `Types`), `OutputItems` (operands written from the box's outputs, `<n/>` where none), `EN`, `ENO` |
+| `BoxTreeOperand` | one `Operand` (`Operand` text, `Type`, `Flags`) |
+| `BoxTreeParallel` | `Trees` in parallel (OR), after its optional `Input` in series; `Mode` `BoxShortCircuit` / `Sequential` |
+| `BoxTreeDemux` | a shared value: defined once with `Input` and `VarId`, used elsewhere by `VarId` without input |
+| `BoxTreeTerminator` | an open input: the rail in LD (TRUE), unconnected in FBD |
+| `STSnippet` (49) | ST inside a box: not read |
+
+- When `EN` is set, the first input item and the first `InputParam` name are `EN`.
+- Operand `Flags` (`TODO(verify-format)`): on a contact/input **1** negated, **16** rising edge, **32** falling edge;
+  on an output **1** negated coil, **2** set, **3** reset, **4** jump to the label named by the operand, **8** return.
+  Evidence: the same coil appears with 2 and 3 in one POU (set/reset); 4 is always a network label; 8 operands are the
+  placeholder `???`.
+- `Flags` on `BoxTreeAssign` (16, 32; 17 cases) are not interpreted.
+- **Mapping to `Network`**: in **LD** view an AND box is contacts in series, an OR box or parallel is parallel
+  branches, a BOOL operand on the rung is a contact, assignment outputs are coils, and a box takes the power flow on
+  its first input (EN when set). Non-BOOL operands are input variables. In **FBD** view every box is a block (AND/OR
+  included), operands are input variables, outputs are output variables (set/reset ones coils). An edge on a data
+  input is a contact from the rail. `Program`/`Action`/`Method` boxes are called by their `BoxType`.
+- Networks have no coordinates (viewers lay them out); elements are executed in tree order (post-order), which is the
+  editor's left-to-right order. Commented-out networks (`OutCommented`) are skipped.
+
+### 9.3 CFC
+`CFCImplementationObject` with `Items/InnerList`: elements with `Id`, `Bounds="x, y, w, h"` (grid units, ×10 for
+drawings) and pins with their own `Id`; `CFCConnection` objects join `SourcePinId` → `DestPinId`.
+
+| Object | Pins | Meaning |
+|---|---|---|
+| `CFCInputElement` | `Output` | read of `Text` |
+| `CFCOutputElement` | `Input` (`CFCInputPinWithSetReset`: `Negated`, `SetReset` None/Set/Reset) | write of `Text` |
+| `CFCBoxElement` | `Inputs`, `Outputs` (`Negated`) | `KindOfCall` (FunctionBlock, Operator, Function, Program, Method, LocalMethod), `EnEno`; `Texts` = input pin names, output pin names, then the **type**, then the **instance** |
+| `CFCJumpElement` / `CFCLabelElement` / `CFCReturnElement` | | control flow (`Text` = label) |
+| `CFCCommentElement`, `CFCPage` | | not semantic |
+| `CFCComposerElement` / `CFCSelectorElement` (38) | | struct compose/select: not read (info diagnostic) |
+
+- Text order evidence: `SR`/`fbSR`; `GF_Warten`/`Kommunikation.Warten` (an instance in a GVL); operators have an empty
+  instance.
+- **Execution order**: no number is stored; the item list order is used (`TODO(verify-format)`: CODESYS keeps the
+  list in execution order). One CFC body is one network.
+
+### 9.4 SFC
+`SFCImplementationObject/Root` is an `SFCSegment`; a segment's `ElementList/InnerList` is a sequence of `SFCStep`,
+`SFCTransition`, `SFCBranch` (whose own list holds one `SFCSegment` per branch), `SFCJump` and `SFCMacro`. Properties
+are `Attributes`: `SFCAttribute` objects with an `AttributeId` GUID and a `Value` (`StringValue`, `BoolValue`, …):
+
+| GUID | On | Meaning (from the values) |
+|---|---|---|
+| `38391c6d-…` | all | name: step name, transition condition (or transition name), action name, jump target |
+| `7d894980-…` | all | comment |
+| `6844a48e-…` | step | initial step |
+| `a6b08bd8-…` / `700a583f-…` / `a2621e18-…` | step | entry / active / exit action (names like `X_entry`, `_aX_active`) |
+| `cacf1a68-…` / `b693554c-…` | step | minimum / maximum time (`T#2s`; not used) |
+| `e174fc0d-…` | action association | qualifier, with a duration after a space (`D T#1s`) |
+| `23bdaa98-…` | branch | TRUE for a simultaneous branch (30 of 269) |
+
+- **Sequence semantics**: a step after a transition is its target; a transition after a step leaves it. An alternative
+  branch follows a step and each of its segments starts with a transition; a simultaneous branch follows a transition
+  and each segment starts with a step (this decides the branch kind; the attribute is only a hint). After a
+  simultaneous branch, the next transition leaves the last step of every segment. A jump ends a sequence. A
+  transition left open at the end of the main sequence goes to the initial step.
+- Actions: an association naming an `<Action>` of the POU is a reference (called while active, per qualifier); one
+  naming a declared variable sets it TRUE; anything else (`fbInstance.Action`) is called. Entry/active/exit actions are
+  `P1`/`N`/`P0`.
+- Transition conditions naming a `<Transition>` of the POU refer to it; otherwise they are ST expressions. A
+  `<Transition>` member whose ST is a bare expression (`NOT fb.BUSY`) means `Name := NOT fb.BUSY;`.
+- Lowered by the shared `SfcLowering` (plcopen.md §6) with the implicit step variables `S.X`/`S.T`. `SFCMacro` (6)
+  is read as a plain step with an info diagnostic. No coordinates: the drawing is laid out by the viewer.
+

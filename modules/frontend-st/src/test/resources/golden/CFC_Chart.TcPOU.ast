@@ -1,0 +1,54 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=PROGRAM name=PRG_Chart bodyLanguage="CFC" @4:27-9:1
+    varBlocks:
+      VarBlock section=VAR @5:1-8:8
+        variables:
+          VarDecl name=bEnable referenceInit=false @6:5-6:34
+            type:
+              Named name=BOOL @6:29-6:33
+          VarDecl name=bIdle referenceInit=false @6:5-6:34
+            type:
+              Named name=BOOL @6:29-6:33
+          VarDecl name=bDone referenceInit=false @6:5-6:34
+            type:
+              Named name=BOOL @6:29-6:33
+          VarDecl name=tonDelay referenceInit=false @7:5-7:20
+            type:
+              Named name=TON @7:16-7:19
+    body:
+      Network number=1 network="FBD 6 elements" @14:13-247:13
+        body:
+          CallStatement @105:40-105:48
+            call:
+              Call @105:40-105:48
+                callee:
+                  NameRef name=tonDelay globalScope=false @105:40-105:48
+                arguments:
+                  Argument kind=INPUT name=IN negated=false @105:40-105:48
+                    value:
+                      NameRef name=bEnable globalScope=false @24:36-24:43
+                  Argument kind=INPUT name=PT negated=false @105:40-105:48
+                    value:
+                      Literal kind=TIME text="2S" typePrefix="T" @37:36-37:40
+          Assignment op=ASSIGN @124:36-124:41
+            target:
+              NameRef name=bIdle globalScope=false @124:36-124:41
+            value:
+              Unary op=NOT @124:36-124:41
+                operand:
+                  MemberAccess member=Q @105:40-105:48
+                    target:
+                      NameRef name=tonDelay globalScope=false @105:40-105:48
+          Assignment op=ASSIGN @200:36-200:41
+            target:
+              NameRef name=bDone globalScope=false @200:36-200:41
+            value:
+              Binary op=AND @130:19-130:40
+                left:
+                  MemberAccess member=Q @105:40-105:48
+                    target:
+                      NameRef name=tonDelay globalScope=false @105:40-105:48
+                right:
+                  NameRef name=bEnable globalScope=false @24:36-24:43
+  comments: 0
+diagnostics:
