@@ -1,4 +1,4 @@
-package dev.plca.frontend.plcopen;
+package dev.plca.frontend.st.kit;
 
 import dev.plca.ast.Expression;
 import dev.plca.ast.Expression.Argument;
@@ -13,6 +13,7 @@ import dev.plca.ast.Network.Modifier;
 import dev.plca.ast.Network.Pin;
 import dev.plca.ast.Statement;
 import dev.plca.core.diag.Diagnostic;
+import dev.plca.core.diag.DiagnosticSink;
 import dev.plca.core.source.Span;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,9 +23,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
- * Lowers one LD/FBD {@link Network} to statements ({@code docs/grammar/plcopen.md} §5). Sinks (coils, output variables,
+ * Lowers one LD/FBD {@link Network} to statements ({@code docs/grammar/plcopen.md} §5), for every frontend that reads
+ * graphical networks (PLCopen XML, TwinCAT NWL/CFC, L5X FBD). Sinks (coils, output variables,
  * FB calls, jumps, returns) are emitted in execution order; each pulls the values it needs, so every element is
  * evaluated after what it reads and exactly once:
  *
@@ -39,9 +42,13 @@ import java.util.Set;
  * <p>Also evaluates graphical SFC transition conditions ({@link #value(Link)}), whose helper statements
  * ({@link #statements()}) go before the chart's transitions.
  */
-final class NetworkLowering {
+public final class NetworkLowering {
 
-    private final PlcOpenFrontend.Run run;
+    /** A connection to an element that does not exist, or an input left open where a value is needed. */
+    public static final String BROKEN_CONNECTION = "PLC-XML-103";
+
+    private final DiagnosticSink sink;
+    private final Function<String, String> temps;
     private final Network network;
     private final boolean ld;
     private final Map<Integer, Element> byId = new HashMap<>();
@@ -54,8 +61,10 @@ final class NetworkLowering {
     /** Functions read in a feedback loop before they are evaluated: their previous value lives in a {@code $fbdN}. */
     private final Map<Integer, Expression> previous = new HashMap<>();
 
-    NetworkLowering(PlcOpenFrontend.Run run, Network network) {
-        this.run = run;
+    /** {@code temps}: a fresh synthetic variable name for a prefix, unique within the POU. */
+    public NetworkLowering(DiagnosticSink sink, Function<String, String> temps, Network network) {
+        this.sink = sink;
+        this.temps = temps;
         this.network = network;
         this.ld = network.language() == Network.Language.LD;
         for (Element e : network.elements()) {
@@ -74,7 +83,7 @@ final class NetworkLowering {
     }
 
     /** The network's statements. */
-    List<Statement> lower() {
+    public List<Statement> lower() {
         List<Element> sinks = new ArrayList<>();
         for (Element e : network.elements()) {
             switch (e.kind()) {
@@ -97,12 +106,12 @@ final class NetworkLowering {
     }
 
     /** Statements emitted so far (helpers of {@link #value(Link)}). */
-    List<Statement> statements() {
+    public List<Statement> statements() {
         return List.copyOf(out);
     }
 
     /** The value arriving over one wire (SFC graphical conditions). */
-    Expression value(Link l) {
+    public Expression value(Link l) {
         Expression v = value(l.source(), l.sourcePin());
         return v == null ? literalTrue(network.span()) : v;
     }
@@ -178,8 +187,8 @@ final class NetworkLowering {
         }
         Element e = byId.get(id);
         if (e == null) {
-            run.sink.report(Diagnostic.warning(
-                    PlcOpenCodes.BROKEN_CONNECTION,
+            sink.report(Diagnostic.warning(
+                    BROKEN_CONNECTION,
                     "connection to element " + id + ", which does not exist in this network",
                     network.span()));
             return new Expression.Invalid(network.span());
@@ -249,7 +258,7 @@ final class NetworkLowering {
                 }
                 // a function has no variable of its own: its previous value is kept in a synthetic one
                 yield previous.computeIfAbsent(e.localId(), id -> {
-                    Identifier name = new Identifier(run.nextTemp("fbd"), Identifier.Form.SYNTHETIC, e.span());
+                    Identifier name = new Identifier(temps.apply("fbd"), Identifier.Form.SYNTHETIC, e.span());
                     return new Expression.NameRef(name, false, e.span());
                 });
             }
@@ -429,7 +438,7 @@ final class NetworkLowering {
     // ---- helpers --------------------------------------------------------------------------------
 
     private Expression materialize(Expression v, Span s) {
-        Identifier name = new Identifier(run.nextTemp("fbd"), Identifier.Form.SYNTHETIC, s);
+        Identifier name = new Identifier(temps.apply("fbd"), Identifier.Form.SYNTHETIC, s);
         out.add(new Statement.Assignment(new Expression.NameRef(name, false, s), Statement.AssignOp.ASSIGN, v, s));
         return new Expression.NameRef(name, false, s);
     }
@@ -447,7 +456,7 @@ final class NetworkLowering {
     }
 
     private Expression missing(Element e, String message) {
-        run.sink.report(Diagnostic.warning(PlcOpenCodes.BROKEN_CONNECTION, message, e.span()));
+        sink.report(Diagnostic.warning(BROKEN_CONNECTION, message, e.span()));
         return new Expression.Invalid(e.span());
     }
 
@@ -472,7 +481,7 @@ final class NetworkLowering {
     }
 
     /** {@code $R_TRIG(x)} / {@code $F_TRIG(x)}: an edge with hidden state, evaluated once per scan. */
-    static Expression edge(Modifier m, Expression x, Span s) {
+    public static Expression edge(Modifier m, Expression x, Span s) {
         String name = m == Modifier.FALLING ? "F_TRIG" : "R_TRIG";
         Identifier id = new Identifier(name, Identifier.Form.SYNTHETIC, s);
         return new Expression.Call(

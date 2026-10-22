@@ -4,6 +4,7 @@ import dev.plca.ast.Network;
 import dev.plca.ast.Statement;
 import dev.plca.ast.VarBlock;
 import dev.plca.core.source.SourceText;
+import dev.plca.frontend.st.kit.NetworkLowering;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -63,7 +64,7 @@ final class Bodies {
         List<Statement> out = new ArrayList<>(networks.size());
         int number = 0;
         for (Network n : networks) {
-            List<Statement> lowered = new NetworkLowering(run, n).lower();
+            List<Statement> lowered = new NetworkLowering(run.sink, run::nextTemp, n).lower();
             out.add(new Statement.Network(++number, n, lowered, n.span()));
         }
         return out;

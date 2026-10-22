@@ -8,7 +8,7 @@ public final class PlcOpenCodes {
     /** A body in a language not analysed (IL, CFC). */
     public static final String UNPARSED_BODY = "PLC-XML-102";
     /** A connection to an element that does not exist, or an input left open where a value is needed. */
-    public static final String BROKEN_CONNECTION = "PLC-XML-103";
+    public static final String BROKEN_CONNECTION = dev.plca.frontend.st.kit.NetworkLowering.BROKEN_CONNECTION;
     /** A feedback loop through a function, which has no value from the previous cycle. */
     public static final String FEEDBACK = "PLC-XML-104";
     /** An SFC element the lowering does not handle (macro steps, graphical inline conditions). */

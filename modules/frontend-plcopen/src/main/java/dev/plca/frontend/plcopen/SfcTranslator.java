@@ -7,6 +7,7 @@ import dev.plca.ast.Sfc;
 import dev.plca.ast.Statement;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.source.Span;
+import dev.plca.frontend.st.kit.NetworkLowering;
 import dev.plca.frontend.st.kit.SfcLowering;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,7 +63,7 @@ final class SfcTranslator {
         List<Network.Element> graphics = NetworkBuilder.elements(run, body);
         if (!graphics.isEmpty()) {
             Network net = new Network(Network.Language.LD, graphics, run.elementSpan(body));
-            graphical = new NetworkLowering(run, net);
+            graphical = new NetworkLowering(run.sink, run::nextTemp, net);
         }
 
         List<Sfc.Step> steps = new ArrayList<>();
