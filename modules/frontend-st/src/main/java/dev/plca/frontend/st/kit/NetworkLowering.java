@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Lowers one LD/FBD {@link Network} to statements ({@code docs/grammar/plcopen.md} §5), for every frontend that reads
@@ -60,6 +61,8 @@ public final class NetworkLowering {
     private final List<Statement> out = new ArrayList<>();
     /** Functions read in a feedback loop before they are evaluated: their previous value lives in a {@code $fbdN}. */
     private final Map<Integer, Expression> previous = new HashMap<>();
+    /** Instance blocks called the Logix way: inputs written to members, then {@code TYPE(inst)} (L5X FBD). */
+    private Predicate<Element> memberCalls = e -> false;
 
     /** {@code temps}: a fresh synthetic variable name for a prefix, unique within the POU. */
     public NetworkLowering(DiagnosticSink sink, Function<String, String> temps, Network network) {
@@ -80,6 +83,15 @@ public final class NetworkLowering {
                 }
             }
         }
+    }
+
+    /**
+     * Blocks for which {@code test} holds are called as Rockwell FBD instructions are in Logix ST: {@code inst.In :=
+     * …;} for every wired input, then {@code TYPE(inst);}. Others are IEC FB calls {@code inst(In := …)}.
+     */
+    public NetworkLowering memberCalls(Predicate<Element> test) {
+        this.memberCalls = test;
+        return this;
     }
 
     /** The network's statements. */
@@ -345,6 +357,10 @@ public final class NetworkLowering {
             return;
         }
         Span s = e.span();
+        if (memberCalls.test(e)) {
+            memberCall(e);
+            return;
+        }
         List<Argument> args = new ArrayList<>();
         Pin en = null;
         for (Pin p : e.inputs()) {
@@ -362,6 +378,25 @@ public final class NetworkLowering {
         Statement st = new Statement.CallStatement(new Expression.Call(instance, args, s), s);
         Expression enable = en == null || en.links().isEmpty() ? null : flow(en);
         out.add(enable == null ? st : guarded(enable, st, s));
+    }
+
+    /** {@code inst.P := v;} per wired input, then {@code TYPE(inst);}. */
+    private void memberCall(Element e) {
+        Span s = e.span();
+        Expression instance = e.value() != null ? e.value() : new Expression.Invalid(s);
+        for (Pin p : e.inputs()) {
+            Expression v = input(p, e);
+            if (v != null && p.name() != null) {
+                Expression member = new Expression.MemberAccess(instance, new Identifier(p.name(), s), s);
+                out.add(assign(member, p.negated() ? not(v, s) : v, s));
+            }
+        }
+        Identifier type = new Identifier(e.name() == null ? "<missing>" : e.name(), s);
+        Expression call = new Expression.Call(
+                new Expression.NameRef(type, false, s),
+                List.of(new Argument(ArgumentKind.POSITIONAL, null, false, instance, s)),
+                s);
+        out.add(new Statement.CallStatement(call, s));
     }
 
     /** A function block as an expression: IEC operators as operators, other functions as calls. */

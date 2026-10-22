@@ -190,6 +190,8 @@ final class L5xReader {
         final List<LineDef> lines = new ArrayList<>();
         /** {@code <SFCContent>} of an SFC routine, else null. */
         SfcDef sfc;
+        /** {@code <FBDContent>} of an FBD routine, else null (M11). */
+        FbdDef fbd;
 
         RoutineDef(Attr name, String type, int offset) {
             this.name = name;
@@ -219,6 +221,46 @@ final class L5xReader {
      * branch. TODO(verify-format): element and attribute names are taken from corpus exports (Studio 5000 V20–V33), not
      * checked against the Import/Export manual (1756-RM084); see {@code docs/grammar/rockwell.md} §SFC.
      */
+    /** The elements of an FBD routine, sheet by sheet in file order (M11). */
+    static final class FbdDef {
+        final List<FbdNode> nodes = new ArrayList<>();
+    }
+
+    /**
+     * An element of an FBD sheet ({@code IRef}, {@code ORef}, {@code Block}, {@code Function},
+     * {@code AddOnInstruction}, {@code ICon}, {@code OCon}, {@code Wire}, {@code FeedbackWire}, {@code JSR}, …) with
+     * every attribute; {@code params}: an AOI's {@code InOutParameter Name/Argument} pairs.
+     */
+    static final class FbdNode {
+        final String tag;
+        final int sheet;
+        final int offset;
+        final java.util.Map<String, Attr> attributes = new java.util.LinkedHashMap<>();
+        final List<Attr[]> params = new ArrayList<>();
+
+        FbdNode(String tag, int sheet, int offset) {
+            this.tag = tag;
+            this.sheet = sheet;
+            this.offset = offset;
+        }
+
+        Attr attr(String name) {
+            return attributes.getOrDefault(name, Attr.NONE);
+        }
+
+        int intAttr(String name, int fallback) {
+            String v = attr(name).value();
+            if (v == null) {
+                return fallback;
+            }
+            try {
+                return Integer.parseInt(v.strip());
+            } catch (NumberFormatException e) {
+                return fallback;
+            }
+        }
+    }
+
     static final class SfcDef {
         final List<SfcNode> nodes = new ArrayList<>();
         /** {@code from → to} element IDs, legs already replaced by their branch. */
@@ -304,6 +346,8 @@ final class L5xReader {
     private RungDef rung;
     /** The SFC element whose ST lines are being read (an action's body, a transition's condition). */
     private SfcNode sfcNode;
+    /** The number of the FBD sheet being read. */
+    private int fbdSheet;
 
     private SfcNode sfcStep;
     private SfcNode sfcBranch;
@@ -470,6 +514,7 @@ final class L5xReader {
             }
             case "SFCContent", "Step", "Transition", "Stop", "Branch", "Action", "Leg", "DirectedLink" ->
                 sfcStart(tag, at, parent);
+            case "FBDContent", "Sheet", "InOutParameter" -> fbdStart(tag, at, parent);
             case "Line" -> {
                 if (routine != null && "STContent".equals(parent)) {
                     lineNumber = intValue("Number", routine.lines.size());
@@ -484,7 +529,11 @@ final class L5xReader {
                     project.modules.add(name);
                 }
             }
-            default -> {}
+            default -> {
+                if ("Sheet".equals(parent) && routine != null && routine.fbd != null) {
+                    fbdStart(tag, at, parent);
+                }
+            }
         }
     }
 
@@ -606,6 +655,35 @@ final class L5xReader {
                 }
             }
             default -> {}
+        }
+    }
+
+    /** Elements of an FBD routine's {@code <FBDContent>} (M11): everything on a sheet is kept with its attributes. */
+    private void fbdStart(String tag, int at, String parent) {
+        if (routine == null) {
+            return;
+        }
+        switch (tag) {
+            case "FBDContent" -> {
+                routine.fbd = new FbdDef();
+                fbdSheet = 0;
+            }
+            case "Sheet" -> fbdSheet = intValue("Number", fbdSheet + 1);
+            case "InOutParameter" -> {
+                if (routine.fbd != null && "AddOnInstruction".equals(parent) && !routine.fbd.nodes.isEmpty()) {
+                    routine.fbd.nodes.getLast().params.add(new Attr[] {attr(at, "Name"), attr(at, "Argument")});
+                }
+            }
+            default -> {
+                if (routine.fbd != null && "Sheet".equals(parent)) {
+                    FbdNode n = new FbdNode(tag, fbdSheet, at);
+                    for (int i = 0; i < r.getAttributeCount(); i++) {
+                        String name = r.getAttributeLocalName(i);
+                        n.attributes.put(name, attr(at, name));
+                    }
+                    routine.fbd.nodes.add(n);
+                }
+            }
         }
     }
 

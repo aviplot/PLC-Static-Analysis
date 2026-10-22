@@ -270,6 +270,8 @@ export function languageOf(path: string, head = ''): string {
       return 'twincat-xml';
     case '.l5x':
       return 'rockwell-l5x';
+    case '.l5k':
+      return 'iec-st'; // Logix text export: ST-like keywords, (* *) comments and strings
     case '.xml':
       return head.includes('plcopen.org/xml/tc6') ? 'plcopen-xml' : 'xml-plain';
     case '.yaml':
@@ -280,9 +282,9 @@ export function languageOf(path: string, head = ''): string {
   }
 }
 
-/** Files that can hold ladder or LD/FBD drawings. */
+/** Files that can hold ladder, LD/FBD/CFC or SFC drawings. */
 export function mayHaveDiagrams(path: string): boolean {
-  return /\.(l5x|xml)$/i.test(path);
+  return /\.(l5x|l5k|xml|tcpou)$/i.test(path);
 }
 
 export interface TreeNode {

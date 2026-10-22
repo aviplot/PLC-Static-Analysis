@@ -183,7 +183,7 @@ public final class ConsoleReport {
             sb.append(s.skippedFiles().size())
                     .append(" file")
                     .append(s.skippedFiles().size() == 1 ? "" : "s")
-                    .append(" skipped (L5K is not supported yet)\n");
+                    .append(" skipped (format not supported yet)\n");
         }
         sb.append(String.format(
                 Locale.ROOT,

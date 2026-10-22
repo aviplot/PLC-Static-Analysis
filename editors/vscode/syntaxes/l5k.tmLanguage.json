@@ -1,0 +1,73 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rockwell L5K export",
+  "scopeName": "source.rockwell-l5k",
+  "patterns": [
+    {
+      "name": "comment.block.rockwell-l5k",
+      "begin": "\\(\\*",
+      "end": "\\*\\)"
+    },
+    {
+      "comment": "an ST line: ' then Structured Text",
+      "begin": "^\\s*(')",
+      "end": "$",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.st-line.rockwell-l5k"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.iec-st"
+        }
+      ]
+    },
+    {
+      "comment": "a rung: N: rung text;",
+      "begin": "^\\s*([A-Za-z]{1,3})(:)\\s",
+      "end": "$",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.rung-type.rockwell-l5k"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.rockwell-rll"
+        }
+      ]
+    },
+    {
+      "name": "keyword.control.block.rockwell-l5k",
+      "match": "\\b(?:END_)?(?:CONTROLLER|DATATYPE|ADD_ON_INSTRUCTION_DEFINITION|PARAMETERS|LOCAL_TAGS|MODULE|CONNECTION|TAG|PROGRAM|CHILD_PROGRAMS|ROUTINE|ST_ROUTINE|FBD_ROUTINE|SFC_ROUTINE|SHEET|TASK|CONFIG|FBD_PARAMETERS|ADD_ON_INSTRUCTION|IREF|OREF|ICON|OCON|WIRE|FEEDBACK_WIRE|[A-Z0-9]+_BLOCK|[A-Z0-9]+_FUNCTION)\\b"
+    },
+    {
+      "name": "keyword.operator.assignment.rockwell-l5k",
+      "match": ":="
+    },
+    {
+      "name": "keyword.other.of.rockwell-l5k",
+      "match": "\\bOF\\b"
+    },
+    {
+      "name": "string.quoted.double.rockwell-l5k",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.rockwell-l5k",
+          "match": "\\$."
+        }
+      ]
+    },
+    {
+      "name": "constant.numeric.rockwell-l5k",
+      "match": "(?<![A-Za-z_.:])[+-]?(?:16#[0-9A-Fa-f_]+|\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\b"
+    },
+    {
+      "name": "support.type.rockwell-l5k",
+      "match": "\\b(?:BOOL|BIT|SINT|INT|DINT|LINT|USINT|UINT|UDINT|ULINT|REAL|LREAL|STRING|TIMER|COUNTER|CONTROL|MESSAGE)\\b"
+    }
+  ]
+}

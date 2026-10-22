@@ -50,7 +50,7 @@ public final class Analyzer {
             Frontends.of(StFrontend::new, SclFrontend::new, L5xFrontend::new, PlcOpenFrontend::new);
 
     /** Extensions of formats not analysed yet; such files are listed as skipped, not ignored silently. */
-    private static final Set<String> LATER_DIALECTS = Set.of(".l5k");
+    private static final Set<String> LATER_DIALECTS = Set.of();
 
     private final RuleRegistry registry;
 
@@ -211,19 +211,24 @@ public final class Analyzer {
         return out;
     }
 
-    /** {@code TargetType="Controller"} on the root element, which comes first in every L5X. */
+    /**
+     * {@code TargetType="Controller"} on the root element, which comes first in every L5X; an L5K holds a whole
+     * controller by construction ({@code CONTROLLER name (…)} after its header comment).
+     */
     private static boolean isController(SourceFile f) {
         if (f == null) {
             return false;
         }
         String head = f.text().substring(0, Math.min(f.text().length(), 4096));
-        return CONTROLLER.matcher(head).find();
+        return CONTROLLER.matcher(head).find() || L5K_CONTROLLER.matcher(head).find();
     }
+
+    private static final Pattern L5K_CONTROLLER = Pattern.compile("(?m)^\\s*CONTROLLER\\s+\\S+\\s*\\(");
 
     private static final Pattern CONTROLLER =
             Pattern.compile("<RSLogix5000Content\\b[^>]*\\bTargetType\\s*=\\s*\"Controller\"");
 
-    /** Files we cannot analyse yet: L5K (Rockwell's text export). */
+    /** Files in a format we recognise but cannot analyse yet (none since M11, when L5K became readable). */
     public static List<String> skipped(Path root) {
         List<String> out = new ArrayList<>();
         try {

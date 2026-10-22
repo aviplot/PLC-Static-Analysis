@@ -1,0 +1,228 @@
+SourceUnit dialect=ROCKWELL
+  TypeDecl name=UDT_Pump @11:2-11:44
+    type:
+      StructType @11:2-11:44
+        members:
+          VarDecl name=Speed referenceInit=false @12:3-12:46
+            type:
+              Named name=REAL @12:3-12:7
+          VarDecl name=Running referenceInit=false @14:3-14:69
+            type:
+              Named name=BOOL @14:3-14:6
+  Pou kind=FUNCTION_BLOCK name=Limit2 bodyLanguage="RLL" @17:2-17:58
+    varBlocks:
+      VarBlock section=INPUT @19:4-21:84
+        variables:
+          VarDecl name=EnableIn referenceInit=false @19:4-19:68
+            type:
+              Named name=BOOL @19:15-19:19
+          VarDecl name=In referenceInit=false @21:4-21:84
+            type:
+              Named name=REAL @21:9-21:13
+            init:
+              Literal kind=REAL text="0.0" @21:79-21:82
+      VarBlock section=OUTPUT @20:4-22:65
+        variables:
+          VarDecl name=EnableOut referenceInit=false @20:4-20:70
+            type:
+              Named name=BOOL @20:16-20:20
+          VarDecl name=Out referenceInit=false @22:4-22:65
+            type:
+              Named name=REAL @22:10-22:14
+      VarBlock section=VAR @25:4-25:38
+        variables:
+          VarDecl name=Max referenceInit=false @25:4-25:38
+            type:
+              Named name=REAL @25:10-25:14
+            init:
+              Literal kind=REAL text="100.0" @25:31-25:36
+    body:
+      Rung number=0 type="N" ladder="GRT(In,Max)MOV(Max,Out);" @28:8-28:32
+        body:
+          If @28:19-28:31
+            branches:
+              Branch @28:19-28:31
+                condition:
+                  Binary op=GT @28:8-28:19
+                    left:
+                      NameRef name=In globalScope=false @28:12-28:14
+                    right:
+                      NameRef name=Max globalScope=false @28:15-28:18
+                body:
+                  Assignment op=ASSIGN @28:19-28:31
+                    target:
+                      NameRef name=Out globalScope=false @28:27-28:30
+                    value:
+                      NameRef name=Max globalScope=false @28:23-28:26
+      Rung number=1 type="N" ladder="LEQ(In,Max)MOV(In,Out);" @29:8-29:31
+        body:
+          If @29:19-29:30
+            branches:
+              Branch @29:19-29:30
+                condition:
+                  Binary op=LE @29:8-29:19
+                    left:
+                      NameRef name=In globalScope=false @29:12-29:14
+                    right:
+                      NameRef name=Max globalScope=false @29:15-29:18
+                body:
+                  Assignment op=ASSIGN @29:19-29:30
+                    target:
+                      NameRef name=Out globalScope=false @29:26-29:29
+                    value:
+                      NameRef name=In globalScope=false @29:23-29:25
+  GlobalVars listName=Mixer @34:3-38:41
+    block:
+      VarBlock section=GLOBAL @34:3-38:41
+        variables:
+          VarDecl name=Start referenceInit=false @34:3-34:40
+            type:
+              Named name=BOOL @34:11-34:15
+            init:
+              Literal kind=BOOL text="FALSE" @34:38-34:39
+          VarDecl name=Level referenceInit=false @35:3-35:40
+            type:
+              Named name=REAL @35:11-35:15
+            init:
+              Literal kind=REAL text="0.0" @35:36-35:39
+          VarDecl name=Pump referenceInit=false @36:3-36:30
+            type:
+              Named name=UDT_Pump @36:10-36:18
+          VarDecl name=Lamp referenceInit=false overlay=Local:2:O.Data.0 @37:3-37:47
+          VarDecl name=Limiter referenceInit=false @38:3-38:41
+            type:
+              Named name=Limit2 @38:13-38:19
+  Pou kind=PROGRAM name=MainProgram bodyLanguage="L5X" @41:2-41:38
+    varBlocks:
+      VarBlock section=VAR @45:4-46:21
+        variables:
+          VarDecl name=Count referenceInit=false @45:4-45:41
+            type:
+              Named name=DINT @45:12-45:16
+            init:
+              Literal kind=INTEGER text="0" @45:39-45:40
+          VarDecl name=Avg_1 referenceInit=false @46:4-46:21
+            type:
+              Named name=FBD_MATH @46:12-46:20
+    members:
+      Pou kind=ROUTINE name=Main bodyLanguage="RLL" @49:3-49:51
+        body:
+          Rung number=0 type="N" ladder="XIC(Start)OTE(Pump.Running);" @51:8-51:36
+            comment:
+              Comment kind=BLOCK @50:10-50:35
+            body:
+              Assignment op=ASSIGN @51:18-51:35
+                target:
+                  MemberAccess member=Running @51:22-51:34
+                    target:
+                      NameRef name=Pump globalScope=false @51:22-51:26
+                value:
+                  NameRef name=Start globalScope=false @51:12-51:17
+          Rung number=1 type="N" ladder="JSR(Fill,0)JSR(Scale,0);" @52:8-52:32
+            body:
+              CallStatement @52:8-52:19
+                call:
+                  Call @52:8-52:19
+                    callee:
+                      NameRef name=JSR globalScope=false @52:8-52:11
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @52:12-52:16
+                        value:
+                          NameRef name=Fill globalScope=false @52:12-52:16
+                      Argument kind=POSITIONAL negated=false @52:17-52:18
+                        value:
+                          Literal kind=INTEGER text="0" @52:17-52:18
+              CallStatement @52:19-52:31
+                call:
+                  Call @52:19-52:31
+                    callee:
+                      NameRef name=JSR globalScope=false @52:19-52:22
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @52:23-52:28
+                        value:
+                          NameRef name=Scale globalScope=false @52:23-52:28
+                      Argument kind=POSITIONAL negated=false @52:29-52:30
+                        value:
+                          Literal kind=INTEGER text="0" @52:29-52:30
+      Pou kind=ROUTINE name=Fill bodyLanguage="ST" @55:3-55:19
+        body:
+          If @56:5-58:11
+            branches:
+              Branch @56:5-56:42
+                condition:
+                  Binary op=AND @56:8-56:37
+                    left:
+                      Binary op=LT @56:8-56:20
+                        left:
+                          NameRef name=Level globalScope=false @56:8-56:13
+                        right:
+                          Literal kind=REAL text="90.0" @56:16-56:20
+                    right:
+                      MemberAccess member=Running @56:25-56:37
+                        target:
+                          NameRef name=Pump globalScope=false @56:25-56:29
+                body:
+                  Assignment op=ASSIGN @57:9-57:28
+                    target:
+                      NameRef name=Count globalScope=false @57:9-57:14
+                    value:
+                      Binary op=ADD @57:18-57:27
+                        left:
+                          NameRef name=Count globalScope=false @57:18-57:23
+                        right:
+                          Literal kind=INTEGER text="1" @57:26-57:27
+          Empty @58:11-58:12
+      Pou kind=ROUTINE name=Scale bodyLanguage="FBD" @61:3-61:58
+        body:
+          Network number=1 network="FBD 3 elements" @63:5-71:93
+            body:
+              Assignment op=ASSIGN @65:57-65:62
+                target:
+                  MemberAccess member=SourceA @65:57-65:62
+                    target:
+                      NameRef name=Avg_1 globalScope=false @65:57-65:62
+                value:
+                  NameRef name=Level globalScope=false @63:51-63:56
+              CallStatement @65:57-65:62
+                call:
+                  Call @65:57-65:62
+                    callee:
+                      NameRef name=ADD globalScope=false @65:57-65:62
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @65:57-65:62
+                        value:
+                          NameRef name=Avg_1 globalScope=false @65:57-65:62
+              Assignment op=ASSIGN @67:52-67:62
+                target:
+                  MemberAccess member=Speed @67:52-67:62
+                    target:
+                      NameRef name=Pump globalScope=false @67:52-67:56
+                value:
+                  MemberAccess member=Dest @65:57-65:62
+                    target:
+                      NameRef name=Avg_1 globalScope=false @65:57-65:62
+    body:
+      CallStatement @41:32-41:36
+        call:
+          Call @41:32-41:36
+            callee:
+              NameRef name=JSR globalScope=false @41:32-41:36
+            arguments:
+              Argument kind=POSITIONAL negated=false @41:32-41:36
+                value:
+                  NameRef name=Main globalScope=false @41:32-41:36
+  Configuration name=Mixer @9:12-9:17
+    elements:
+      Task name=MainTask @80:2-80:81
+        settings:
+          Argument kind=INPUT name=TYPE negated=false @80:7-80:15
+            value:
+              Literal kind=STRING text="'CONTINUOUS'" @80:7-80:15
+          Argument kind=INPUT name=PRIORITY negated=false @80:61-80:63
+            value:
+              Literal kind=INTEGER text="10" @80:61-80:63
+      ProgramInstance name=MainProgram task=MainTask type=MainProgram @81:4-81:15
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Controller" @9:1-9:11
+  comments: 1
+diagnostics:

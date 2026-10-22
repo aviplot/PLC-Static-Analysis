@@ -42,5 +42,4 @@ SourceUnit dialect=ROCKWELL
   comments: 0
 diagnostics:
   INFO PLC-L5X-003 @5:61 Add-On Instruction 'Drive_v3' is source-protected; only its parameters are analysed
-  INFO PLC-L5X-002 @17:16 routine 'Graph' is written in FBD, which is not analysed yet
   INFO PLC-L5X-003 @23:42 routine 'Secret' is source-protected and not analysed

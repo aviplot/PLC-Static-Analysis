@@ -156,13 +156,14 @@ class MainTest {
     }
 
     @Test
-    void skippedDialectsAreReported() throws IOException {
+    void l5kIsNoLongerSkipped() throws IOException {
         Path p = project("P.st", WARNINGS_ONLY);
         Files.writeString(p.resolve("Motor.scl"), "FUNCTION_BLOCK \"Motor\"\nEND_FUNCTION_BLOCK\n");
         Files.writeString(p.resolve("Line.L5X"), "<RSLogix5000Content/>");
         Files.writeString(p.resolve("Line.L5K"), "CONTROLLER Line\nEND_CONTROLLER\n");
         Files.writeString(p.resolve("other.xml"), "<root/>");
-        assertThat(dev.plca.analysis.Analyzer.skipped(p)).containsExactly("Line.L5K");
+        // every format the analyzer recognises is read since M11 (L5K included)
+        assertThat(dev.plca.analysis.Analyzer.skipped(p)).isEmpty();
     }
 
     @Test

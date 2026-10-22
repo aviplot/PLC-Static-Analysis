@@ -41,6 +41,7 @@ import dev.plca.frontend.l5x.RungLowering.AoiSignature;
 import dev.plca.frontend.st.SyntaxCodes;
 import dev.plca.frontend.st.kit.Frontend;
 import dev.plca.frontend.st.kit.SfcLowering;
+import dev.plca.frontend.st.kit.SimpleExpressions;
 import dev.plca.frontend.st.kit.TwoStageParser.Parsed;
 import dev.plca.frontend.st.kit.XmlInput;
 import dev.plca.grammar.RockwellStParser.ConditionOnlyContext;
@@ -70,7 +71,7 @@ import java.util.regex.Pattern;
 public final class L5xFrontend implements Frontend {
 
     /** Every extension this frontend reads (lower case, with dot). */
-    public static final Set<String> EXTENSIONS = Set.of(".l5x");
+    public static final Set<String> EXTENSIONS = Set.of(".l5x", ".l5k");
 
     private final RungParserDriver rungParser;
     private final RockwellStParserDriver stParser;
@@ -130,6 +131,9 @@ public final class L5xFrontend implements Frontend {
         final SourceRegistry registry;
         final DiagnosticSink sink;
         final SourceText whole;
+        /** L5X (XML) or L5K (text): where text is decoded and how far an element's span reaches. */
+        final boolean xml;
+
         final List<Declaration> declarations = new ArrayList<>();
         final List<Comment> comments = new ArrayList<>();
         final List<Pragma> pragmas = new ArrayList<>();
@@ -140,13 +144,14 @@ public final class L5xFrontend implements Frontend {
 
         Run(SourceFile file, SourceRegistry registry, DiagnosticSink sink) {
             this.file = file;
+            this.xml = !Frontend.extension(file.path()).equals(".l5k");
             this.registry = registry;
             this.sink = sink;
             this.whole = registry.register(file);
         }
 
         void unit() {
-            L5xReader.Project p = L5xReader.read(file.text());
+            L5xReader.Project p = xml ? L5xReader.read(file.text()) : L5kReader.read(file.text());
             if (p.error != null) {
                 sink.report(Diagnostic.error(
                         SyntaxCodes.MALFORMED_XML,
@@ -157,7 +162,10 @@ public final class L5xFrontend implements Frontend {
                 sink.report(Diagnostic.of(
                         L5xCodes.NOT_L5X,
                         Severity.INFO,
-                        "'" + file.path() + "' is not a Logix 5000 export (no RSLogix5000Content root); skipped",
+                        xml
+                                ? "'" + file.path()
+                                        + "' is not a Logix 5000 export (no RSLogix5000Content root); skipped"
+                                : "'" + file.path() + "' is not a Logix 5000 export (no CONTROLLER block); skipped",
                         Span.at(whole.id(), 0)));
                 return;
             }
@@ -350,6 +358,11 @@ public final class L5xFrontend implements Frontend {
                 case "RLL" -> body = parsed == null || parsed.test(path) ? ladder(r) : placeholders(r);
                 case "ST" -> body = drawn == null ? structuredText(r) : null;
                 case "SFC" -> body = r.sfc == null ? null : chart(r);
+                case "FBD" ->
+                    body = r.fbd == null
+                            ? null
+                            : new FbdTranslator(sink, this::operandExpression, this::elementSpan, aois.keySet())
+                                    .translate(r.fbd);
                 case "ENCRYPTED" ->
                     sink.report(Diagnostic.of(
                             L5xCodes.PROTECTED,
@@ -596,9 +609,7 @@ public final class L5xFrontend implements Frontend {
         private String conditionText(L5xReader.SfcNode n) {
             StringBuilder b = new StringBuilder();
             for (LineDef l : n.lines) {
-                b.append(XmlText.decode(file.text(), l.text().start(), l.text().end())
-                                .text())
-                        .append(' ');
+                b.append(decode(l.text().start(), l.text().end())).append(' ');
             }
             String t = b.toString().strip().replaceAll("\\s+", " ");
             return t.isEmpty() && n.operand.present() ? n.operand.value() : t;
@@ -665,7 +676,7 @@ public final class L5xFrontend implements Frontend {
                 starts[k] = text.length();
                 if (d.text.present()) {
                     int from = text.length();
-                    XmlText.decodeInto(fileText, d.text.start(), d.text.end(), text, map);
+                    decodeInto(fileText, d.text.start(), d.text.end(), text, map);
                     if (!endsWithSemicolon(text, from)) {
                         // every rung's text ends with ';': close it here so it cannot swallow the next rung
                         sink.report(Diagnostic.warning(
@@ -679,7 +690,7 @@ public final class L5xFrontend implements Frontend {
                     map.replacement(d.text.end(), 0, 1);
                 }
                 if (d.comment.present()) {
-                    SourceText c = registry.registerXmlContent(file, d.comment.start(), d.comment.end());
+                    SourceText c = content(d.comment.start(), d.comment.end());
                     rungComments[k] =
                             new Comment(Comment.Kind.BLOCK, c.span(0, c.text().length()));
                     comments.add(rungComments[k]);
@@ -746,7 +757,7 @@ public final class L5xFrontend implements Frontend {
         }
 
         private boolean blank(Range r) {
-            String s = XmlText.decode(file.text(), r.start(), r.end()).text().strip();
+            String s = decode(r.start(), r.end()).strip();
             return s.isEmpty() || s.equals(";");
         }
 
@@ -774,13 +785,40 @@ public final class L5xFrontend implements Frontend {
             return statements(r.lines);
         }
 
+        /**
+         * A tag operand held in an attribute ({@code Operand="Local:4:I.Ch1.Data"}), with spans in the file: plain
+         * designators directly, anything else through the Rockwell ST condition parser.
+         */
+        Expression operandExpression(Attr a, int elementOffset) {
+            if (!a.present() || !a.range().present()) {
+                return new Expression.Invalid(elementSpan(elementOffset));
+            }
+            int s = a.range().start();
+            int e = a.range().end();
+            if (a.value().equals(file.text().substring(s, e))) {
+                Expression fast = SimpleExpressions.simple(whole, s, e);
+                if (fast != null) {
+                    return fast;
+                }
+            }
+            SourceText text = content(s, e);
+            if (text.text().isBlank()) {
+                return new Expression.Invalid(whole.span(s, e));
+            }
+            Parsed p = stParser.parseCondition(text, sink);
+            count(p);
+            RockwellStAstBuilder b = new RockwellStAstBuilder(text, p.tokens(), sink);
+            Expression ex = p.tree() instanceof ConditionOnlyContext x ? b.conditionOnly(x) : null;
+            return ex == null ? new Expression.Invalid(whole.span(s, e)) : ex;
+        }
+
         /** ST lines as one text through the source map. */
         private SourceText lines(List<LineDef> lines) {
             StringBuilder text = new StringBuilder();
             SourceMap.Builder map = SourceMap.builder();
             String fileText = file.text();
             for (LineDef line : lines) {
-                XmlText.decodeInto(fileText, line.text().start(), line.text().end(), text, map);
+                decodeInto(fileText, line.text().start(), line.text().end(), text, map);
                 text.append('\n');
                 map.replacement(line.text().end(), 0, 1);
             }
@@ -901,8 +939,7 @@ public final class L5xFrontend implements Frontend {
             String v = t.initialValue.strip();
             if (t.initialIsString) {
                 // String data is CDATA content: decode it like other embedded text
-                String decoded = XmlText.decode(file.text(), t.initialValueRange.start(), t.initialValueRange.end())
-                        .text()
+                String decoded = decode(t.initialValueRange.start(), t.initialValueRange.end())
                         .strip();
                 return new Expression.Literal(Expression.LiteralKind.STRING, decoded, null, s);
             }
@@ -980,10 +1017,32 @@ public final class L5xFrontend implements Frontend {
                     whole.id(), Math.max(0, Math.min(elementOffset, file.text().length())));
         }
 
-        /** The start tag of the element at {@code offset}. */
+        /** The start tag of the element at {@code offset} (L5K: the rest of its line). */
         Span elementSpan(int offset) {
             int s = Math.max(0, Math.min(offset, file.text().length()));
-            return whole.span(s, XmlInput.endOfStartTag(file.text(), s));
+            return whole.span(s, xml ? XmlInput.endOfStartTag(file.text(), s) : L5kReader.lineEnd(file.text(), s));
+        }
+
+        /** The text of {@code file[s, e)}: XML content decoded, L5K text as it is. */
+        String decode(int s, int e) {
+            return xml ? XmlText.decode(file.text(), s, e).text() : file.text().substring(s, e);
+        }
+
+        void decodeInto(String fileText, int s, int e, StringBuilder out, SourceMap.Builder map) {
+            if (xml) {
+                XmlText.decodeInto(fileText, s, e, out, map);
+            } else {
+                out.append(fileText, s, e);
+                map.verbatim(s, e - s);
+            }
+        }
+
+        /** {@code file[s, e)} as a text of its own, with spans in the file. */
+        SourceText content(int s, int e) {
+            if (xml) {
+                return registry.registerXmlContent(file, s, e);
+            }
+            return registry.registerFragment(file, file.text().substring(s, e), SourceMap.verbatim(s, e - s));
         }
 
         Pragma attribute(String name, String value, Span span) {

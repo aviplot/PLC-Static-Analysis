@@ -1,7 +1,7 @@
 {
   "name": "plca",
   "displayName": "plca — PLC static analysis",
-  "description": "Diagnostics, navigation and highlighting for IEC 61131-3 Structured Text (CODESYS, TwinCAT), Siemens SCL, Rockwell L5X and PLCopen XML, from the plca language server.",
+  "description": "Diagnostics, navigation and highlighting for IEC 61131-3 Structured Text (CODESYS, TwinCAT), Siemens SCL, Rockwell L5X/L5K and PLCopen XML, from the plca language server.",
   "version": "0.1.0",
   "publisher": "plca",
   "license": "UNLICENSED",
@@ -10,10 +10,10 @@
     "vscode": "^1.100.0"
   },
   "categories": ["Programming Languages", "Linters"],
-  "keywords": ["PLC", "IEC 61131-3", "Structured Text", "TwinCAT", "CODESYS", "SCL", "TIA Portal", "Studio 5000", "L5X", "PLCopen"],
+  "keywords": ["PLC", "IEC 61131-3", "Structured Text", "TwinCAT", "CODESYS", "SCL", "TIA Portal", "Studio 5000", "L5X", "L5K", "PLCopen"],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "workspaceContains:**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,scl,SCL,L5X,l5x}"
+    "workspaceContains:**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,scl,SCL,L5X,l5x,L5K,l5k}"
   ],
   "contributes": {
     "languages": [
@@ -40,6 +40,12 @@
         "aliases": ["Rockwell L5X export"],
         "extensions": [".L5X", ".l5x"],
         "configuration": "./language-configuration-xml.json"
+      },
+      {
+        "id": "rockwell-l5k",
+        "aliases": ["Rockwell L5K export"],
+        "extensions": [".L5K", ".l5k"],
+        "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
@@ -65,6 +71,14 @@
         "language": "rockwell-l5x",
         "scopeName": "text.xml.l5x",
         "path": "./syntaxes/l5x.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.iec-st": "iec-st"
+        }
+      },
+      {
+        "language": "rockwell-l5k",
+        "scopeName": "source.rockwell-l5k",
+        "path": "./syntaxes/l5k.tmLanguage.json",
         "embeddedLanguages": {
           "source.iec-st": "iec-st"
         }
@@ -135,7 +149,7 @@
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outfile=dist/extension.js --sourcemap",
     "typecheck": "tsc --noEmit -p .",
-    "test:grammar": "vscode-tmgrammar-test -g syntaxes/iec-st.tmLanguage.json -g syntaxes/siemens-scl.tmLanguage.json -g syntaxes/rockwell-rll.tmLanguage.json \"test/grammar/*.test.*\"",
+    "test:grammar": "vscode-tmgrammar-test -g syntaxes/iec-st.tmLanguage.json -g syntaxes/siemens-scl.tmLanguage.json -g syntaxes/rockwell-rll.tmLanguage.json -g syntaxes/l5k.tmLanguage.json \"test/grammar/*.test.*\"",
     "test:e2e": "npm run build && tsc -p test/e2e && node out/test/e2e/run.js",
     "package": "npm run typecheck && npm run build && vsce package --no-dependencies --skip-license --allow-missing-repository --out plca.vsix"
   },

@@ -54,12 +54,13 @@ const DOCUMENTS: { scheme: string; language?: string; pattern?: string }[] = [
   { scheme: "file", language: "siemens-scl" },
   { scheme: "file", language: "twincat-xml" },
   { scheme: "file", language: "rockwell-l5x" },
+  { scheme: "file", language: "rockwell-l5k" },
   { scheme: "file", pattern: "**/*.xml" },
 ];
 
 /** Files whose changes on disk the server must see (closed files, plca.yaml, baselines). */
 const WATCHED =
-  "**/{*.st,*.ST,*.TcPOU,*.TcDUT,*.TcGVL,*.TcIO,*.TcTTO,*.scl,*.SCL,*.db,*.udt,*.L5X,*.l5x,*.xml,plca.yaml,*.json}";
+  "**/{*.st,*.ST,*.TcPOU,*.TcDUT,*.TcGVL,*.TcIO,*.TcTTO,*.scl,*.SCL,*.db,*.udt,*.L5X,*.l5x,*.L5K,*.l5k,*.xml,plca.yaml,*.json}";
 
 async function start(context: vscode.ExtensionContext): Promise<void> {
   const settings = vscode.workspace.getConfiguration("plca");

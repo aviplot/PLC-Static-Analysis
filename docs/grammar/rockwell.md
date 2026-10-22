@@ -205,6 +205,34 @@ them.
   has only `Y` and spans its links. Sizes are not in the export: steps 80×30, transitions 20×10. A step's actions are
   drawn as an action block beside it.
 
+## 6b. FBD routines (M11)
+`<Routine Type="FBD"><FBDContent><Sheet Number="n">` (143 routines in 31 repos, 2026-10-22). Elements carry `ID`,
+`X`, `Y`; wires join them:
+
+| Element | Count | Read as |
+|---|---|---|
+| `IRef Operand` / `ORef Operand` | 909 / 779 | tag read / write (`Operand` may be an immediate value) |
+| `Block Type Operand VisiblePins` | 963 | an instruction with a backing tag (`LDLG`, `BAND`, `PIDE`, `SCL`, `TONR`, …; `Array` children not read) |
+| `AddOnInstruction Name Operand` + `InOutParameter Name Argument` | 119 | an AOI on its backing tag; in-out parameters by name |
+| `Function Type` | 168 | `BOR__F`, `BAND__F`, `ADD__F`, …: a function without a tag |
+| `Wire FromID FromParam? ToID ToParam?` / `FeedbackWire` | 2,347 / 20 | a connection; params name the pins |
+| `OCon Name` / `ICon Name` | 66 / 72 | a wire leaving / continuing under a name, possibly on another sheet |
+| `JSR Routine In Ret`, `SBR Routine Ret`, `RET Routine In` | 9 / 4 / 4 | routine calls with parameter tags (space-separated) |
+| `GSV`/`SSV Object` | 4 / 3 | not read (info diagnostic): only the class is in the element |
+| `TextBox`, `Attachment` | 369 / 273 | comments |
+
+- **Lowering** (one `Statement.Network` per sheet, `NetworkLowering`):
+  - `Block`: as Logix ST runs FBD instructions (PM007), `Scl1.In := x; SCL(Scl1);`, outputs read as `Scl1.Out`
+    (the wire's `FromParam`, else `Out`). Unwired inputs keep the tag's value.
+  - `AddOnInstruction`: `Valve_01(Command := …, State := ValveState);` as in ladder (§4), outputs `Valve_01.Running`.
+  - `Function`: `__F` removed; `BAND/BOR/BXOR/BNOT` as `AND/OR/XOR/NOT`, `GRT/GEQ/LES/LEQ/EQU/NEQ` as comparisons, the
+    rest as calls (`SQRT(x)`). Inputs in natural pin order (`In1`, `In2`, … `SourceA`, `SourceB`).
+  - `OCon`/`ICon` on one sheet: connector and continuation. Across sheets (sheets run in order): a synthetic
+    `con_<Name>` written by the OCon and read by the ICon.
+  - `JSR`/`SBR`/`RET`: calls with the same operands as the rung instructions (`JSR(routine, n, in…, ret…)`).
+- **Order** `TODO(verify-format)`: Logix orders FBD by data flow; independent elements top to bottom, left to right
+  (the lowering's default). Feedback wires are read as the previous scan's value.
+
 ## 7. Error recovery
 - XML: a well-formedness error ends reading. Everything read before it is analysed, plus one error diagnostic.
 - Rungs: recovery syncs on `;` (and stops at `,`, `]`, `)` inside a rung), so one bad rung costs one diagnostic. A
@@ -250,4 +278,52 @@ files from 169 repos, 17.8M lines, 59 s on 8 threads including model and rules:
 SLL fallbacks: 34 of 34,065 routine texts, all with real syntax errors (no clean fallback). The remaining failures are
 not Studio 5000 syntax: C operators (`&&`, `||`) in tool-generated or hand-edited files, test fixtures with broken
 XML (truncated, XXE, bad UTF-8), `=>` in a CMP (§9.8), one ST routine with an unbalanced `END_IF`.
+
+## 11. L5K text exports (M11)
+42 files in 17 repos (179k lines; half of them generator test fixtures). L5K holds the same project as L5X in a text
+form (RM084 describes both; the element names below are from the corpus, `TODO(verify-format)` where only one file
+shows them):
+
+```
+(* header comment *)
+IE_VER := 2.25;
+CONTROLLER Name (ProcessorType := "…", …)
+  DATATYPE Name (FamilyType := NoFamily) <member>; … END_DATATYPE
+      member: TYPE Name[dim] (attrs)  |  BIT Name Target : bit (attrs)
+  ADD_ON_INSTRUCTION_DEFINITION Name (attrs)
+      PARAMETERS Name : TYPE (Usage := Input, Required := Yes, DefaultData := 0, …); … END_PARAMETERS
+      LOCAL_TAGS … END_LOCAL_TAGS
+      <routines>
+  END_ADD_ON_INSTRUCTION_DEFINITION
+  MODULE Name (…) CONNECTION … END_CONNECTION END_MODULE
+  TAG  Name : TYPE[dims] (attrs) := value;  |  Name OF Local:2:O.Data.0 (attrs);  END_TAG
+  PROGRAM Name (MAIN := "R", FAULT := "F", DisableFlag := 0, …)
+      TAG … END_TAG
+      ROUTINE Name (attrs)        RC: "comment" "more";  N: XIC(a)OTE(b);   END_ROUTINE
+      ST_ROUTINE Name (attrs)     'IF a < b THEN …       (one ' per line)   END_ST_ROUTINE
+      FBD_ROUTINE Name (attrs)    SHEET (…) IREF (ID := 0, X := …, Operand := "Tag") END_IREF
+                                  ADD_BLOCK (…) END_ADD_BLOCK, WIRE (FromElementID, FromParameter, ToElementID,
+                                  ToParameter) END_WIRE, ADD_ON_INSTRUCTION Aoi (…) FBD_PARAMETERS (P := Arg)
+                                  END_FBD_PARAMETERS END_ADD_ON_INSTRUCTION … END_SHEET  END_FBD_ROUTINE
+      CHILD_PROGRAMS … END_CHILD_PROGRAMS
+  END_PROGRAM
+  TASK Name (Type := CONTINUOUS, Rate := 10, Priority := 10, InhibitTask := No, …) Program; … END_TASK
+  CONFIG … END_CONFIG
+END_CONTROLLER
+```
+
+- **Reader** (`L5kReader`): a hand-written block scanner, not an ANTLR grammar (the plan said grammar; changed while
+  building it): L5K is a container like the XML of L5X, its bodies are rung text and ST that the existing grammars
+  parse, and a scanner keeps exact offsets for every name, value and body at no cost. It fills the same
+  `L5xReader.Project`, so tags, UDTs, AOIs, programs, tasks, the semantic model and drawings are shared. Unknown blocks
+  are skipped to their `END_` keyword; nothing throws.
+- **Values**: strings are `"…"` with `$` escapes; bare values run to `,`/`)` (`Read Only`). `[…]` initial values
+  (structures, arrays) are not read, as in L5X.
+- **Rungs**: `N:` (and the other type letters) up to the `;` that ends the rung; `RC:` comments attach to the next
+  rung. **ST**: each line after its `'`. **FBD**: `X_BLOCK` is the instruction `X`, or the AOI `X` when one is defined
+  (`TODO(verify-format)`: whether AOIs ever appear as `X_BLOCK`); `X_FUNCTION` is the function `X__F`
+  (`TODO(verify-format)`: not in the corpus). SFC routines (none in the corpus) are skipped.
+- **Spans** point into the L5K text; an element's span is the rest of its line.
+- Corpus (2026-10-22): 40 of 43 files without a diagnostic; one hand-written sample puts `[comments]` into rung text
+  (a syntax error, correctly), one generator fixture has no `CONTROLLER` (not an export, correctly skipped).
 

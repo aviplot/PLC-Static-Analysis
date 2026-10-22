@@ -146,7 +146,7 @@ public final class HtmlReport {
                     .append("</a>");
         }
         if (!s.skippedFiles().isEmpty()) {
-            h.append(" &middot; ").append(s.skippedFiles().size()).append(" files skipped (L5K)");
+            h.append(" &middot; ").append(s.skippedFiles().size()).append(" files skipped (format not supported)");
         }
         h.append("</p>\n");
     }

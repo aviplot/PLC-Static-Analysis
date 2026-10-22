@@ -1,0 +1,17 @@
+// SYNTAX TEST "source.rockwell-l5k" "Rockwell L5K"
+(* header comment *)
+// <-- comment.block.rockwell-l5k
+    PROGRAM MainProgram (MAIN := "MainRoutine")
+//  ^^^^^^^ keyword.control.block.rockwell-l5k
+//                            ^^ keyword.operator.assignment.rockwell-l5k
+//                               ^^^^^^^^^^^^^ string.quoted.double.rockwell-l5k
+        Count : DINT (RADIX := Decimal) := 16#00ff;
+//              ^^^^ support.type.rockwell-l5k
+//                                         ^^^^^^^ constant.numeric.rockwell-l5k
+        N: XIC(Start)OTE(Motor);
+//      ^ keyword.other.rung-type.rockwell-l5k
+//         ^^^ entity.name.function.instruction.rockwell-rll
+        'Level := Level + 1;
+//      ^ punctuation.definition.st-line.rockwell-l5k
+    END_PROGRAM
+//  ^^^^^^^^^^^ keyword.control.block.rockwell-l5k

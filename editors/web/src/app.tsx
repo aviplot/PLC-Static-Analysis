@@ -684,7 +684,7 @@ function Welcome({ onPick, limit }: { onPick: (p: Promise<Picked>) => void; limi
         <LadderMark />
         <h1>Review a PLC project</h1>
         <p class="lead">
-          Drop a project export here: a folder or a zip with CODESYS or TwinCAT sources, Siemens SCL, a Rockwell L5X or PLCopen XML.
+          Drop a project export here: a folder or a zip with CODESYS or TwinCAT sources, Siemens SCL, a Rockwell L5X/L5K or PLCopen XML.
           You get every finding of the analyzer, the code with go-to-definition, and the ladder logic as drawn.
         </p>
         <UploadButtons onPick={onPick} compact={false} />

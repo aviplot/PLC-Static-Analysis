@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.01" TargetName="Mixer" TargetType="Controller">
+<Controller Use="Target" Name="Mixer">
+<AddOnInstructionDefinitions>
+<AddOnInstructionDefinition Name="Valve" Revision="1.0">
+<Parameters>
+<Parameter Name="EnableIn" TagType="Base" DataType="BOOL" Usage="Input" Required="false" Visible="false"/>
+<Parameter Name="EnableOut" TagType="Base" DataType="BOOL" Usage="Output" Required="false" Visible="false"/>
+<Parameter Name="Cmd" TagType="Base" DataType="BOOL" Usage="Input" Required="true" Visible="true"/>
+<Parameter Name="Open" TagType="Base" DataType="BOOL" Usage="Output" Required="false" Visible="true"/>
+<Parameter Name="Cfg" TagType="Base" DataType="DINT" Usage="InOut" Required="true" Visible="true"/>
+</Parameters>
+<Routines>
+<Routine Name="Logic" Type="ST"><STContent><Line Number="0"><![CDATA[Open := Cmd;]]></Line></STContent></Routine>
+</Routines>
+</AddOnInstructionDefinition>
+</AddOnInstructionDefinitions>
+<Programs>
+<Program Name="Main" MainRoutineName="Blend">
+<Tags>
+<Tag Name="Level" TagType="Base" DataType="REAL"/>
+<Tag Name="Offset" TagType="Base" DataType="REAL"/>
+<Tag Name="Scaled" TagType="Base" DataType="REAL"/>
+<Tag Name="Start" TagType="Base" DataType="BOOL"/>
+<Tag Name="Permit" TagType="Base" DataType="BOOL"/>
+<Tag Name="Running" TagType="Base" DataType="BOOL"/>
+<Tag Name="Add_1" TagType="Base" DataType="FBD_MATH"/>
+<Tag Name="Inlet" TagType="Base" DataType="Valve"/>
+<Tag Name="InletCfg" TagType="Base" DataType="DINT"/>
+</Tags>
+<Routines>
+<Routine Name="Blend" Type="FBD">
+<FBDContent SheetSize="Letter - 8.5 x 11 in" SheetOrientation="Landscape">
+<Sheet Number="1">
+<IRef ID="1" X="40" Y="40" Operand="Level" HideDesc="false"/>
+<IRef ID="2" X="40" Y="100" Operand="Offset" HideDesc="false"/>
+<Block Type="ADD" ID="3" X="200" Y="40" Operand="Add_1" VisiblePins="SourceA SourceB Dest" HideDesc="false"/>
+<ORef ID="4" X="400" Y="40" Operand="Scaled" HideDesc="false"/>
+<IRef ID="5" X="40" Y="200" Operand="Start" HideDesc="false"/>
+<IRef ID="6" X="40" Y="260" Operand="Permit" HideDesc="false"/>
+<Function Type="BAND__F" ID="7" X="200" Y="200"/>
+<OCon ID="8" X="400" Y="200" Name="StartOk"/>
+<Wire FromID="1" ToID="3" ToParam="SourceA"/>
+<Wire FromID="2" ToID="3" ToParam="SourceB"/>
+<Wire FromID="3" FromParam="Dest" ToID="4"/>
+<Wire FromID="5" ToID="7" ToParam="In1"/>
+<Wire FromID="6" ToID="7" ToParam="In2"/>
+<Wire FromID="7" FromParam="Out" ToID="8"/>
+</Sheet>
+<Sheet Number="2">
+<ICon ID="9" X="40" Y="40" Name="StartOk"/>
+<AddOnInstruction Name="Valve" ID="10" X="200" Y="40" Operand="Inlet" VisiblePins="Cmd Open">
+<InOutParameter Name="Cfg" Argument="InletCfg"/>
+</AddOnInstruction>
+<ORef ID="11" X="400" Y="40" Operand="Running" HideDesc="false"/>
+<JSR ID="12" X="40" Y="200" Routine="Report" In="Scaled" Ret="Running"/>
+<Wire FromID="9" ToID="10" ToParam="Cmd"/>
+<Wire FromID="10" FromParam="Open" ToID="11"/>
+</Sheet>
+</FBDContent>
+</Routine>
+<Routine Name="Report" Type="RLL"><RLLContent><Rung Number="0" Type="N"><Text><![CDATA[SBR(Value)RET(Done);]]></Text></Rung></RLLContent></Routine>
+</Routines>
+</Program>
+</Programs>
+</Controller>
+</RSLogix5000Content>

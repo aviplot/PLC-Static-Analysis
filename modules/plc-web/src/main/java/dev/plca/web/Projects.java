@@ -108,7 +108,7 @@ final class Projects {
             ZipExtractor.Result r = ZipExtractor.extract(zip, dir, options.limits(), p -> probe.accepts(p) || extra(p));
             if (r.files().stream().noneMatch(probe::accepts)) {
                 throw new ZipExtractor.UploadException(
-                        "the archive has no PLC sources (.st, TwinCAT, .scl/.db/.udt, .L5X or PLCopen .xml)");
+                        "the archive has no PLC sources (.st, TwinCAT, .scl/.db/.udt, .L5X/.L5K or PLCopen .xml)");
             }
             Project p = new Project(id, clean(name), owner, dir, r.files(), r.skipped(), now);
             byId.put(id, p);

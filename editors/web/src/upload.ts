@@ -74,7 +74,7 @@ async function pack(entries: { path: string; file: File }[]): Promise<Picked> {
   const kept = entries.filter((e) => uploadable(e.path));
   if (kept.length === 0) {
     throw new Error(
-      'No PLC sources found. The workbench reads .st, TwinCAT (.TcPOU, .TcDUT, .TcGVL), Siemens (.scl, .db, .udt), Rockwell .L5X and PLCopen .xml files.',
+      'No PLC sources found. The workbench reads .st, TwinCAT (.TcPOU, .TcDUT, .TcGVL), Siemens (.scl, .db, .udt), Rockwell .L5X/.L5K and PLCopen .xml files.',
     );
   }
   const files: Zippable = {};

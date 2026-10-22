@@ -1,0 +1,180 @@
+SourceUnit dialect=ROCKWELL
+  Pou kind=FUNCTION_BLOCK name=Valve bodyLanguage="ST" @5:1-5:57
+    varBlocks:
+      VarBlock section=INPUT @7:1-9:100
+        variables:
+          VarDecl name=EnableIn referenceInit=false @7:1-7:107
+            type:
+              Named name=BOOL @7:53-7:57
+          VarDecl name=Cmd referenceInit=false @9:1-9:100
+            type:
+              Named name=BOOL @9:48-9:52
+      VarBlock section=OUTPUT @8:1-10:103
+        variables:
+          VarDecl name=EnableOut referenceInit=false @8:1-8:109
+            type:
+              Named name=BOOL @8:54-8:58
+          VarDecl name=Open referenceInit=false @10:1-10:103
+            type:
+              Named name=BOOL @10:49-10:53
+      VarBlock section=IN_OUT @11:1-11:100
+        variables:
+          VarDecl name=Cfg referenceInit=false @11:1-11:100
+            type:
+              Named name=DINT @11:48-11:52
+    body:
+      Assignment op=ASSIGN @14:70-14:82
+        target:
+          NameRef name=Open globalScope=false @14:70-14:74
+        value:
+          NameRef name=Cmd globalScope=false @14:78-14:81
+  Pou kind=PROGRAM name=Main bodyLanguage="L5X" @19:1-19:46
+    varBlocks:
+      VarBlock section=VAR @21:1-29:54
+        variables:
+          VarDecl name=Level referenceInit=false @21:1-21:51
+            type:
+              Named name=REAL @21:44-21:48
+          VarDecl name=Offset referenceInit=false @22:1-22:52
+            type:
+              Named name=REAL @22:45-22:49
+          VarDecl name=Scaled referenceInit=false @23:1-23:52
+            type:
+              Named name=REAL @23:45-23:49
+          VarDecl name=Start referenceInit=false @24:1-24:51
+            type:
+              Named name=BOOL @24:44-24:48
+          VarDecl name=Permit referenceInit=false @25:1-25:52
+            type:
+              Named name=BOOL @25:45-25:49
+          VarDecl name=Running referenceInit=false @26:1-26:53
+            type:
+              Named name=BOOL @26:46-26:50
+          VarDecl name=Add_1 referenceInit=false @27:1-27:55
+            type:
+              Named name=FBD_MATH @27:44-27:52
+          VarDecl name=Inlet referenceInit=false @28:1-28:52
+            type:
+              Named name=Valve @28:44-28:49
+          VarDecl name=InletCfg referenceInit=false @29:1-29:54
+            type:
+              Named name=DINT @29:47-29:51
+    members:
+      Pou kind=ROUTINE name=Blend bodyLanguage="FBD" @32:1-32:34
+        body:
+          Network number=1 network="FBD 8 elements" @35:1-48:44
+            body:
+              Assignment op=ASSIGN @37:50-37:55
+                target:
+                  MemberAccess member=SourceA @37:50-37:55
+                    target:
+                      NameRef name=Add_1 globalScope=false @37:50-37:55
+                value:
+                  NameRef name=Level globalScope=false @35:37-35:42
+              Assignment op=ASSIGN @37:50-37:55
+                target:
+                  MemberAccess member=SourceB @37:50-37:55
+                    target:
+                      NameRef name=Add_1 globalScope=false @37:50-37:55
+                value:
+                  NameRef name=Offset globalScope=false @36:38-36:44
+              CallStatement @37:50-37:55
+                call:
+                  Call @37:50-37:55
+                    callee:
+                      NameRef name=ADD globalScope=false @37:50-37:55
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @37:50-37:55
+                        value:
+                          NameRef name=Add_1 globalScope=false @37:50-37:55
+              Assignment op=ASSIGN @38:38-38:44
+                target:
+                  NameRef name=Scaled globalScope=false @38:38-38:44
+                value:
+                  MemberAccess member=Dest @37:50-37:55
+                    target:
+                      NameRef name=Add_1 globalScope=false @37:50-37:55
+              Assignment op=ASSIGN @42:1-42:46
+                target:
+                  NameRef name=$con_StartOk globalScope=false @42:1-42:46
+                value:
+                  Binary op=AND @41:1-41:50
+                    left:
+                      NameRef name=Start globalScope=false @39:38-39:43
+                    right:
+                      NameRef name=Permit globalScope=false @40:38-40:44
+          Network number=2 network="FBD 4 elements" @51:1-58:47
+            body:
+              CallStatement @52:64-52:69
+                call:
+                  Call @52:64-52:69
+                    callee:
+                      NameRef name=Inlet globalScope=false @52:64-52:69
+                    arguments:
+                      Argument kind=INPUT name=Cmd negated=false @52:64-52:69
+                        value:
+                          NameRef name=$con_StartOk globalScope=false @51:1-51:44
+                      Argument kind=INPUT name=Cfg negated=false @52:64-52:69
+                        value:
+                          NameRef name=InletCfg globalScope=false @53:38-53:46
+              Assignment op=ASSIGN @55:39-55:46
+                target:
+                  NameRef name=Running globalScope=false @55:39-55:46
+                value:
+                  MemberAccess member=Open @52:64-52:69
+                    target:
+                      NameRef name=Inlet globalScope=false @52:64-52:69
+              CallStatement @56:1-56:73
+                call:
+                  Call @56:1-56:73
+                    callee:
+                      NameRef name=JSR globalScope=false @56:1-56:73
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @56:38-56:44
+                        value:
+                          NameRef name=Report globalScope=false @56:38-56:44
+                      Argument kind=POSITIONAL negated=false @56:1-56:73
+                        value:
+                          Literal kind=INTEGER text="1" @56:1-56:73
+                      Argument kind=POSITIONAL negated=false @56:50-56:56
+                        value:
+                          NameRef name=Scaled globalScope=false @56:50-56:56
+                      Argument kind=POSITIONAL negated=false @56:63-56:70
+                        value:
+                          NameRef name=Running globalScope=false @56:63-56:70
+      Pou kind=ROUTINE name=Report bodyLanguage="RLL" @62:1-62:35
+        body:
+          Rung number=0 type="N" ladder="SBR(Value)RET(Done);" @62:88-62:108
+            body:
+              CallStatement @62:88-62:98
+                call:
+                  Call @62:88-62:98
+                    callee:
+                      NameRef name=SBR globalScope=false @62:88-62:91
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @62:92-62:97
+                        value:
+                          NameRef name=Value globalScope=false @62:92-62:97
+              CallStatement @62:98-62:107
+                call:
+                  Call @62:98-62:107
+                    callee:
+                      NameRef name=RET globalScope=false @62:98-62:101
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @62:102-62:106
+                        value:
+                          NameRef name=Done globalScope=false @62:102-62:106
+    body:
+      CallStatement @19:39-19:44
+        call:
+          Call @19:39-19:44
+            callee:
+              NameRef name=JSR globalScope=false @19:39-19:44
+            arguments:
+              Argument kind=POSITIONAL negated=false @19:39-19:44
+                value:
+                  NameRef name=Blend globalScope=false @19:39-19:44
+  pragmas:
+    Pragma kind=ATTRIBUTE name="TargetType" value="Controller" @2:98-2:108
+  comments: 0
+diagnostics:

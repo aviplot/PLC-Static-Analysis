@@ -7,6 +7,7 @@ import dev.plca.core.testing.Golden;
 import dev.plca.frontend.l5x.L5xFrontend;
 import dev.plca.frontend.plcopen.PlcOpenFrontend;
 import dev.plca.frontend.st.ProjectLoader;
+import dev.plca.frontend.st.StFrontend;
 import dev.plca.frontend.st.kit.Frontends;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -28,10 +29,11 @@ class DiagramsTest {
 
     private static final Path RESOURCES = Path.of(System.getProperty("golden.root"));
     private static final Path MODULES = RESOURCES.resolve("../../../..").normalize();
-    private static final Frontends FRONTENDS = Frontends.of(L5xFrontend::new, PlcOpenFrontend::new);
+    private static final Frontends FRONTENDS = Frontends.of(StFrontend::new, L5xFrontend::new, PlcOpenFrontend::new);
 
     static Stream<String> fixtures() {
         return Stream.of(
+                "frontend-st/src/test/resources/golden",
                 "frontend-l5x/src/test/resources/golden",
                 "frontend-plcopen/src/test/resources/golden",
                 "plc-semantic/src/test/resources/projects/rockwell_line",

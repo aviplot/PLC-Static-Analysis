@@ -18,8 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
- * Jazzer fuzz targets for the L5X frontend: whole exports ({@code fuzzL5x}) and raw rung text through parsing and
- * lowering ({@code fuzzRungs}). In a normal {@code ./gradlew test} run they replay the seeds under
+ * Jazzer fuzz targets for the L5X frontend: whole exports ({@code fuzzL5x}, {@code fuzzL5k}) and raw rung text through
+ * parsing and lowering ({@code fuzzRungs}). In a normal {@code ./gradlew test} run they replay the seeds under
  * {@code src/test/resources/dev/plca/frontend/l5x/L5xFrontendFuzzTestInputs/}. To fuzz: {@code JAZZER_FUZZ=1 ./gradlew
  * :frontend-l5x:test --tests '*L5xFrontendFuzzTest*'}.
  *
@@ -31,6 +31,18 @@ class L5xFrontendFuzzTest {
     @DictionaryFile(resourcePath = "/l5x.dict")
     void fuzzL5x(byte[] input) {
         SourceFile file = SourceFile.fromBytes("fuzz.L5X", input);
+        SourceRegistry registry = new SourceRegistry();
+        DiagnosticCollector diags = new DiagnosticCollector();
+        Frontend.Result result = new L5xFrontend().parse(file, registry, diags);
+        assertThat(result.unit()).isNotNull();
+        checkSpans(file, registry, diags);
+    }
+
+    /** L5K text exports (M11): the hand-written block scanner, then the shared pipeline. */
+    @FuzzTest(maxDuration = "5m")
+    @DictionaryFile(resourcePath = "/l5x.dict")
+    void fuzzL5k(byte[] input) {
+        SourceFile file = SourceFile.fromBytes("fuzz.L5K", input);
         SourceRegistry registry = new SourceRegistry();
         DiagnosticCollector diags = new DiagnosticCollector();
         Frontend.Result result = new L5xFrontend().parse(file, registry, diags);

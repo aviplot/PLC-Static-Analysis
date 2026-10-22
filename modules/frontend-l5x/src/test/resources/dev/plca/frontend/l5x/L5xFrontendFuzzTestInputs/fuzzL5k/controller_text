@@ -1,0 +1,86 @@
+(*********************************************
+
+  Import-Export
+  Version   := RSLogix 5000 v33.00
+
+**********************************************)
+IE_VER := 2.25;
+
+CONTROLLER Mixer (ProcessorType := "1769-L33ER",
+                  Major := 33)
+	DATATYPE UDT_Pump (FamilyType := NoFamily)
+		REAL Speed (Description := "Speed in rpm");
+		SINT ZZZZZZZZZZUDT_Pump1 (Hidden := 1);
+		BIT Running ZZZZZZZZZZUDT_Pump1 : 0 (ExternalAccess := Read Only);
+	END_DATATYPE
+
+	ADD_ON_INSTRUCTION_DEFINITION Limit2 (Revision := "1.0")
+		PARAMETERS
+			EnableIn : BOOL (Usage := Input, Required := No, Visible := No);
+			EnableOut : BOOL (Usage := Output, Required := No, Visible := No);
+			In : REAL (Usage := Input, Required := Yes, Visible := Yes, DefaultData := 0.0);
+			Out : REAL (Usage := Output, Required := No, Visible := Yes);
+		END_PARAMETERS
+		LOCAL_TAGS
+			Max : REAL (DefaultData := 100.0);
+		END_LOCAL_TAGS
+		ROUTINE Logic 
+				N: GRT(In,Max)MOV(Max,Out);
+				N: LEQ(In,Max)MOV(In,Out);
+		END_ROUTINE
+	END_ADD_ON_INSTRUCTION_DEFINITION
+
+	TAG
+		Start : BOOL (RADIX := Decimal) := 0;
+		Level : REAL (RADIX := Float) := 0.0;
+		Pump : UDT_Pump := [0.0,0];
+		Lamp OF Local:2:O.Data.0 (RADIX := Decimal);
+		Limiter : Limit2 := [1,0.0,0.0,100.0];
+	END_TAG
+
+	PROGRAM MainProgram (MAIN := "Main",
+	                     MODE := 0,
+	                     DisableFlag := 0)
+		TAG
+			Count : DINT (RADIX := Decimal) := 0;
+			Avg_1 : FBD_MATH;
+		END_TAG
+
+		ROUTINE Main (Description := "Calls the others")
+				RC: "Run the pump when started";
+				N: XIC(Start)OTE(Pump.Running);
+				N: JSR(Fill,0)JSR(Scale,0);
+		END_ROUTINE
+
+		ST_ROUTINE Fill 
+			'IF Level < 90.0 AND Pump.Running THEN
+			'    Count := Count + 1;
+			'END_IF;
+		END_ST_ROUTINE
+
+		FBD_ROUTINE Scale (SheetSize := "Letter - 8.5 x 11 in")
+			SHEET  (Name := "")
+				IREF  (ID := 0, X := 40, Y := 40, Operand := "Level")
+				END_IREF
+				ADD_BLOCK  (ID := 1, X := 200, Y := 40, Operand := "Avg_1", VisiblePins := "SourceA, SourceB, Dest")
+				END_ADD_BLOCK
+				OREF  (ID := 2, X := 400, Y := 40, Operand := "Pump.Speed")
+				END_OREF
+				WIRE  (FromElementID := 0, FromParameter := "", ToElementID := 1, ToParameter := "SourceA")
+				END_WIRE
+				WIRE  (FromElementID := 1, FromParameter := "Dest", ToElementID := 2, ToParameter := "")
+				END_WIRE
+			END_SHEET
+		END_FBD_ROUTINE
+
+		CHILD_PROGRAMS
+		END_CHILD_PROGRAMS
+	END_PROGRAM
+
+	TASK MainTask (Type := CONTINUOUS, Rate := 10, Priority := 10, Watchdog := 500)
+			MainProgram;
+	END_TASK
+
+CONFIG WallClockTime(TimeZone := 0) END_CONFIG
+
+END_CONTROLLER
