@@ -2,7 +2,7 @@
   "name": "plca-workbench",
   "version": "0.1.0",
   "description": "PLC code review workbench: the browser app served by `plca web`.",
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
   "private": true,
   "type": "module",
   "scripts": {

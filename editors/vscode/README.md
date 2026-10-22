@@ -6,9 +6,9 @@ hover, document outline and workspace symbols, from the plca language server.
 | Files | Language |
 |---|---|
 | `.st` | IEC 61131-3 Structured Text (CODESYS, generic) |
-| `.TcPOU`, `.TcDUT`, `.TcGVL`, `.TcIO` | TwinCAT PLC objects (ST in the XML) |
+| `.TcPOU`, `.TcDUT`, `.TcGVL`, `.TcIO` | TwinCAT PLC objects (ST, LD/FBD networks, CFC, SFC) |
 | `.scl`, `.db`, `.udt` | Siemens SCL sources from TIA Portal |
-| `.L5X` | Rockwell Studio 5000 exports (ladder rungs, ST routines, tags) |
+| `.L5X`, `.L5K` | Rockwell Studio 5000 exports (ladder, ST, FBD and SFC routines, tags, AOIs) |
 | `.xml` | PLCopen TC6 XML (recognised by its namespace) |
 
 Rules, severities and suppressions come from `plca.yaml` in the workspace folder, exactly as for `plca analyze`, and a
@@ -31,3 +31,8 @@ Java 21 or newer: set `plca.java.home`, or `JAVA_HOME`, or put `java` on the PAT
 
 The editor shows rule findings of the edited file about 0.1 s after typing stops, and findings that depend on the
 whole project (unused POUs, double coils, cross-task writes) after about 0.75 s or on save.
+
+## License
+
+GNU General Public License v3.0 or later, like the rest of plca: see `LICENSE.txt`.
+
