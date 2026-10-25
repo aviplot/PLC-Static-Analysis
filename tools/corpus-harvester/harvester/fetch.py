@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -23,7 +24,14 @@ GIT_ENV = {
     "GIT_ASKPASS": "true",
     "GCM_INTERACTIVE": "never",
 }
-GIT_CFG = ["-c", "protocol.file.allow=never", "-c", "core.symlinks=false", "-c", "credential.helper="]
+# core.autocrlf=false: Git for Windows enables autocrlf system-wide, which would rewrite LF to CRLF
+# and change hashes, line offsets and dedup. core.longpaths: deep repo paths under corpus/external/.
+GIT_CFG = ["-c", "protocol.file.allow=never", "-c", "core.symlinks=false", "-c", "credential.helper=",
+           "-c", "core.autocrlf=false", "-c", "core.longpaths=true"]
+
+WINDOWS = os.name == "nt"
+_WIN_BAD_CHARS = re.compile(r'[<>:"|?*\\\x00-\x1f]')
+_WIN_RESERVED = re.compile(r"^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\..*)?$", re.I)
 
 
 class BudgetExceeded(Exception):
@@ -43,6 +51,14 @@ def _safe_rel(path: str) -> PurePosixPath | None:
     if p.is_absolute() or ".." in p.parts or not p.parts:
         return None
     return p
+
+
+def _windows_safe(p: PurePosixPath) -> bool:
+    """False for paths NTFS cannot hold (git's core.protectNTFS would also refuse to check them out)."""
+    for part in p.parts:
+        if _WIN_BAD_CHARS.search(part) or part.endswith((".", " ")) or _WIN_RESERVED.match(part):
+            return False
+    return True
 
 
 def _sparse_pattern(path: str) -> str:
@@ -67,7 +83,9 @@ def du_bytes(root: Path) -> int:
 def fetch_repo(rec: dict, external: Path, tmp_root: Path, max_file_bytes: int) -> dict:
     """Returns updates for the repo record. Never raises for repo-level problems."""
     dest = external / rec["host"] / rec["full_name"]
-    with tempfile.TemporaryDirectory(dir=tmp_root) as tmp:
+    # ignore_cleanup_errors: on Windows, git pack files or a lingering git process can block deletion;
+    # the whole .tmp directory is removed again at the end of the run.
+    with tempfile.TemporaryDirectory(dir=tmp_root, ignore_cleanup_errors=True) as tmp:
         work = Path(tmp) / "r"
         try:
             _git(["clone", "--quiet", "--depth", "1", "--filter=blob:none", "--no-checkout", "--sparse",
@@ -78,16 +96,23 @@ def fetch_repo(rec: dict, external: Path, tmp_root: Path, max_file_bytes: int) -
         except (RuntimeError, subprocess.TimeoutExpired) as e:
             return {"status": "failed", "error": str(e)[:300]}
 
-        wanted = []
+        wanted, seen_ci, win_skipped = [], set(), 0
         for entry in listing.split(b"\0"):
             if not entry:
                 continue
             meta, _, path_b = entry.partition(b"\t")
             mode, otype, _ = meta.split()
             path = path_b.decode("utf-8", errors="surrogateescape")
-            if otype != b"blob" or mode == b"120000" or _safe_rel(path) is None:
+            rel = _safe_rel(path)
+            if otype != b"blob" or mode == b"120000" or rel is None:
                 continue
             if classify.candidate_format(path) or classify.is_license_file(path):
+                if WINDOWS:
+                    # one bad path would make the whole sparse checkout fail; case-only twins collide
+                    if not _windows_safe(rel) or path.lower() in seen_ci:
+                        win_skipped += 1
+                        continue
+                    seen_ci.add(path.lower())
                 wanted.append(path)
 
         files, too_big = [], 0
@@ -145,6 +170,7 @@ def fetch_repo(rec: dict, external: Path, tmp_root: Path, max_file_bytes: int) -
         "files": files,
         "license_files": rec_license_files,
         "skipped_too_big": too_big,
+        "skipped_windows_path": win_skipped,
         "error": None,
     }
 
@@ -173,15 +199,18 @@ def mark_for_refetch(state: State, dialect: str) -> int:
 
 
 def run(state: State, external: Path, workers: int, max_file_mb: int, budget_mb: int, min_free_mb: int,
-        limit: int | None = None) -> None:
+        limit: int | None = None, retry_failed: bool = True) -> tuple[int, str | None]:
+    """Fetches the pending repos; returns (repos attempted, budget-stop reason or None)."""
+    statuses = ("pending", "failed") if retry_failed else ("pending",)
     tmp_root = external / ".tmp"
     shutil.rmtree(tmp_root, ignore_errors=True)
     tmp_root.mkdir(parents=True, exist_ok=True)
-    pending = sorted(
-        (k for k, r in state.repos.items() if r["status"] in ("pending", "failed") and not r.get("fork")
-         and r.get("attempts", 0) < 3),
-        key=lambda k: (_priority(state.repos[k]), state.repos[k]["order"]),
-    )
+    with state.lock:  # discover may be adding repos from another thread
+        pending = sorted(
+            (k for k, r in state.repos.items() if r["status"] in statuses and not r.get("fork")
+             and r.get("attempts", 0) < 3),
+            key=lambda k: (_priority(state.repos[k]), state.repos[k]["order"]),
+        )
     if limit:
         pending = pending[:limit]
     used = du_bytes(external)
@@ -239,3 +268,4 @@ def run(state: State, external: Path, workers: int, max_file_mb: int, budget_mb:
             state.data["budget_stop"] = stop
             state.save()
     shutil.rmtree(tmp_root, ignore_errors=True)
+    return done, stop

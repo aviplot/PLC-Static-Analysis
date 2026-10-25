@@ -98,10 +98,14 @@ def _paged(client: Client, path: str, q: str, interval: float, state: State, qke
     return total or 0
 
 
-def github_code_search(client: Client, state: State, query: str) -> None:
+def _full(state: State, max_repos: int | None) -> bool:
+    return max_repos is not None and len(state.repos) >= max_repos
+
+
+def github_code_search(client: Client, state: State, query: str, max_repos: int | None = None) -> None:
     """Code search, split by file-size ranges so each slice stays under the 1000-result cap."""
     stack = [(0, MAX_FILE_SIZE)]
-    while stack:
+    while stack and not _full(state, max_repos):
         lo, hi = stack.pop()
         q = f"{query} size:{lo}..{hi}"
         qkey = f"gh-code:{q}"
@@ -219,7 +223,9 @@ def gitlab_search(client: Client, state: State) -> None:
         log.info("%-45s new repos=%d (known: %d)", qkey, new, len(state.repos))
 
 
-def run(state: State, github_token: str | None, gitlab_token: str | None, skip_code_search: bool = False) -> None:
+def run(state: State, github_token: str | None, gitlab_token: str | None, skip_code_search: bool = False,
+        max_repos: int | None = None) -> None:
+    """max_repos stops code search once that many candidate repos are known; metadata and GitLab still run."""
     if github_token:
         gh = github_client(github_token)
         github_seeds(gh, state)
@@ -229,7 +235,10 @@ def run(state: State, github_token: str | None, gitlab_token: str | None, skip_c
             github_repo_search(gh, state, f"{k} in:name,description,readme")
         if not skip_code_search:
             for q in CODE_QUERIES:
-                github_code_search(gh, state, q)
+                if _full(state, max_repos):
+                    log.info("stopping code search: %d candidate repos (--max-repos %d)", len(state.repos), max_repos)
+                    break
+                github_code_search(gh, state, q, max_repos)
         github_enrich(gh, state)
     else:
         log.warning("GITHUB_TOKEN not set: skipping GitHub (search API requires auth)")

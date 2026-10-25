@@ -14,6 +14,20 @@ python3 -m harvester build         # dedup + reports only
 python3 -m unittest discover -s tests
 ```
 
+On Windows (PowerShell; Python 3.10+ and Git for Windows on `PATH`):
+
+```powershell
+cd tools\corpus-harvester
+$env:GITHUB_TOKEN = (gh auth token)
+python -m harvester all --budget-mb 256000
+```
+
+Windows notes: git runs with `core.autocrlf=false` (Git for Windows defaults to `true`, which would
+rewrite LF to CRLF and change hashes and line offsets) and `core.longpaths=true`; enable long paths in
+Windows too (`LongPathsEnabled=1`). Files whose paths NTFS cannot hold (`:`, `?`, `\`, `CON`, `NUL`,
+trailing dot/space, ...) or that differ from another kept path only by case are skipped and counted
+in the repo's `skipped_windows_path`. Exclude `corpus\` from real-time antivirus scanning for speed.
+
 All stages resume from `corpus/external/.harvest-state.json`; interrupt and re-run freely.
 Failed repos are retried up to 3 times on later `fetch` runs.
 
