@@ -20,6 +20,7 @@ repo Manorstone-NZ/FW-Agents4PLC
 repo FranciscoOsuna/weryfikacja-kodu-plc-llm
 repo SubhikshaPonraj/AI-powered-PLC-Code-Generator
 repo singh-tushar2005/Industrial-automation-using-LLMs
+repo tc3-engineer/InformationFBs
 
 # --- fuzzer corpora ---
 repo tomoveon/SemantiST
