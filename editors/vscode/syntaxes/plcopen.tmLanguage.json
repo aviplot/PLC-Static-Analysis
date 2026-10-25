@@ -1,0 +1,117 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "PLCopen XML",
+  "scopeName": "text.xml.plcopen",
+  "patterns": [
+    {
+      "begin": "(<)(ST|InterfaceAsPlainText)\\b([^>]*)(?<!/)(>)",
+      "end": "(</)(\\2)(>)",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml"
+        },
+        "2": {
+          "name": "entity.name.tag.xml"
+        },
+        "3": {
+          "patterns": [
+            {
+              "include": "text.xml"
+            }
+          ]
+        },
+        "4": {
+          "name": "punctuation.definition.tag.xml"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.tag.xml"
+        },
+        "2": {
+          "name": "entity.name.tag.xml"
+        },
+        "3": {
+          "name": "punctuation.definition.tag.xml"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "(<)(xhtml:p|xhtml|p)\\b([^>]*)(?<!/)(>)",
+          "end": "(</)(\\2)(>)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.xml"
+            },
+            "2": {
+              "name": "entity.name.tag.xml"
+            },
+            "3": {
+              "patterns": [
+                {
+                  "include": "text.xml"
+                }
+              ]
+            },
+            "4": {
+              "name": "punctuation.definition.tag.xml"
+            }
+          },
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.tag.xml"
+            },
+            "2": {
+              "name": "entity.name.tag.xml"
+            },
+            "3": {
+              "name": "punctuation.definition.tag.xml"
+            }
+          },
+          "patterns": [
+            {
+              "begin": "<!\\[CDATA\\[",
+              "end": "\\]\\]>",
+              "beginCaptures": {
+                "0": {
+                  "name": "punctuation.definition.string.begin.xml"
+                }
+              },
+              "endCaptures": {
+                "0": {
+                  "name": "punctuation.definition.string.end.xml"
+                }
+              },
+              "contentName": "meta.embedded.block.iec-st",
+              "patterns": [
+                {
+                  "include": "source.iec-st"
+                }
+              ]
+            },
+            {
+              "name": "meta.embedded.block.iec-st",
+              "begin": "(?=[^<\\s])",
+              "end": "(?=<)",
+              "patterns": [
+                {
+                  "name": "constant.character.entity.xml",
+                  "match": "&(?:[a-zA-Z]+|#[0-9]+|#x[0-9a-fA-F]+);"
+                },
+                {
+                  "include": "source.iec-st"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "include": "text.xml"
+        }
+      ]
+    },
+    {
+      "include": "text.xml"
+    }
+  ]
+}

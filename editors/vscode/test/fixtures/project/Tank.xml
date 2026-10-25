@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0201" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <fileHeader companyName="plca" productName="e2e" productVersion="1" creationDateTime="2026-10-25T10:00:00"/>
+  <contentHeader name="Tank" modificationDateTime="2026-10-25T10:00:00">
+    <coordinateInfo><fbd><scaling x="0" y="0"/></fbd><ld><scaling x="0" y="0"/></ld><sfc><scaling x="0" y="0"/></sfc></coordinateInfo>
+  </contentHeader>
+  <types>
+    <dataTypes/>
+    <pous>
+      <pou name="TankCheck" pouType="program">
+        <interface>
+          <localVars>
+            <variable name="rVolume"><type><REAL/></type></variable>
+            <variable name="bFull"><type><BOOL/></type></variable>
+          </localVars>
+        </interface>
+        <body><ST><xhtml:p><![CDATA[bFull := rVolume = 100.0;]]></xhtml:p></ST></body>
+      </pou>
+    </pous>
+  </types>
+  <instances><configurations/></instances>
+</project>

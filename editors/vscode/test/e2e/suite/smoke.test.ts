@@ -79,4 +79,21 @@ suite("plca", () => {
         .find((d) => (typeof d.code === "object" ? d.code.value : d.code) === "PLC-SYN-001"),
     );
   });
+
+  test("PLCopen XML by its namespace, TwinCAT task objects", async () => {
+    const tank = vscode.Uri.joinPath(folder(), "Tank.xml");
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(tank));
+    await until("Tank.xml as plcopen-xml", () =>
+      vscode.workspace.textDocuments.find((d) => d.uri.toString() === tank.toString() && d.languageId === "plcopen-xml"),
+    );
+    const q003 = await until("PLCA-Q003 on Tank.xml", () =>
+      vscode.languages
+        .getDiagnostics(tank)
+        .find((d) => d.source === "plca" && (typeof d.code === "object" ? d.code.value : d.code) === "PLCA-Q003"),
+    );
+    assert.strictEqual(q003.range.start.line, 16);
+
+    const task = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder(), "PlcTask.TcTTO"));
+    assert.strictEqual(task.languageId, "twincat-xml");
+  });
 });

@@ -22,7 +22,8 @@
   "keywords": ["PLC", "IEC 61131-3", "Structured Text", "TwinCAT", "CODESYS", "SCL", "TIA Portal", "Studio 5000", "L5X", "L5K", "PLCopen"],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "workspaceContains:**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,scl,SCL,L5X,l5x,L5K,l5k}"
+    "workspaceContains:**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,TcTTO,scl,SCL,db,udt,L5X,l5x,L5K,l5k}",
+    "onLanguage:xml"
   ],
   "contributes": {
     "languages": [
@@ -41,13 +42,18 @@
       {
         "id": "twincat-xml",
         "aliases": ["TwinCAT PLC object"],
-        "extensions": [".TcPOU", ".TcDUT", ".TcGVL", ".TcIO"],
+        "extensions": [".TcPOU", ".TcDUT", ".TcGVL", ".TcIO", ".TcTTO"],
         "configuration": "./language-configuration-xml.json"
       },
       {
         "id": "rockwell-l5x",
         "aliases": ["Rockwell L5X export"],
         "extensions": [".L5X", ".l5x"],
+        "configuration": "./language-configuration-xml.json"
+      },
+      {
+        "id": "plcopen-xml",
+        "aliases": ["PLCopen XML"],
         "configuration": "./language-configuration-xml.json"
       },
       {
@@ -80,6 +86,14 @@
         "language": "rockwell-l5x",
         "scopeName": "text.xml.l5x",
         "path": "./syntaxes/l5x.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.iec-st": "iec-st"
+        }
+      },
+      {
+        "language": "plcopen-xml",
+        "scopeName": "text.xml.plcopen",
+        "path": "./syntaxes/plcopen.tmLanguage.json",
         "embeddedLanguages": {
           "source.iec-st": "iec-st"
         }

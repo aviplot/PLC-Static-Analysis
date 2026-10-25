@@ -4,7 +4,7 @@
   "scopeName": "text.xml.twincat",
   "patterns": [
     {
-      "begin": "(<)(Declaration|ST)\\b([^>]*)(>)",
+      "begin": "(<)(Declaration|ST)\\b([^>]*)(?<!/)(>)",
       "end": "(</)(\\2)(>)",
       "beginCaptures": {
         "1": {

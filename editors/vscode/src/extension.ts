@@ -18,6 +18,7 @@ const MIN_JAVA = 21;
 const RULE_DOC = "plca.ruleDoc";
 
 let client: LanguageClient | undefined;
+let running: Promise<void> | undefined;
 let output: vscode.LogOutputChannel;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -26,7 +27,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     output,
     vscode.commands.registerCommand("plca.restartServer", async () => {
       await stop();
-      await start(context);
+      await ensureStarted(context);
     }),
     vscode.commands.registerCommand("plca.showRuleDoc", (ruleId?: string) => showRuleDoc(ruleId)),
     vscode.languages.registerCodeActionsProvider(
@@ -35,13 +36,40 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       { providedCodeActionKinds: [vscode.CodeActionKind.Empty] },
     ),
     vscode.workspace.onDidChangeConfiguration(async (e) => {
-      if (e.affectsConfiguration("plca") && !e.affectsConfiguration("plca.trace.server")) {
+      if (running && e.affectsConfiguration("plca") && !e.affectsConfiguration("plca.trace.server")) {
         await stop();
-        await start(context);
+        await ensureStarted(context);
       }
     }),
+    vscode.workspace.onDidOpenTextDocument((doc) => opened(context, doc)),
   );
-  await start(context);
+  for (const doc of vscode.workspace.textDocuments) {
+    await opened(context, doc);
+  }
+  // Activated by any XML file (PLCopen exports have no extension of their own): start the server only for PLC code.
+  if ((await vscode.workspace.findFiles(PLC_FILES, undefined, 1)).length > 0) {
+    await ensureStarted(context);
+  }
+}
+
+/** Marks a PLCopen export as plcopen-xml (VS Code then reopens it) and starts the server on the first PLC file. */
+async function opened(context: vscode.ExtensionContext, doc: vscode.TextDocument): Promise<void> {
+  if (doc.languageId === "xml" && isPlcOpen(doc)) {
+    await vscode.languages.setTextDocumentLanguage(doc, "plcopen-xml");
+  } else if (doc.uri.scheme === "file" && PLC_LANGUAGES.has(doc.languageId)) {
+    await ensureStarted(context);
+  }
+}
+
+/** A PLCopen TC6 export: its namespace (tc6_0200, tc6_0201) is declared on the root element near the top. */
+function isPlcOpen(doc: vscode.TextDocument): boolean {
+  const head = doc.getText(new vscode.Range(new vscode.Position(0, 0), doc.positionAt(4096)));
+  return head.includes("plcopen.org/xml/tc6");
+}
+
+async function ensureStarted(context: vscode.ExtensionContext): Promise<void> {
+  running ??= start(context);
+  await running;
 }
 
 export async function deactivate(): Promise<void> {
@@ -55,8 +83,14 @@ const DOCUMENTS: { scheme: string; language?: string; pattern?: string }[] = [
   { scheme: "file", language: "twincat-xml" },
   { scheme: "file", language: "rockwell-l5x" },
   { scheme: "file", language: "rockwell-l5k" },
+  { scheme: "file", language: "plcopen-xml" },
   { scheme: "file", pattern: "**/*.xml" },
 ];
+
+const PLC_LANGUAGES = new Set(["iec-st", "siemens-scl", "twincat-xml", "rockwell-l5x", "rockwell-l5k", "plcopen-xml"]);
+
+/** Files that make a workspace a PLC project (PLCopen .xml is recognised only once opened). */
+const PLC_FILES = "**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,TcTTO,scl,SCL,db,udt,L5X,l5x,L5K,l5k}";
 
 /** Files whose changes on disk the server must see (closed files, plca.yaml, baselines). */
 const WATCHED =
@@ -95,6 +129,8 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
 }
 
 async function stop(): Promise<void> {
+  await running;
+  running = undefined;
   const c = client;
   client = undefined;
   if (c) {

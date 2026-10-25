@@ -6,13 +6,16 @@ hover, document outline and workspace symbols, from the plca language server.
 | Files | Language |
 |---|---|
 | `.st` | IEC 61131-3 Structured Text (CODESYS, generic) |
-| `.TcPOU`, `.TcDUT`, `.TcGVL`, `.TcIO` | TwinCAT PLC objects (ST, LD/FBD networks, CFC, SFC) |
+| `.TcPOU`, `.TcDUT`, `.TcGVL`, `.TcIO`, `.TcTTO` | TwinCAT PLC objects (ST, LD/FBD networks, CFC, SFC) and task objects |
 | `.scl`, `.db`, `.udt` | Siemens SCL sources from TIA Portal |
 | `.L5X`, `.L5K` | Rockwell Studio 5000 exports (ladder, ST, FBD and SFC routines, tags, AOIs) |
-| `.xml` | PLCopen TC6 XML (recognised by its namespace) |
+| `.xml` | PLCopen TC6 XML, recognised by its namespace and shown as "PLCopen XML" with the ST bodies highlighted |
 
 Rules, severities and suppressions come from `plca.yaml` in the workspace folder, exactly as for `plca analyze`, and a
 baseline named there hides known findings. "Show documentation of PLCA-…" on a finding opens the rule's description.
+
+The extension activates in a workspace with PLC files, or when an XML file is opened; the server starts on the first
+PLC file, so an XML file of another kind (a `pom.xml`) does not start it.
 
 ## Requirements
 

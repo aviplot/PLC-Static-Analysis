@@ -143,33 +143,61 @@ rll = {
 }
 
 
+def tag_block(element, patterns):
+    """`<element ...>` … `</element>` with XML tag scopes and `patterns` for the content (not `<element/>`)."""
+    return {
+        "begin": r"(<)(" + element + r")\b([^>]*)(?<!/)(>)",
+        "end": r"(</)(\2)(>)",
+        "beginCaptures": {"1": {"name": "punctuation.definition.tag.xml"}, "2": {"name": "entity.name.tag.xml"},
+                          "3": {"patterns": [{"include": "text.xml"}]}, "4": {"name": "punctuation.definition.tag.xml"}},
+        "endCaptures": {"1": {"name": "punctuation.definition.tag.xml"}, "2": {"name": "entity.name.tag.xml"},
+                        "3": {"name": "punctuation.definition.tag.xml"}},
+        "patterns": patterns,
+    }
+
+
+def cdata(embedded):
+    """A CDATA section whose content is code in the `embedded` scope."""
+    return {
+        "begin": r"<!\[CDATA\[", "end": r"\]\]>",
+        "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.xml"}},
+        "endCaptures": {"0": {"name": "punctuation.definition.string.end.xml"}},
+        "contentName": "meta.embedded.block." + embedded.split(".")[-1],
+        "patterns": [{"include": embedded}],
+    }
+
+
 def xml_with_cdata(name, scope, rules):
     """An XML document whose CDATA sections hold code: `rules` is (element regex, embedded scope) in order."""
-    patterns = []
-    for element, embedded in rules:
-        patterns.append({
-            "begin": r"(<)(" + element + r")\b([^>]*)(>)",
-            "end": r"(</)(\2)(>)",
-            "beginCaptures": {"1": {"name": "punctuation.definition.tag.xml"}, "2": {"name": "entity.name.tag.xml"},
-                              "3": {"patterns": [{"include": "text.xml"}]}, "4": {"name": "punctuation.definition.tag.xml"}},
-            "endCaptures": {"1": {"name": "punctuation.definition.tag.xml"}, "2": {"name": "entity.name.tag.xml"},
-                            "3": {"name": "punctuation.definition.tag.xml"}},
-            "patterns": [{
-                "begin": r"<!\[CDATA\[", "end": r"\]\]>",
-                "beginCaptures": {"0": {"name": "punctuation.definition.string.begin.xml"}},
-                "endCaptures": {"0": {"name": "punctuation.definition.string.end.xml"}},
-                "contentName": "meta.embedded.block." + embedded.split(".")[-1],
-                "patterns": [{"include": embedded}],
-            }],
-        })
+    patterns = [tag_block(element, [cdata(embedded)]) for element, embedded in rules]
     patterns.append({"include": "text.xml"})
     return {"$schema": st["$schema"], "name": name, "scopeName": scope, "patterns": patterns}
 
 
 twincat = xml_with_cdata("TwinCAT PLC object", "text.xml.twincat", [("Declaration|ST", "source.iec-st")])
 l5x = xml_with_cdata("Rockwell L5X export", "text.xml.l5x", [("Text", "source.rockwell-rll"), ("Line", "source.iec-st")])
+# PLCopen TC6: an <ST> body holds its text in an XHTML element, as CDATA (Beremiz: <xhtml:p><![CDATA[…]]>) or as
+# escaped text (CODESYS: <xhtml xmlns="…">a &lt; b</xhtml>), also in CODESYS <InterfaceAsPlainText> declarations.
+# <xhtml> elsewhere (documentation) stays plain XML.
+plcopen = {
+    "$schema": st["$schema"], "name": "PLCopen XML", "scopeName": "text.xml.plcopen",
+    "patterns": [
+        tag_block("ST|InterfaceAsPlainText", [
+            tag_block(r"xhtml:p|xhtml|p", [
+                cdata("source.iec-st"),
+                {"name": "meta.embedded.block.iec-st", "begin": r"(?=[^<\s])", "end": r"(?=<)", "patterns": [
+                    {"name": "constant.character.entity.xml", "match": r"&(?:[a-zA-Z]+|#[0-9]+|#x[0-9a-fA-F]+);"},
+                    {"include": "source.iec-st"},
+                ]},
+            ]),
+            {"include": "text.xml"},
+        ]),
+        {"include": "text.xml"},
+    ],
+}
 
-for file, grammar in [("iec-st", st), ("siemens-scl", scl), ("rockwell-rll", rll), ("twincat", twincat), ("l5x", l5x)]:
+for file, grammar in [("iec-st", st), ("siemens-scl", scl), ("rockwell-rll", rll), ("twincat", twincat), ("l5x", l5x),
+                      ("plcopen", plcopen)]:
     (OUT / f"{file}.tmLanguage.json").write_text(json.dumps(grammar, indent=2) + "\n")
     print("wrote", file)
 
