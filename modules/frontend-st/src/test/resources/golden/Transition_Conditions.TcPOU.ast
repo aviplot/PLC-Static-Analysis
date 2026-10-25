@@ -1,0 +1,91 @@
+SourceUnit dialect=TWINCAT
+  Pou kind=PROGRAM name=PRG_Wash bodyLanguage="ST" @4:27-11:1
+    varBlocks:
+      VarBlock section=VAR @5:1-10:8
+        variables:
+          VarDecl name=bStart referenceInit=false @6:5-6:19
+            type:
+              Named name=BOOL @6:14-6:18
+          VarDecl name=bMoto referenceInit=false @7:5-7:18
+            type:
+              Named name=BOOL @7:13-7:17
+          VarDecl name=bAuto referenceInit=false @8:5-8:18
+            type:
+              Named name=BOOL @8:13-8:17
+          VarDecl name=nStep referenceInit=false @9:5-9:17
+            type:
+              Named name=INT @9:13-9:16
+    members:
+      Pou kind=TRANSITION name=T_Bare bodyLanguage="ST" @15:5-15:75
+        body:
+          Assignment op=ASSIGN @17:22-17:42
+            target:
+              NameRef name=$T_Bare globalScope=false @17:22-17:42
+            value:
+              Binary op=AND @17:22-17:42
+                left:
+                  NameRef name=bStart globalScope=false @17:22-17:28
+                right:
+                  Unary op=NOT @17:33-17:42
+                    operand:
+                      NameRef name=bAuto globalScope=false @17:37-17:42
+      Pou kind=TRANSITION name=T_Semicolon bodyLanguage="ST" @20:5-20:80
+        body:
+          Assignment op=ASSIGN @22:22-22:52
+            target:
+              NameRef name=$T_Semicolon globalScope=false @22:22-22:52
+            value:
+              Binary op=AND @22:22-22:52
+                left:
+                  Binary op=OR @22:23-22:37
+                    left:
+                      NameRef name=bMoto globalScope=false @22:23-22:28
+                    right:
+                      NameRef name=bAuto globalScope=false @22:32-22:37
+                right:
+                  Binary op=EQ @22:43-22:52
+                    left:
+                      NameRef name=nStep globalScope=false @22:43-22:48
+                    right:
+                      Literal kind=INTEGER text="1" @22:51-22:52
+      Pou kind=TRANSITION name=T_Name bodyLanguage="ST" @25:5-25:75
+        body:
+          Assignment op=ASSIGN @27:22-27:28
+            target:
+              NameRef name=$T_Name globalScope=false @27:22-27:28
+            value:
+              NameRef name=bStart globalScope=false @27:22-27:28
+      Pou kind=TRANSITION name=T_Comment bodyLanguage="ST" @30:5-30:78
+        body:
+          Assignment op=ASSIGN @32:22-32:31
+            target:
+              NameRef name=$T_Comment globalScope=false @32:22-32:31
+            value:
+              Binary op=GT @32:22-32:31
+                left:
+                  NameRef name=nStep globalScope=false @32:22-32:27
+                right:
+                  Literal kind=INTEGER text="2" @32:30-32:31
+      Pou kind=TRANSITION name=T_Assign bodyLanguage="ST" @35:5-35:77
+        body:
+          Assignment op=ASSIGN @37:22-37:51
+            target:
+              NameRef name=T_Assign globalScope=false @37:22-37:30
+            value:
+              Binary op=AND @37:34-37:50
+                left:
+                  NameRef name=bMoto globalScope=false @37:34-37:39
+                right:
+                  NameRef name=bStart globalScope=false @37:44-37:50
+    body:
+      Assignment op=ASSIGN @13:20-13:39
+        target:
+          NameRef name=nStep globalScope=false @13:20-13:25
+        value:
+          Binary op=ADD @13:29-13:38
+            left:
+              NameRef name=nStep globalScope=false @13:29-13:34
+            right:
+              Literal kind=INTEGER text="1" @13:37-13:38
+  comments: 1
+diagnostics:

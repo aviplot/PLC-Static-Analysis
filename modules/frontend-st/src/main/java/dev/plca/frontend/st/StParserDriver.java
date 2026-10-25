@@ -25,6 +25,8 @@ final class StParserDriver {
         DECLARATION_PART,
         STATEMENTS,
         EXPRESSION,
+        /** An expression that may end with {@code ;}: a TwinCAT transition written as its condition. */
+        TRANSITION_CONDITION,
         /** COMPILATION_UNIT if the text starts with a library element keyword, else STATEMENTS. */
         AUTO
     }
@@ -101,6 +103,7 @@ final class StParserDriver {
             case COMPILATION_UNIT -> CodesysStParser::compilationUnit;
             case DECLARATION_PART -> CodesysStParser::declarationPart;
             case EXPRESSION -> CodesysStParser::expressionOnly;
+            case TRANSITION_CONDITION -> CodesysStParser::transitionCondition;
             case STATEMENTS, AUTO -> CodesysStParser::statementsOnly;
         };
         return parser.parse(text, tokens, rule, sink);

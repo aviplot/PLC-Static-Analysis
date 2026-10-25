@@ -43,6 +43,11 @@ expressionOnly
     : expression EOF
     ;
 
+/** A TwinCAT transition object written as its condition, which may end with ';' (`bStart AND bReady;`). */
+transitionCondition
+    : expression SEMI? EOF
+    ;
+
 // ================================================================================================
 // Library elements and POUs (IEC 6.6)
 //

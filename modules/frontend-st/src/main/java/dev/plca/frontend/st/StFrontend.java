@@ -28,6 +28,7 @@ import dev.plca.grammar.CodesysStParser.CompilationUnitContext;
 import dev.plca.grammar.CodesysStParser.DeclarationPartContext;
 import dev.plca.grammar.CodesysStParser.ExpressionOnlyContext;
 import dev.plca.grammar.CodesysStParser.StatementsOnlyContext;
+import dev.plca.grammar.CodesysStParser.TransitionConditionContext;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -463,8 +464,12 @@ public final class StFrontend implements Frontend {
             }
             SourceText t = registry.registerXmlContent(file, e.implStart, e.implEnd);
             if (e.tag.equals("Transition") && isBareCondition(t.text())) {
-                // a transition written as its condition: `NOT fb.BUSY` means `Trans := NOT fb.BUSY;`
-                Expression condition = expression(t);
+                // a transition written as its condition: `NOT fb.BUSY` (or `NOT fb.BUSY;`) means `Trans := NOT
+                // fb.BUSY;`
+                Parsed p = parse(t, StParserDriver.Entry.TRANSITION_CONDITION, sink);
+                AstBuilder b = new AstBuilder(t, p.tokens(), sink);
+                Expression condition = b.transitionCondition((TransitionConditionContext) p.tree());
+                b.collectHidden(comments, pragmas);
                 Span s = condition.span();
                 Expression target = new Expression.NameRef(
                         new Identifier(e.name == null ? "<unnamed>" : e.name, Identifier.Form.SYNTHETIC, s), false, s);
@@ -477,10 +482,15 @@ public final class StFrontend implements Frontend {
             return body;
         }
 
-        /** No statement in the text: no {@code ;} and no {@code :=} outside comments and strings. */
+        /**
+         * No statement in the text: no {@code :=} and no {@code ;} except one at the end, outside comments and strings.
+         * {@code start;} is the condition {@code start}, not a call: a transition's body yields its value.
+         */
         private static boolean isBareCondition(String text) {
-            String code = text.replaceAll("(?s)\\(\\*.*?\\*\\)|//[^\\n]*|'[^']*'|\"[^\"]*\"", " ");
-            return !code.isBlank() && !code.contains(";") && !code.contains(":=");
+            String code = text.replaceAll("(?s)\\(\\*.*?\\*\\)|//[^\\n]*|'[^']*'|\"[^\"]*\"", " ")
+                    .strip();
+            int semi = code.indexOf(';');
+            return !code.isEmpty() && !code.contains(":=") && (semi < 0 || semi == code.length() - 1);
         }
 
         /** A graphical body read from its {@code XmlArchive}; null when the archive is unreadable (reported). */

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="PRG_Wash" Id="{00000000-0000-0000-0000-000000000101}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_Wash
+VAR
+    bStart : BOOL;
+    bMoto : BOOL;
+    bAuto : BOOL;
+    nStep : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[nStep := nStep + 1;]]></ST>
+    </Implementation>
+    <Transition Name="T_Bare" Id="{00000000-0000-0000-0000-000000000102}">
+      <Implementation>
+        <ST><![CDATA[bStart AND NOT bAuto]]></ST>
+      </Implementation>
+    </Transition>
+    <Transition Name="T_Semicolon" Id="{00000000-0000-0000-0000-000000000103}">
+      <Implementation>
+        <ST><![CDATA[(bMoto OR bAuto) AND nStep = 1;]]></ST>
+      </Implementation>
+    </Transition>
+    <Transition Name="T_Name" Id="{00000000-0000-0000-0000-000000000104}">
+      <Implementation>
+        <ST><![CDATA[bStart;]]></ST>
+      </Implementation>
+    </Transition>
+    <Transition Name="T_Comment" Id="{00000000-0000-0000-0000-000000000105}">
+      <Implementation>
+        <ST><![CDATA[nStep > 2; // after the second step]]></ST>
+      </Implementation>
+    </Transition>
+    <Transition Name="T_Assign" Id="{00000000-0000-0000-0000-000000000106}">
+      <Implementation>
+        <ST><![CDATA[T_Assign := bMoto AND bStart;]]></ST>
+      </Implementation>
+    </Transition>
+  </POU>
+</TcPlcObject>
