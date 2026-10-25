@@ -71,6 +71,7 @@ public final class CorpusCheck {
             Frontend.Stats stats,
             List<String> errors,
             String firstError,
+            List<String> errorRows,
             Parts parts) {}
 
     /**
@@ -247,6 +248,7 @@ public final class CorpusCheck {
                         Frontend.Stats.NONE,
                         List.of(err),
                         err,
+                        List.of("0\t0\tESCAPED\t" + tsvField(err) + "\t" + tsvField(err)),
                         Parts.NONE));
             }
         }
@@ -473,14 +475,17 @@ public final class CorpusCheck {
         DiagnosticCollector diags = new DiagnosticCollector();
         Frontend.Result result = frontend.parse(sf, registry, diags);
         List<String> errors = new ArrayList<>();
+        List<String> errorRows = new ArrayList<>();
         String first = null;
         for (Diagnostic d : diags.diagnostics()) {
             if (d.severity() != Severity.ERROR) {
                 continue;
             }
             errors.add(d.code() + " " + normalise(d.message()));
+            Location l = registry.resolve(d.span());
+            errorRows.add(l.startLine() + "\t" + l.startColumn() + "\t" + d.code() + "\t"
+                    + tsvField(normalise(d.message())) + "\t" + tsvField(d.message()));
             if (first == null) {
-                Location l = registry.resolve(d.span());
                 first = l.startLine() + ":" + l.startColumn() + " " + d.message();
             }
         }
@@ -493,7 +498,17 @@ public final class CorpusCheck {
                         ? parts("PlcOpen", result.unit(), diags)
                         : r[4].equals("TcPOU") ? parts("TwinCat", result.unit(), diags) : Parts.NONE;
         return Map.entry(
-                new FileResult(repoUrl, r[2], format, lines, errors.isEmpty(), result.stats(), errors, first, parts),
+                new FileResult(
+                        repoUrl,
+                        r[2],
+                        format,
+                        lines,
+                        errors.isEmpty(),
+                        result.stats(),
+                        errors,
+                        first,
+                        errorRows,
+                        parts),
                 result.unit());
     }
 
@@ -653,6 +668,7 @@ public final class CorpusCheck {
             }
         }
         Files.writeString(reportDir.resolve("failures.tsv"), tsv);
+        writeErrorLogs(results, messages, examples, reportDir);
         out.println("\nReports: " + reportDir.toAbsolutePath());
         return rates;
     }
@@ -761,6 +777,38 @@ public final class CorpusCheck {
         }
         out.println(ok ? "corpusCheck OK" : "corpusCheck FAILED");
         return ok;
+    }
+
+    /**
+     * Every error diagnostic of every file ({@code parse-errors.tsv}) and every distinct normalised message with the
+     * number of files it affects ({@code error-messages.tsv}) — the input for grammar and frontend work.
+     */
+    private static void writeErrorLogs(
+            List<FileResult> results, Map<String, int[]> messages, Map<String, String> examples, Path reportDir)
+            throws IOException {
+        try (var w = Files.newBufferedWriter(reportDir.resolve("parse-errors.tsv"), StandardCharsets.UTF_8)) {
+            w.write("format\trepo\tpath\tline\tcolumn\tcode\tnormalised_message\tmessage\n");
+            for (FileResult r : results) {
+                for (String row : r.errorRows()) {
+                    w.write(r.format() + "\t" + r.repo() + "\t" + r.path() + "\t" + row + "\n");
+                }
+            }
+        }
+        StringBuilder tsv = new StringBuilder("files\tmessage\texample\n");
+        messages.entrySet().stream()
+                .sorted(Comparator.comparingInt((Map.Entry<String, int[]> x) -> -x.getValue()[0])
+                        .thenComparing(Map.Entry::getKey))
+                .forEach(x -> tsv.append(x.getValue()[0])
+                        .append('\t')
+                        .append(tsvField(x.getKey()))
+                        .append('\t')
+                        .append(examples.get(x.getKey()))
+                        .append('\n'));
+        Files.writeString(reportDir.resolve("error-messages.tsv"), tsv, StandardCharsets.UTF_8);
+    }
+
+    private static String tsvField(String s) {
+        return s.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ');
     }
 
     /** Keeps keyword-like quoted tokens ('END_IF', ':='), hides names and literals so messages group. */
