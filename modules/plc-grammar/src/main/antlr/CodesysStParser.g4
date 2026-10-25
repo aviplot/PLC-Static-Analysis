@@ -169,9 +169,13 @@ structInitializer
     : LPAREN (structInitElement (COMMA structInitElement)*)? RPAREN
     ;
 
-/** `p : REFERENCE TO T REF= x;` initialises a reference in its declaration. */
+/**
+ * `p : REFERENCE TO T REF= x;` initialises a reference in its declaration. An array initial value may also be
+ * written without brackets, as in CODESYS V2 (M12): `ARRAY[0..3] OF BYTE := 110, 60, 3, 219;`, `:= 2(0), 4(4);`.
+ * One token decides each step: `(` after the first value makes it a repetition, `,` starts the next element.
+ */
 variableInit
-    : ASSIGN initializer
+    : ASSIGN initializer (LPAREN initializer? RPAREN)? (COMMA arrayInitElement)*
     | IDENT EQ expression
     ;
 

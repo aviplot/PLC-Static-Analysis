@@ -1,0 +1,116 @@
+SourceUnit dialect=CODESYS
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @2:1-11:12
+    varBlocks:
+      VarBlock section=VAR @3:1-9:8
+        variables:
+          VarDecl name=buf referenceInit=false @4:5-4:50
+            type:
+              ArrayType @4:11-4:30
+                dimensions:
+                  Dimension @4:17-4:21
+                    low:
+                      Literal kind=INTEGER text="0" @4:17-4:18
+                    high:
+                      Literal kind=INTEGER text="3" @4:20-4:21
+                element:
+                  Named name=BYTE @4:26-4:30
+            init:
+              ArrayInit @4:34-4:49
+                elements:
+                  Element repeat=1 @4:34-4:37
+                    value:
+                      Literal kind=INTEGER text="110" @4:34-4:37
+                  Element repeat=1 @4:39-4:41
+                    value:
+                      Literal kind=INTEGER text="60" @4:39-4:41
+                  Element repeat=1 @4:43-4:44
+                    value:
+                      Literal kind=INTEGER text="3" @4:43-4:44
+                  Element repeat=1 @4:46-4:49
+                    value:
+                      Literal kind=INTEGER text="219" @4:46-4:49
+          VarDecl name=arr2 referenceInit=false @5:5-5:48
+            type:
+              ArrayType @5:12-5:36
+                dimensions:
+                  Dimension @5:18-5:22
+                    low:
+                      Literal kind=INTEGER text="1" @5:18-5:19
+                    high:
+                      Literal kind=INTEGER text="2" @5:21-5:22
+                  Dimension @5:24-5:28
+                    low:
+                      Literal kind=INTEGER text="3" @5:24-5:25
+                    high:
+                      Literal kind=INTEGER text="4" @5:27-5:28
+                element:
+                  Named name=INT @5:33-5:36
+            init:
+              ArrayInit @5:40-5:47
+                elements:
+                  Element repeat=1 @5:40-5:41
+                    value:
+                      Literal kind=INTEGER text="1" @5:40-5:41
+                  Element repeat=3 @5:43-5:47
+                    value:
+                      Literal kind=INTEGER text="7" @5:45-5:46
+          VarDecl name=arr3 referenceInit=false @6:5-6:51
+            type:
+              ArrayType @6:12-6:30
+                dimensions:
+                  Dimension @6:18-6:22
+                    low:
+                      Literal kind=INTEGER text="1" @6:18-6:19
+                    high:
+                      Literal kind=INTEGER text="8" @6:21-6:22
+                element:
+                  Named name=INT @6:27-6:30
+            init:
+              ArrayInit @6:34-6:50
+                elements:
+                  Element repeat=2 @6:34-6:38
+                    value:
+                      Literal kind=INTEGER text="0" @6:36-6:37
+                  Element repeat=4 @6:40-6:44
+                    value:
+                      Literal kind=INTEGER text="4" @6:42-6:43
+                  Element repeat=1 @6:46-6:47
+                    value:
+                      Literal kind=INTEGER text="2" @6:46-6:47
+                  Element repeat=1 @6:49-6:50
+                    value:
+                      Literal kind=INTEGER text="3" @6:49-6:50
+          VarDecl name=one referenceInit=false @7:5-7:38
+            type:
+              ArrayType @7:11-7:29
+                dimensions:
+                  Dimension @7:17-7:21
+                    low:
+                      Literal kind=INTEGER text="1" @7:17-7:18
+                    high:
+                      Literal kind=INTEGER text="3" @7:20-7:21
+                element:
+                  Named name=INT @7:26-7:29
+            init:
+              ArrayInit @7:33-7:37
+                elements:
+                  Element repeat=3 @7:33-7:37
+                    value:
+                      Literal kind=INTEGER text="5" @7:35-7:36
+          VarDecl name=n referenceInit=false @8:5-8:18
+            type:
+              Named name=INT @8:9-8:12
+            init:
+              Literal kind=INTEGER text="5" @8:16-8:17
+    body:
+      Assignment op=ASSIGN @10:1-10:12
+        target:
+          NameRef name=n globalScope=false @10:1-10:2
+        value:
+          Binary op=ADD @10:6-10:11
+            left:
+              NameRef name=n globalScope=false @10:6-10:7
+            right:
+              Literal kind=INTEGER text="1" @10:10-10:11
+  comments: 2
+diagnostics:

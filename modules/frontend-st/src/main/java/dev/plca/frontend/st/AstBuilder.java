@@ -616,8 +616,10 @@ final class AstBuilder extends BuilderSupport {
                             tokenSpan(vi.IDENT().getSymbol())));
                 }
                 init = expression(vi.expression(), span(vi));
+            } else if (vi.LPAREN() == null && vi.arrayInitElement().isEmpty()) {
+                init = vi.initializer().isEmpty() ? new Expression.Invalid(span(vi)) : initializer(vi.initializer(0));
             } else {
-                init = vi.initializer() == null ? new Expression.Invalid(span(vi)) : initializer(vi.initializer());
+                init = bareArrayInit(vi);
             }
         }
         for (VariablePathContext p : ctx.variablePath()) {
@@ -641,24 +643,54 @@ final class AstBuilder extends BuilderSupport {
         return new QualifiedName(parts, span(ctx));
     }
 
+    private Initializer.Element arrayElement(ArrayInitElementContext e) {
+        if (e.expression() == null) {
+            return new Initializer.Element(1, initializerOrInvalid(e.initializer(), span(e)), span(e));
+        }
+        return repetition(e.expression(), e.initializer() == null ? null : initializer(e.initializer()), span(e));
+    }
+
+    /** {@code 3(0)}: a literal count is {@code repeat}; a constant expression is {@code count} (CODESYS). */
+    private Initializer.Element repetition(ExpressionContext n, Initializer value, Span span) {
+        if (n instanceof PrimaryExprContext p
+                && p.primaryExpression().literal() != null
+                && p.primaryExpression().literal().INTEGER() != null) {
+            return new Initializer.Element(parseIntOr(n.getText(), 1), value, span);
+        }
+        return new Initializer.Element(0, expression(n, span), value, span);
+    }
+
+    /** CODESYS V2 {@code := 1, 2, 3(0);}: an array initial value without brackets. */
+    private Initializer bareArrayInit(VariableInitContext vi) {
+        List<Initializer.Element> elements = new ArrayList<>();
+        InitializerContext first = vi.initializer(0);
+        if (vi.LPAREN() == null) {
+            elements.add(new Initializer.Element(1, initializer(first), span(first)));
+        } else {
+            Span span = span(first.getStart(), vi.RPAREN());
+            Initializer value = vi.initializer().size() > 1 ? initializer(vi.initializer(1)) : null;
+            if (first.expression() != null) {
+                elements.add(repetition(first.expression(), value, span));
+            } else {
+                sink.report(
+                        Diagnostic.error(SyntaxCodes.SYNTAX, "a repetition count must be an expression", span(first)));
+                elements.add(new Initializer.Element(1, value, span));
+            }
+        }
+        for (ArrayInitElementContext e : vi.arrayInitElement()) {
+            elements.add(arrayElement(e));
+        }
+        Span all = span(vi);
+        return new Initializer.ArrayInit(
+                elements, new Span(all.textId(), span(first).start(), all.end()));
+    }
+
     private Initializer initializer(InitializerContext ctx) {
         if (ctx.arrayInitializer() != null) {
             ArrayInitializerContext a = ctx.arrayInitializer();
             List<Initializer.Element> elements = new ArrayList<>();
             for (ArrayInitElementContext e : a.arrayInitElement()) {
-                if (e.expression() != null) {
-                    Initializer value = e.initializer() == null ? null : initializer(e.initializer());
-                    ExpressionContext n = e.expression();
-                    if (n instanceof PrimaryExprContext p
-                            && p.primaryExpression().literal() != null
-                            && p.primaryExpression().literal().INTEGER() != null) {
-                        elements.add(new Initializer.Element(parseIntOr(n.getText(), 1), value, span(e)));
-                    } else {
-                        elements.add(new Initializer.Element(0, expression(n, span(e)), value, span(e)));
-                    }
-                } else {
-                    elements.add(new Initializer.Element(1, initializerOrInvalid(e.initializer(), span(e)), span(e)));
-                }
+                elements.add(arrayElement(e));
             }
             return new Initializer.ArrayInit(elements, span(a));
         }
