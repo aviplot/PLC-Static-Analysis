@@ -138,6 +138,7 @@ the vendor documentation was not checked.
 | FB_init constructor arguments | `fb : FB_X(1, b := 2);`, `ARRAY[1..2] OF FB_X[(a:=1), (a:=2)]` | CODESYS help "FB_init" |
 | Generic constants (TwinCAT 3.1.4026) | `VAR_GENERIC CONSTANT … END_VAR`, `fb : FB_Buffer<10>;` | CODESYS help "VAR_GENERIC CONSTANT". The section comes before EXTENDS / IMPLEMENTS: `FUNCTION_BLOCK F VAR_GENERIC CONSTANT … END_VAR IMPLEMENTS I`, `… END_VAR EXTENDS FB_Base<n>`. Clauses after any other section are an error (`PLC-SYN-001`, still kept in the AST). Generic arguments of a base are not kept in `Pou.extendsTypes`, and the section is a `VAR CONSTANT` block in the AST |
 | Chained assignment | `a := b := FALSE;`, `a R= b R= c;` | AST: one `Assignment` per target, same value |
+| ExST: assignment as an expression (M12) | `IF b := (i = 1) THEN`, `IF (n := FIND(s, 'x')) > 0 THEN`, `RETURN(bInit := t <= 0);`, `F := (x := x + 1);` | CODESYS online help "Extended Structured Text (ExST)" *(verify the exact rules)*. Accepted in two places only: inside parentheses and as a whole `IF`/`ELSIF`/`WHILE`/`UNTIL` condition. The value is the rest of the expression (lowest precedence); the target must be a variable (`PLC-SYN-001` otherwise). AST `Expression.Assign(target, value)`: writes `target`, yields `value`; the semantic model records the write on the enclosing statement. Corpus 2026-10-25: ~50 files in ~25 TwinCAT repos. Statement-level `a := b := c` stays a chained assignment |
 | `REF=` in declarations | `r : REFERENCE TO T REF= x;` | `VarDecl.referenceInit` |
 | Global scope operator | `.gVar` | `NameRef.globalScope` |
 | Type operands | `SIZEOF(POINTER TO T)`, `SIZEOF(STRING)` | `Expression.TypeOperand` |
@@ -159,8 +160,8 @@ Measured on the corpus (`./gradlew :plc-devtools:corpusCheck`): TwinCAT POU/DUT/
 (repo-weighted). Most of what remains, and most `.st` failures, falls into these groups:
 - **Other dialects in `.st` files**: Siemens SCL (`#local`, `"quoted"`; → M4), IEC textual SFC (`STEP`/`TRANSITION`),
   tool-specific test dialects (`TEST_PROGRAM`, `ASSERT_*`), proprietary blocks (`END_NATIVE`).
-- **CODESYS ExST** (assignment as an expression: `IF b := (i = 1) THEN`). It conflicts with chained assignment in the
-  grammar, so it is not supported; it is rare (one teaching repo).
+- ~~CODESYS ExST~~: accepted since M12 in parentheses and as a whole condition (§7). Not accepted elsewhere
+  (`a := NOT b := c;`, chains inside parentheses `(a := b := c)`): none in the corpus.
 - **Generated or broken files**: LLM output with `? :` or `{}`, double-escaped `&gt;` inside CDATA, merge-conflict
   markers, truncated XML.
 - Conditional pragmas are not evaluated; both branches are parsed.

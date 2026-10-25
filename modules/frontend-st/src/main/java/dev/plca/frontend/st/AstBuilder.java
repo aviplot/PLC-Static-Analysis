@@ -839,9 +839,9 @@ final class AstBuilder extends BuilderSupport {
                         statementList(f.statementList()),
                         span);
             case WhileStatementContext w ->
-                new Statement.While(expression(w.expression(), span), statementList(w.statementList()), span);
+                new Statement.While(condition(w.condition(), span), statementList(w.statementList()), span);
             case RepeatStatementContext r ->
-                new Statement.Repeat(statementList(r.statementList()), expression(r.expression(), span), span);
+                new Statement.Repeat(statementList(r.statementList()), condition(r.condition(), span), span);
             case ExitStatementContext e -> new Statement.Exit(span);
             case ContinueStatementContext e -> new Statement.Continue(span);
             case ReturnStatementContext r ->
@@ -912,10 +912,10 @@ final class AstBuilder extends BuilderSupport {
         List<Statement.Branch> branches = new ArrayList<>();
         List<StatementListContext> lists = ctx.statementList();
         branches.add(new Statement.Branch(
-                expression(ctx.expression(), span), statementList(listAt(lists, 0)), span(ctx.getStart(), ctx.THEN())));
+                condition(ctx.condition(), span), statementList(listAt(lists, 0)), span(ctx.getStart(), ctx.THEN())));
         for (ElsifClauseContext e : ctx.elsifClause()) {
-            branches.add(new Statement.Branch(
-                    expression(e.expression(), span(e)), statementList(e.statementList()), span(e)));
+            branches.add(
+                    new Statement.Branch(condition(e.condition(), span(e)), statementList(e.statementList()), span(e)));
         }
         List<Statement> elseBody = ctx.ELSE() == null ? null : statementList(listAt(lists, 1));
         return new Statement.If(branches, elseBody, span);
@@ -1001,7 +1001,44 @@ final class AstBuilder extends BuilderSupport {
         if (ctx.designator() != null) {
             return designator(ctx.designator(), span);
         }
-        return expression(ctx.expression(), span);
+        Expression inner = expression(exprAt(ctx.expression(), 0), span);
+        return ctx.ASSIGN() == null
+                ? inner
+                : assignExpression(inner, expression(exprAt(ctx.expression(), 1), span), span);
+    }
+
+    /** IF / ELSIF / WHILE / UNTIL condition; ExST allows an assignment as the whole condition (M12). */
+    private Expression condition(ConditionContext ctx, Span fallback) {
+        if (ctx == null) {
+            return new Expression.Invalid(fallback);
+        }
+        Span span = span(ctx);
+        Expression first = expression(exprAt(ctx.expression(), 0), span);
+        return ctx.ASSIGN() == null
+                ? first
+                : assignExpression(first, expression(exprAt(ctx.expression(), 1), span), span);
+    }
+
+    /** ExST {@code target := value} inside an expression; the target must denote a variable. */
+    private Expression assignExpression(Expression target, Expression value, Span span) {
+        boolean variable = switch (target) {
+            case Expression.NameRef n -> true;
+            case Expression.MemberAccess m -> true;
+            case Expression.Index i -> true;
+            case Expression.Deref d -> true;
+            case Expression.BitAccess b -> true;
+            case Expression.IndirectBit b -> true;
+            case Expression.Slice s -> true;
+            case Expression.DirectAddress d -> true;
+            case Expression.Invalid i -> true; // already reported
+            default -> false;
+        };
+        if (!variable) {
+            sink.report(Diagnostic.error(
+                    SyntaxCodes.SYNTAX, "the left side of ':=' in an expression must be a variable", target.span()));
+            return new Expression.Invalid(span);
+        }
+        return new Expression.Assign(target, value, span);
     }
 
     private Expression designator(DesignatorContext ctx, Span fallback) {

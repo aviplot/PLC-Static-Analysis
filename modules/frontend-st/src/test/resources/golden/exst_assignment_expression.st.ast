@@ -1,0 +1,236 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_ExSt bodyLanguage="ST" @2:1-38:19
+    varBlocks:
+      VarBlock section=VAR @3:1-10:8
+        variables:
+          VarDecl name=b referenceInit=false @4:5-4:26
+            type:
+              Named name=BOOL @4:21-4:25
+          VarDecl name=bInit referenceInit=false @4:5-4:26
+            type:
+              Named name=BOOL @4:21-4:25
+          VarDecl name=bOk referenceInit=false @4:5-4:26
+            type:
+              Named name=BOOL @4:21-4:25
+          VarDecl name=i referenceInit=false @5:5-5:16
+            type:
+              Named name=INT @5:12-5:15
+          VarDecl name=n referenceInit=false @5:5-5:16
+            type:
+              Named name=INT @5:12-5:15
+          VarDecl name=s referenceInit=false @6:5-6:16
+            type:
+              StringType wide=false @6:9-6:15
+          VarDecl name=p referenceInit=false @7:5-7:24
+            type:
+              PointerType kind=POINTER @7:9-7:23
+                target:
+                  Named name=INT @7:20-7:23
+          VarDecl name=st referenceInit=false @8:5-8:18
+            type:
+              Named name=ST_Item @8:10-8:17
+          VarDecl name=arr referenceInit=false @9:5-9:30
+            type:
+              ArrayType @9:11-9:29
+                dimensions:
+                  Dimension @9:17-9:21
+                    low:
+                      Literal kind=INTEGER text="0" @9:17-9:18
+                    high:
+                      Literal kind=INTEGER text="9" @9:20-9:21
+                element:
+                  Named name=INT @9:26-9:29
+    body:
+      If @13:1-17:7
+        branches:
+          Branch @13:1-13:21
+            condition:
+              Assign @13:4-13:16
+                target:
+                  NameRef name=b globalScope=false @13:4-13:5
+                value:
+                  Binary op=EQ @13:10-13:15
+                    left:
+                      NameRef name=i globalScope=false @13:10-13:11
+                    right:
+                      Literal kind=INTEGER text="1" @13:14-13:15
+            body:
+              Assignment op=ASSIGN @14:5-14:16
+                target:
+                  NameRef name=i globalScope=false @14:5-14:6
+                value:
+                  Binary op=ADD @14:10-14:15
+                    left:
+                      NameRef name=i globalScope=false @14:10-14:11
+                    right:
+                      Literal kind=INTEGER text="1" @14:14-14:15
+          Branch @15:1-16:12
+            condition:
+              Assign @15:7-15:29
+                target:
+                  MemberAccess member=bDone @15:7-15:15
+                    target:
+                      NameRef name=st globalScope=false @15:7-15:9
+                value:
+                  Binary op=OR @15:19-15:29
+                    left:
+                      Binary op=GT @15:19-15:24
+                        left:
+                          NameRef name=i globalScope=false @15:19-15:20
+                        right:
+                          Literal kind=INTEGER text="2" @15:23-15:24
+                    right:
+                      NameRef name=b globalScope=false @15:28-15:29
+            body:
+              Assignment op=ASSIGN @16:5-16:12
+                target:
+                  NameRef name=i globalScope=false @16:5-16:6
+                value:
+                  Literal kind=INTEGER text="0" @16:10-16:11
+      While @18:1-20:10
+        condition:
+          Assign @18:7-18:19
+            target:
+              Deref @18:7-18:9
+                target:
+                  NameRef name=p globalScope=false @18:7-18:8
+            value:
+              Binary op=SUB @18:13-18:19
+                left:
+                  Deref @18:13-18:15
+                    target:
+                      NameRef name=p globalScope=false @18:13-18:14
+                right:
+                  Literal kind=INTEGER text="1" @18:18-18:19
+        body:
+          Empty @19:5-19:6
+      Repeat @21:1-24:11
+        body:
+          Assignment op=ASSIGN @22:5-22:16
+            target:
+              NameRef name=i globalScope=false @22:5-22:6
+            value:
+              Binary op=ADD @22:10-22:15
+                left:
+                  NameRef name=i globalScope=false @22:10-22:11
+                right:
+                  Literal kind=INTEGER text="1" @22:14-22:15
+        condition:
+          Assign @23:7-23:21
+            target:
+              NameRef name=bOk globalScope=false @23:7-23:10
+            value:
+              Binary op=GE @23:14-23:21
+                left:
+                  NameRef name=i globalScope=false @23:14-23:15
+                right:
+                  Literal kind=INTEGER text="10" @23:19-23:21
+      If @27:1-29:7
+        branches:
+          Branch @27:1-27:64
+            condition:
+              Binary op=AND_THEN @27:4-27:59
+                left:
+                  Binary op=GT @27:4-27:27
+                    left:
+                      Assign @27:4-27:23
+                        target:
+                          NameRef name=n globalScope=false @27:5-27:6
+                        value:
+                          Call @27:10-27:22
+                            callee:
+                              NameRef name=FIND globalScope=false @27:10-27:14
+                            arguments:
+                              Argument kind=POSITIONAL negated=false @27:15-27:16
+                                value:
+                                  NameRef name=s globalScope=false @27:15-27:16
+                              Argument kind=POSITIONAL negated=false @27:18-27:21
+                                value:
+                                  Literal kind=STRING text="'x'" @27:18-27:21
+                    right:
+                      Literal kind=INTEGER text="0" @27:26-27:27
+                right:
+                  Binary op=NE @27:37-27:59
+                    left:
+                      Assign @27:37-27:54
+                        target:
+                          Index @27:38-27:44
+                            target:
+                              NameRef name=arr globalScope=false @27:38-27:41
+                            indices:
+                              NameRef name=n globalScope=false @27:42-27:43
+                        value:
+                          Binary op=MUL @27:48-27:53
+                            left:
+                              NameRef name=n globalScope=false @27:48-27:49
+                            right:
+                              Literal kind=INTEGER text="2" @27:52-27:53
+                    right:
+                      Literal kind=INTEGER text="0" @27:58-27:59
+            body:
+              Assignment op=ASSIGN @28:5-28:13
+                target:
+                  NameRef name=s globalScope=false @28:5-28:6
+                value:
+                  Literal kind=STRING text="''" @28:10-28:12
+      Case @30:1-32:9
+        selector:
+          Assign @30:6-30:18
+            target:
+              NameRef name=n globalScope=false @30:7-30:8
+            value:
+              Binary op=ADD @30:12-30:17
+                left:
+                  NameRef name=n globalScope=false @30:12-30:13
+                right:
+                  Literal kind=INTEGER text="1" @30:16-30:17
+        branches:
+          CaseBranch @31:5-31:15
+            labels:
+              CaseLabel @31:5-31:6
+                low:
+                  Literal kind=INTEGER text="1" @31:5-31:6
+            body:
+              Assignment op=ASSIGN @31:8-31:15
+                target:
+                  NameRef name=i globalScope=false @31:8-31:9
+                value:
+                  Literal kind=INTEGER text="1" @31:13-31:14
+      Assignment op=ASSIGN @33:1-33:37
+        target:
+          NameRef name=b globalScope=false @33:1-33:2
+        value:
+          Unary op=NOT @33:6-33:36
+            operand:
+              Assign @33:10-33:36
+                target:
+                  NameRef name=bOk globalScope=false @33:11-33:14
+                value:
+                  Call @33:18-33:35
+                    callee:
+                      MemberAccess member=Execute @33:18-33:33
+                        target:
+                          NameRef name=fbChild globalScope=false @33:18-33:25
+      Return @34:1-34:25
+        value:
+          Assign @34:7-34:24
+            target:
+              NameRef name=bInit globalScope=false @34:8-34:13
+            value:
+              Binary op=LE @34:17-34:23
+                left:
+                  NameRef name=i globalScope=false @34:17-34:18
+                right:
+                  Literal kind=INTEGER text="0" @34:22-34:23
+      Assignment op=ASSIGN @37:1-37:13
+        target:
+          NameRef name=n globalScope=false @37:6-37:7
+        value:
+          Literal kind=INTEGER text="0" @37:11-37:12
+      Assignment op=ASSIGN @37:1-37:13
+        target:
+          NameRef name=i globalScope=false @37:1-37:2
+        value:
+          Literal kind=INTEGER text="0" @37:11-37:12
+  comments: 4
+diagnostics:

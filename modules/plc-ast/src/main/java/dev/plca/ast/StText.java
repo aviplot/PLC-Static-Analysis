@@ -310,6 +310,14 @@ public final class StText {
                         });
                 operand(u.operand(), 8, sb);
             }
+            case Expression.Assign a -> {
+                // always parenthesised: valid ExST in every position
+                sb.append('(');
+                expr(a.target(), sb);
+                sb.append(" := ");
+                expr(a.value(), sb);
+                sb.append(')');
+            }
             case Expression.Binary b -> {
                 int p = precedence(b);
                 boolean rightAssoc = b.op() == Expression.BinaryOp.POWER;

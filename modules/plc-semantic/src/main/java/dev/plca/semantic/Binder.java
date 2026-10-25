@@ -275,6 +275,12 @@ final class Binder {
             case Expression.Call c -> call(c, pou);
             case Expression.Unary u -> unary(u, pou);
             case Expression.Binary b -> binary(b, pou);
+            case Expression.Assign a -> {
+                // ExST: as a statement assignment; the expression has the type of its target
+                Type target = expression(a.target(), pou);
+                expression(a.value(), pou);
+                yield target;
+            }
             case Expression.TypeOperand t2 -> Type.UNKNOWN;
             case Expression.Invalid inv -> Type.UNKNOWN;
         };

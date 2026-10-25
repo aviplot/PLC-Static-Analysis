@@ -196,6 +196,26 @@ class SemanticTest {
     }
 
     @Test
+    void exstAssignmentInAnExpressionWritesItsTarget() {
+        SemanticModel m = model("""
+                PROGRAM P
+                VAR b, ok : BOOL; n : INT; s : STRING; END_VAR
+                IF (n := FIND(s, 'x')) > 0 THEN ok := TRUE; END_IF
+                WHILE b := n > 3 DO n := n - 1; END_WHILE
+                END_PROGRAM""");
+        assertThat(m.effects(body(m, "P").get(0)).accesses())
+                .extracting(Access::toString)
+                .containsExactly("READ s", "WRITE n");
+        assertThat(m.effects(body(m, "P").get(1)).accesses())
+                .extracting(Access::toString)
+                .containsExactly("READ n", "WRITE b");
+        Expression cond =
+                ((Statement.If) body(m, "P").get(0)).branches().getFirst().condition();
+        assertThat(((Expression.Binary) cond).left()).isInstanceOf(Expression.Assign.class);
+        assertThat(m.type(((Expression.Binary) cond).left()).display()).isEqualTo("INT");
+    }
+
+    @Test
     void propertyAccessIsAnAccessorCall() {
         SemanticModel m = model("""
                 FUNCTION_BLOCK FB

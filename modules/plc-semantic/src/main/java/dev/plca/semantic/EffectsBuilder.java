@@ -210,6 +210,11 @@ final class EffectsBuilder {
                 read(b.left(), c);
                 read(b.right(), c);
             }
+            // ExST `(x := v)`: the enclosing statement writes x (and the expression's value is v)
+            case Expression.Assign a -> {
+                read(a.value(), c);
+                write(a.target(), c);
+            }
             case Expression.Literal l -> {}
             default -> {
                 Symbol s = model.symbols.get(e);

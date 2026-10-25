@@ -113,6 +113,12 @@ public sealed interface Expression extends Node, Initializer {
 
     record Binary(BinaryOp op, Expression left, Expression right, Span span) implements Expression {}
 
+    /**
+     * CODESYS ExST: an assignment used as an expression, {@code IF (n := FIND(s, 'x')) > 0 THEN}. Writes {@code target}
+     * and yields {@code value}. Statement-level assignments are {@link Statement.Assignment}, never this.
+     */
+    record Assign(Expression target, Expression value, Span span) implements Expression {}
+
     /** Placeholder for a region that did not parse; a diagnostic has been reported. */
     record Invalid(Span span) implements Expression {}
 }

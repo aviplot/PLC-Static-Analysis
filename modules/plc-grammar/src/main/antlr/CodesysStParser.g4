@@ -125,6 +125,21 @@ assignmentTail
     | IDENT EQ (designator IDENT EQ)* expression      // chains: a S= b R= c;
     ;
 
+/**
+ * ExST (M12): an assignment as the whole condition, `IF b := (i = 1) THEN`. The value is the rest of the expression;
+ * the AST builder checks that the left side is a variable. One token of lookahead after the expression decides.
+ */
+condition
+    : expression (ASSIGN expression)?
+    ;
+
+/** ExST (M12) inside parentheses: `IF (n := FIND(s, 'x')) > 0 THEN`, `RETURN(b := t <= 0);`. */
+primaryExpression
+    : literal
+    | designator
+    | LPAREN expression (ASSIGN expression)? RPAREN
+    ;
+
 /** `p : REFERENCE TO T REF= x;` initialises a reference in its declaration. */
 variableInit
     : ASSIGN initializer

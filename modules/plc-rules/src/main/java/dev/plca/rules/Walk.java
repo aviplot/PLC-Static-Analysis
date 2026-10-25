@@ -78,6 +78,10 @@ public final class Walk {
                 deep(b.left(), action);
                 deep(b.right(), action);
             }
+            case Expression.Assign a -> {
+                deep(a.target(), action);
+                deep(a.value(), action);
+            }
             default -> {}
         }
     }

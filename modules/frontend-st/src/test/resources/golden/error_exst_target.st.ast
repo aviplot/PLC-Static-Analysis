@@ -1,0 +1,28 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION name=F_Bad bodyLanguage="ST" @2:1-9:13
+    returnType:
+      Named name=BOOL @2:18-2:22
+    varBlocks:
+      VarBlock section=VAR @3:1-5:8
+        variables:
+          VarDecl name=a referenceInit=false @4:5-4:17
+            type:
+              Named name=BOOL @4:12-4:16
+          VarDecl name=b referenceInit=false @4:5-4:17
+            type:
+              Named name=BOOL @4:12-4:16
+    body:
+      If @6:1-8:7
+        branches:
+          Branch @6:1-6:26
+            condition:
+              Invalid @6:4-6:21
+            body:
+              Assignment op=ASSIGN @7:5-7:19
+                target:
+                  NameRef name=F_Bad globalScope=false @7:5-7:10
+                value:
+                  Literal kind=BOOL text="TRUE" @7:14-7:18
+  comments: 1
+diagnostics:
+  ERROR PLC-SYN-001 @6:5 the left side of ':=' in an expression must be a variable

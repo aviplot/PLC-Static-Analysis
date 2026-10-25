@@ -99,9 +99,9 @@ final class RockwellStAstBuilder extends BuilderSupport {
                         statementList(f.statementList()),
                         span);
             case WhileStatementContext w ->
-                new Statement.While(expression(w.expression(), span), statementList(w.statementList()), span);
+                new Statement.While(condition(w.condition(), span), statementList(w.statementList()), span);
             case RepeatStatementContext r ->
-                new Statement.Repeat(statementList(r.statementList()), expression(r.expression(), span), span);
+                new Statement.Repeat(statementList(r.statementList()), condition(r.condition(), span), span);
             case ExitStatementContext e -> new Statement.Exit(span);
             case ContinueStatementContext e -> new Statement.Continue(span);
             case ReturnStatementContext r ->
@@ -140,15 +140,20 @@ final class RockwellStAstBuilder extends BuilderSupport {
         out.add(new Statement.Assignment(target, op, value, span));
     }
 
+    /** IF / ELSIF / WHILE / UNTIL condition (the core grammar's `condition` extension point). */
+    private Expression condition(ConditionContext ctx, Span fallback) {
+        return expression(ctx == null ? null : ctx.expression(), fallback);
+    }
+
     private Statement ifStatement(IfStatementContext ctx) {
         Span span = span(ctx);
         List<Statement.Branch> branches = new ArrayList<>();
         List<StatementListContext> lists = ctx.statementList();
         branches.add(new Statement.Branch(
-                expression(ctx.expression(), span), statementList(listAt(lists, 0)), span(ctx.getStart(), ctx.THEN())));
+                condition(ctx.condition(), span), statementList(listAt(lists, 0)), span(ctx.getStart(), ctx.THEN())));
         for (ElsifClauseContext e : ctx.elsifClause()) {
-            branches.add(new Statement.Branch(
-                    expression(e.expression(), span(e)), statementList(e.statementList()), span(e)));
+            branches.add(
+                    new Statement.Branch(condition(e.condition(), span(e)), statementList(e.statementList()), span(e)));
         }
         List<Statement> elseBody = ctx.ELSE() == null ? null : statementList(listAt(lists, 1));
         return new Statement.If(branches, elseBody, span);

@@ -2,7 +2,7 @@
  * IEC 61131-3 Ed. 3 Structured Text — shared parser core.
  *
  * Imported by dialect parsers. Extension points are small "list" rules (libraryElement, memberDeclaration,
- * typeSpec, varSectionKeyword, varQualifier, statement, statementList, assignmentTail, softKeyword):
+ * typeSpec, varSectionKeyword, varQualifier, statement, statementList, assignmentTail, condition, softKeyword):
  * a dialect overrides one by re-listing the core sub-rules plus its own, never by copying whole rules.
  *
  * Notes and spec references: docs/grammar/codesys.md.
@@ -282,11 +282,16 @@ assignmentTail
     ;
 
 ifStatement
-    : IF expression THEN statementList elsifClause* (ELSE statementList)? END_IF
+    : IF condition THEN statementList elsifClause* (ELSE statementList)? END_IF
     ;
 
 elsifClause
-    : ELSIF expression THEN statementList
+    : ELSIF condition THEN statementList
+    ;
+
+/** The condition of IF / ELSIF / WHILE / UNTIL; CODESYS extends it with ExST (an assignment as the condition). */
+condition
+    : expression
     ;
 
 caseStatement
@@ -311,11 +316,11 @@ forStatement
     ;
 
 whileStatement
-    : WHILE expression DO statementList END_WHILE
+    : WHILE condition DO statementList END_WHILE
     ;
 
 repeatStatement
-    : REPEAT statementList UNTIL expression END_REPEAT
+    : REPEAT statementList UNTIL condition END_REPEAT
     ;
 
 exitStatement       : EXIT SEMI ;
