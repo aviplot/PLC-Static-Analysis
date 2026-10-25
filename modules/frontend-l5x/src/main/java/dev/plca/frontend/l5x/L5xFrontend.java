@@ -836,8 +836,7 @@ public final class L5xFrontend implements Frontend {
         }
 
         private void count(Parsed p) {
-            stats = stats.plus(new Stats(
-                    1, p.fallback() ? 1 : 0, p.fallback() && p.syntaxErrors() == 0 ? 1 : 0, p.syntaxErrors()));
+            stats = stats.plus(new Stats(1, p.fallback() ? 1 : 0, p.cleanFallback() ? 1 : 0, p.syntaxErrors()));
         }
 
         // ---- tags -----------------------------------------------------------------------------------

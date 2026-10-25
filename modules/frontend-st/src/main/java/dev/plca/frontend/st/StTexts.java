@@ -100,8 +100,7 @@ public final class StTexts {
 
     private Parsed parse(SourceText text, StParserDriver.Entry entry, DiagnosticSink sink) {
         Parsed p = driver.parse(text, entry, sink);
-        stats = stats.plus(new Frontend.Stats(
-                1, p.fallback() ? 1 : 0, p.fallback() && p.syntaxErrors() == 0 ? 1 : 0, p.syntaxErrors()));
+        stats = stats.plus(new Frontend.Stats(1, p.fallback() ? 1 : 0, p.cleanFallback() ? 1 : 0, p.syntaxErrors()));
         return p;
     }
 }

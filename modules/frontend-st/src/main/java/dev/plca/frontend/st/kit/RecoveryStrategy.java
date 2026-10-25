@@ -32,11 +32,31 @@ public final class RecoveryStrategy extends DefaultErrorStrategy {
 
     private IntervalSet memberStart;
     private int lastReported = -1;
+    /** Tokens before which a missing {@code ;} is accepted (a warning, not an error); EOF may be one of them. */
+    private final IntervalSet semicolonOptionalBefore;
+
+    /**
+     * Marks a report that is accepted input, not a syntax error: the listener turns it into a warning (M12: a {@code ;}
+     * left out before {@code END_VAR} or after the last statement of a body).
+     */
+    public static final class Accepted extends RecognitionException {
+        private static final long serialVersionUID = 1L;
+
+        Accepted(Parser recognizer) {
+            super(recognizer, recognizer.getInputStream(), recognizer.getContext());
+        }
+    }
 
     /** @param sync the dialect's terminators: recovery never deletes them and stops at them */
     public RecoveryStrategy(IntervalSet sync, CoreTokens tokens) {
+        this(sync, tokens, new IntervalSet());
+    }
+
+    /** @param semicolonOptionalBefore tokens before which a missing {@code ;} is reported as accepted */
+    public RecoveryStrategy(IntervalSet sync, CoreTokens tokens, IntervalSet semicolonOptionalBefore) {
         this.sync = sync;
         this.tokens = tokens;
+        this.semicolonOptionalBefore = semicolonOptionalBefore;
         this.operandBefore = tokens.set(
                 "ASSIGN",
                 "ATTEMPT_ASSIGN",
@@ -119,6 +139,23 @@ public final class RecoveryStrategy extends DefaultErrorStrategy {
         report(recognizer, t, "unexpected " + describe(t) + expecting(getExpectedTokens(recognizer)), null);
     }
 
+    /**
+     * Before an optional part that a {@code ;} would follow (`a : INT` + END_VAR, after the type), ANTLR's sync reports
+     * the token as unexpected. When a missing {@code ;} is accepted before it, let the parser go on: the {@code ;}
+     * match then fails, single-token insertion runs and {@link #reportMissingToken} accepts it.
+     */
+    @Override
+    public void sync(Parser recognizer) throws RecognitionException {
+        int la = recognizer.getInputStream().LA(1);
+        if (!inErrorRecoveryMode(recognizer) && semicolonOptionalBefore.contains(la)) {
+            ATN atn = recognizer.getInterpreter().atn;
+            if (atn.nextTokens(atn.states.get(recognizer.getState())).contains(tokens.type("SEMI"))) {
+                return;
+            }
+        }
+        super.sync(recognizer);
+    }
+
     @Override
     protected void reportMissingToken(Parser recognizer) {
         if (inErrorRecoveryMode(recognizer)) {
@@ -127,6 +164,15 @@ public final class RecoveryStrategy extends DefaultErrorStrategy {
         beginErrorCondition(recognizer);
         Token t = recognizer.getCurrentToken();
         IntervalSet expected = getExpectedTokens(recognizer);
+        if (expected.contains(tokens.type("SEMI")) && semicolonOptionalBefore.contains(t.getType())) {
+            // not recorded in lastReported: a real error on the same token (a missing END_IF) is still reported
+            Token before = previousOnChannel(recognizer.getInputStream(), t);
+            recognizer.notifyErrorListeners(
+                    before == null ? t : before,
+                    "missing ';' before " + describe(t) + " (accepted)",
+                    new Accepted(recognizer));
+            return;
+        }
         report(recognizer, t, "missing " + names(expected) + " before " + describe(t), null);
     }
 

@@ -15,6 +15,8 @@ public final class SyntaxCodes {
     public static final String UNKNOWN_ASSIGNMENT_OPERATOR = "PLC-SYN-005";
     /** A statement that is neither an assignment nor a call, e.g. {@code fbTimer;}. */
     public static final String NOT_A_STATEMENT = "PLC-SYN-006";
+    /** A ';' left out before {@code END_VAR} or after the last statement of a body: accepted, a warning (M12). */
+    public static final String MISSING_SEMICOLON = "PLC-SYN-007";
     /** Malformed XML in a TwinCAT file. */
     public static final String MALFORMED_XML = "PLC-XML-001";
     /** TwinCAT implementation in a graphical language (not parsed). */

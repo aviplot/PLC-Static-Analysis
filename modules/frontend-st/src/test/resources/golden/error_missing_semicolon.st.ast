@@ -1,0 +1,84 @@
+SourceUnit dialect=CODESYS
+  TypeDecl name=ST_Row @2:6-6:11
+    type:
+      StructType @3:1-6:11
+        members:
+          VarDecl name=a referenceInit=false @4:5-4:13
+            type:
+              Named name=INT @4:9-4:12
+          VarDecl name=b referenceInit=false @5:5-5:13
+            type:
+              Named name=BOOL @5:9-5:13
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @9:1-23:12
+    varBlocks:
+      VarBlock section=VAR @10:1-13:8
+        variables:
+          VarDecl name=a referenceInit=true @11:5-12:8
+            type:
+              Named name=INT @11:9-11:12
+            init:
+              Invalid @12:5-12:8
+          VarDecl name=INT referenceInit=false @12:9-12:12
+            type:
+              Invalid @12:9-12:12
+    body:
+      Assignment op=ASSIGN @14:1-14:7
+        target:
+          NameRef name=a globalScope=false @14:1-14:2
+        value:
+          Literal kind=INTEGER text="1" @14:6-14:7
+      Assignment op=ASSIGN @15:1-15:8
+        target:
+          NameRef name=b globalScope=false @15:1-15:2
+        value:
+          Literal kind=INTEGER text="2" @15:6-15:7
+      If @16:1-18:7
+        branches:
+          Branch @16:1-16:14
+            condition:
+              Binary op=GT @16:4-16:9
+                left:
+                  NameRef name=a globalScope=false @16:4-16:5
+                right:
+                  Literal kind=INTEGER text="0" @16:8-16:9
+            body:
+              Assignment op=ASSIGN @17:5-17:11
+                target:
+                  NameRef name=b globalScope=false @17:5-17:6
+                value:
+                  Literal kind=INTEGER text="3" @17:10-17:11
+      Case @19:1-22:9
+        selector:
+          NameRef name=a globalScope=false @19:6-19:7
+        branches:
+          CaseBranch @20:5-20:14
+            labels:
+              CaseLabel @20:5-20:6
+                low:
+                  Literal kind=INTEGER text="1" @20:5-20:6
+            body:
+              Assignment op=ASSIGN @20:8-20:14
+                target:
+                  NameRef name=b globalScope=false @20:8-20:9
+                value:
+                  Literal kind=INTEGER text="4" @20:13-20:14
+          CaseBranch @21:5-21:15
+            labels:
+              CaseLabel @21:5-21:6
+                low:
+                  Literal kind=INTEGER text="2" @21:5-21:6
+            body:
+              Assignment op=ASSIGN @21:8-21:15
+                target:
+                  NameRef name=b globalScope=false @21:8-21:9
+                value:
+                  Literal kind=INTEGER text="5" @21:13-21:14
+  comments: 1
+diagnostics:
+  ERROR PLC-SYN-001 @6:1 unexpected 'END_STRUCT'; expected ':=' or ';' or ':' or identifier
+  ERROR PLC-SYN-001 @12:7 unexpected ':'; expected '='
+  ERROR PLC-SYN-001 @12:12 unexpected ';'; expected 'AT' or ',' or ':'
+  ERROR PLC-SYN-001 @15:1 missing ';' before 'b'
+  ERROR PLC-SYN-001 @18:1 missing ';' before 'END_IF'
+  ERROR PLC-SYN-001 @21:5 missing ';' before '2'
+  ERROR PLC-SYN-005 @12:5 unknown initialisation operator 'b='; expected ':=' or 'REF='

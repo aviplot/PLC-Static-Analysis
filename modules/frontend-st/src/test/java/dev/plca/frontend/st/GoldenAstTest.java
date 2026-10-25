@@ -63,12 +63,17 @@ class GoldenAstTest {
         }
         Golden.assertMatches(out.toString(), "golden/" + fixture + ".ast");
 
-        // well-formed fixtures must take the fast path: no SLL fallback
+        // well-formed fixtures must take the fast path: no SLL fallback. An accepted missing ';' (M12) is found by
+        // the LL recovery, so those fixtures fall back by design.
         if (!fixture.startsWith("error_")) {
             assertThat(diags.hasErrors()).as("errors in %s", fixture).isFalse();
-            assertThat(result.stats().sllFallbacks())
-                    .as("SLL fallbacks in %s", fixture)
-                    .isZero();
+            boolean accepted =
+                    diags.diagnostics().stream().anyMatch(d -> d.code().equals(SyntaxCodes.MISSING_SEMICOLON));
+            if (!accepted) {
+                assertThat(result.stats().sllFallbacks())
+                        .as("SLL fallbacks in %s", fixture)
+                        .isZero();
+            }
         }
     }
 }

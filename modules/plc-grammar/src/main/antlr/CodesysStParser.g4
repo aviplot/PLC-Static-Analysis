@@ -119,6 +119,20 @@ statement
     | emptyStatement
     ;
 
+/**
+ * Left-factored (M12): the core's two alternatives (plain and VAR_ACCESS) are decided only at the second ':', so a
+ * declaration with its ';' left out before END_VAR failed in prediction ("unexpected 'END_VAR'") instead of
+ * reaching single-token insertion, where the recovery strategy accepts it. In VAR_ACCESS `name : P1.fb.x : INT
+ * READ_ONLY;` the access path parses as the first typeSpec (a named type) and the AST builder reads it back.
+ */
+varDeclaration
+    : variablePath (COMMA variablePath)* location? COLON typeSpec (variableInit | accessTail)? SEMI
+    ;
+
+accessTail
+    : COLON typeSpec (READ_ONLY | READ_WRITE)?
+    ;
+
 /** `S=`, `R=`, `REF=` are `identifier '='`; the AST builder checks the operator name. */
 assignmentTail
     : (ASSIGN | ATTEMPT_ASSIGN) (designator ASSIGN)* expression

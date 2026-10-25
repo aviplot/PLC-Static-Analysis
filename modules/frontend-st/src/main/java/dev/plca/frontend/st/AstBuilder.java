@@ -593,13 +593,25 @@ final class AstBuilder extends BuilderSupport {
     private void varDeclaration(VarDeclarationContext ctx, List<VarDecl> out) {
         Span span = span(ctx);
         List<Pragma> pragmas = pragmasBefore(ctx.getStart());
-        TypeRef type = typeSpec(ctx.typeSpec(), span);
-        if (ctx.COLON().size() == 2) {
-            // VAR_ACCESS: name : path : type [READ_ONLY|READ_WRITE];
-            QualifiedName path = variablePath(ctx.variablePath(0));
-            out.add(new VarDecl(identifier(ctx.identifier()), path, null, type, null, false, pragmas, span));
+        if (ctx.accessTail() != null) {
+            // VAR_ACCESS: name : path : type [READ_ONLY|READ_WRITE]; the path parsed as the first typeSpec
+            TypeRef type = typeSpec(ctx.accessTail().typeSpec(), span);
+            NamedTypeContext named = ctx.typeSpec().namedType();
+            QualifiedName path = named == null ? null : qualifiedName(named.qualifiedName());
+            QualifiedName name = variablePath(ctx.variablePath(0));
+            if (path == null
+                    || name == null
+                    || name.parts().size() != 1
+                    || ctx.variablePath().size() != 1) {
+                sink.report(Diagnostic.error(
+                        SyntaxCodes.SYNTAX, "expected 'name : access path : type' in VAR_ACCESS", span));
+            }
+            if (name != null) {
+                out.add(new VarDecl(name.last(), path, null, type, null, false, pragmas, span));
+            }
             return;
         }
+        TypeRef type = typeSpec(ctx.typeSpec(), span);
         String address = ctx.location() == null || ctx.location().DIRECT_ADDRESS() == null
                 ? null
                 : ctx.location().DIRECT_ADDRESS().getText();

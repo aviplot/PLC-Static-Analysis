@@ -64,7 +64,7 @@ diagnostics:
   ERROR PLC-SYN-001 @4:13 expected an expression after ':=', found ';'
   ERROR PLC-SYN-001 @7:8 expected an expression after '+', found ';'
   ERROR PLC-SYN-001 @11:1 missing ';' before 'END_IF'
-  ERROR PLC-SYN-001 @17:1 missing ';' before end of input
+  WARNING PLC-SYN-007 @15:6 missing ';' before end of input (accepted)
   ERROR PLC-SYN-005 @12:3 unknown assignment operator 'FOO='; expected ':=', 'S=', 'R=' or 'REF='
   ERROR PLC-SYN-003 @15:6 string is not closed before the end of the text
   ERROR PLC-SYN-004 @13:1 unexpected character '§'

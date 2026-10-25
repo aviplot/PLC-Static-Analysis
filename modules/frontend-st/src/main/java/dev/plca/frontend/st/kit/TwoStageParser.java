@@ -23,13 +23,24 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
  */
 public final class TwoStageParser<P extends Parser> {
 
-    /** Parse tree plus the tokens (incl. hidden channels) the AST builder needs. */
-    public record Parsed(ParserRuleContext tree, CommonTokenStream tokens, boolean fallback, int syntaxErrors) {}
+    /**
+     * Parse tree plus the tokens (incl. hidden channels) the AST builder needs. {@code accepted} counts deviations the
+     * recovery accepted with a warning ({@link RecoveryStrategy.Accepted}).
+     */
+    public record Parsed(
+            ParserRuleContext tree, CommonTokenStream tokens, boolean fallback, int syntaxErrors, int accepted) {
+
+        /** SLL failed but LL found nothing to report: the grammar-ambiguity signal. */
+        public boolean cleanFallback() {
+            return fallback && syntaxErrors == 0 && accepted == 0;
+        }
+    }
 
     private final Lexer lexer;
     private final P parser;
     private final CoreTokens coreTokens;
     private final IntervalSet sync;
+    private final IntervalSet semicolonOptionalBefore;
     private final BailErrorStrategy bail = new BailErrorStrategy();
     private final boolean sllFirst;
     private long parses;
@@ -41,10 +52,22 @@ public final class TwoStageParser<P extends Parser> {
      * @param sllFirst {@code false} skips stage 1 (always full LL): only for benchmarking the two-stage gain
      */
     public TwoStageParser(Lexer lexer, P parser, CoreTokens coreTokens, IntervalSet sync, boolean sllFirst) {
+        this(lexer, parser, coreTokens, sync, new IntervalSet(), sllFirst);
+    }
+
+    /** @param semicolonOptionalBefore tokens before which a missing {@code ;} is accepted (a warning) */
+    public TwoStageParser(
+            Lexer lexer,
+            P parser,
+            CoreTokens coreTokens,
+            IntervalSet sync,
+            IntervalSet semicolonOptionalBefore,
+            boolean sllFirst) {
         this.lexer = lexer;
         this.parser = parser;
         this.coreTokens = coreTokens;
         this.sync = sync;
+        this.semicolonOptionalBefore = semicolonOptionalBefore;
         this.sllFirst = sllFirst;
         lexer.removeErrorListeners();
     }
@@ -67,7 +90,7 @@ public final class TwoStageParser<P extends Parser> {
             parser.setErrorHandler(bail);
             parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
             try {
-                return new Parsed(entry.apply(parser), tokens, false, 0);
+                return new Parsed(entry.apply(parser), tokens, false, 0, 0);
             } catch (ParseCancellationException sllFailed) {
                 fallbacks++;
             }
@@ -78,13 +101,13 @@ public final class TwoStageParser<P extends Parser> {
         parser.removeErrorListeners();
         SyntaxErrorListener listener = new SyntaxErrorListener(text, sink);
         parser.addErrorListener(listener);
-        parser.setErrorHandler(new RecoveryStrategy(sync, coreTokens));
+        parser.setErrorHandler(new RecoveryStrategy(sync, coreTokens, semicolonOptionalBefore));
         parser.getInterpreter().setPredictionMode(PredictionMode.LL);
         ParserRuleContext tree = entry.apply(parser);
-        if (listener.count() == 0) {
+        if (listener.count() == 0 && listener.accepted() == 0) {
             cleanFallbacks++;
         }
-        return new Parsed(tree, tokens, true, listener.count());
+        return new Parsed(tree, tokens, true, listener.count(), listener.accepted());
     }
 
     public long parses() {

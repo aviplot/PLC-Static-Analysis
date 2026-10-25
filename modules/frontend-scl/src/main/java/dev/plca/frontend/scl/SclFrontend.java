@@ -70,7 +70,7 @@ public final class SclFrontend implements Frontend {
         }
         try {
             Parsed p = driver.parse(text, sink);
-            stats = new Stats(1, p.fallback() ? 1 : 0, p.fallback() && p.syntaxErrors() == 0 ? 1 : 0, p.syntaxErrors());
+            stats = new Stats(1, p.fallback() ? 1 : 0, p.cleanFallback() ? 1 : 0, p.syntaxErrors());
             SclAstBuilder b = new SclAstBuilder(text, p.tokens(), sink);
             if (p.tree() instanceof CompilationUnitContext cu) {
                 declarations.addAll(b.compilationUnit(cu));

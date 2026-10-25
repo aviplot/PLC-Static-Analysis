@@ -279,7 +279,7 @@ public final class StFrontend implements Frontend {
         texts++;
         if (p.fallback()) {
             fallbacks++;
-            if (p.syntaxErrors() == 0) {
+            if (p.cleanFallback()) {
                 cleanFallbacks++;
             }
         }

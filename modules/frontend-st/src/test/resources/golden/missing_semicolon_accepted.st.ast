@@ -1,0 +1,92 @@
+SourceUnit dialect=CODESYS
+  Pou kind=FUNCTION_BLOCK name=FB_Collection bodyLanguage="ST" @2:1-18:19
+    varBlocks:
+      VarBlock section=INPUT @3:1-6:8
+        variables:
+          VarDecl name=bInitRetains referenceInit=false @4:5-4:25
+            type:
+              Named name=BOOL @4:20-4:24
+          VarDecl name=T referenceInit=false @5:5-5:28
+            type:
+              Named name=Tc2_Utilities.T_Arg @5:9-5:28
+      VarBlock section=IN_OUT @7:1-9:8
+        variables:
+          VarDecl name=XTSUnitRef referenceInit=false @8:5-8:27
+            type:
+              Named name=I_XtsUnit @8:18-8:27
+      VarBlock section=VAR @10:1-12:8
+        variables:
+          VarDecl name=n referenceInit=false @11:5-11:13
+            type:
+              Named name=INT @11:9-11:12
+    members:
+      Pou kind=METHOD name=M bodyLanguage="ST" @15:1-17:11
+        returnType:
+          Named name=BOOL @15:12-15:16
+        body:
+          Assignment op=ASSIGN @16:1-16:10
+            target:
+              NameRef name=M globalScope=false @16:1-16:2
+            value:
+              Literal kind=BOOL text="TRUE" @16:6-16:10
+    body:
+      Assignment op=ASSIGN @13:1-13:12
+        target:
+          NameRef name=n globalScope=false @13:1-13:2
+        value:
+          Binary op=ADD @13:6-13:11
+            left:
+              NameRef name=n globalScope=false @13:6-13:7
+            right:
+              Literal kind=INTEGER text="1" @13:10-13:11
+      Assignment op=ASSIGN @14:1-14:21
+        target:
+          MemberAccess member=oRun @14:1-14:12
+            target:
+              NameRef name=Engine globalScope=false @14:1-14:7
+        value:
+          Binary op=GT @14:16-14:21
+            left:
+              NameRef name=n globalScope=false @14:16-14:17
+            right:
+              Literal kind=INTEGER text="2" @14:20-14:21
+  Pou kind=FUNCTION name=F_Speed bodyLanguage="ST" @20:1-25:1
+    returnType:
+      Named name=UINT @20:20-20:24
+    varBlocks:
+      VarBlock section=INPUT @21:1-23:8
+        variables:
+          VarDecl name=iAnalog referenceInit=false @22:5-22:19
+            type:
+              Named name=INT @22:15-22:18
+    body:
+      Assignment op=ASSIGN @24:1-24:45
+        target:
+          NameRef name=F_Speed globalScope=false @24:1-24:8
+        value:
+          Call @24:12-24:45
+            callee:
+              NameRef name=TO_UINT globalScope=false @24:12-24:19
+            arguments:
+              Argument kind=POSITIONAL negated=false @24:20-24:44
+                value:
+                  Call @24:20-24:44
+                    callee:
+                      NameRef name=LIMIT globalScope=false @24:20-24:25
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @24:26-24:27
+                        value:
+                          Literal kind=INTEGER text="0" @24:26-24:27
+                      Argument kind=POSITIONAL negated=false @24:29-24:36
+                        value:
+                          NameRef name=iAnalog globalScope=false @24:29-24:36
+                      Argument kind=POSITIONAL negated=false @24:38-24:43
+                        value:
+                          Literal kind=INTEGER text="24000" @24:38-24:43
+  comments: 4
+diagnostics:
+  WARNING PLC-SYN-007 @5:23 missing ';' before 'END_VAR' (accepted)
+  WARNING PLC-SYN-007 @8:18 missing ';' before 'END_VAR' (accepted)
+  WARNING PLC-SYN-007 @14:20 missing ';' before 'METHOD' (accepted)
+  WARNING PLC-SYN-007 @16:6 missing ';' before 'END_METHOD' (accepted)
+  WARNING PLC-SYN-007 @24:44 missing ';' before end of input (accepted)

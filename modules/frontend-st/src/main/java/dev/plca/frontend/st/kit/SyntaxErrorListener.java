@@ -16,6 +16,7 @@ public final class SyntaxErrorListener extends BaseErrorListener {
     private final SourceText text;
     private final DiagnosticSink sink;
     private int count;
+    private int accepted;
 
     public SyntaxErrorListener(SourceText text, DiagnosticSink sink) {
         this.text = text;
@@ -25,12 +26,23 @@ public final class SyntaxErrorListener extends BaseErrorListener {
     @Override
     public void syntaxError(
             Recognizer<?, ?> recognizer, Object offending, int line, int col, String msg, RecognitionException e) {
+        if (e instanceof RecoveryStrategy.Accepted) {
+            accepted++;
+            sink.report(Diagnostic.warning(SyntaxCodes.MISSING_SEMICOLON, msg, tokenSpan(text, (Token) offending)));
+            return;
+        }
         count++;
         sink.report(Diagnostic.error(SyntaxCodes.SYNTAX, msg, tokenSpan(text, (Token) offending)));
     }
 
+    /** Syntax errors reported. */
     public int count() {
         return count;
+    }
+
+    /** Accepted deviations reported as warnings ({@link RecoveryStrategy.Accepted}). */
+    public int accepted() {
+        return accepted;
     }
 
     public static Span tokenSpan(SourceText text, Token t) {

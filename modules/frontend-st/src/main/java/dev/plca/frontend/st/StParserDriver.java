@@ -82,6 +82,32 @@ final class StParserDriver {
             "END_NAMESPACE",
             "ENDTRY");
 
+    /**
+     * A {@code ;} left out before these is accepted with a warning (M12, TwinCAT): the last declaration of a VAR
+     * section, the last statement of a body (end of input in a TwinCAT {@code <ST>}, or a POU's end keyword or next
+     * member in a text export). A missing {@code ;} anywhere else stays a syntax error.
+     */
+    static final IntervalSet SEMICOLON_OPTIONAL_BEFORE = semicolonOptionalBefore();
+
+    private static IntervalSet semicolonOptionalBefore() {
+        IntervalSet s = new IntervalSet(AstBuilder.TOKENS.set(
+                "END_VAR",
+                "END_PROGRAM",
+                "END_FUNCTION",
+                "END_FUNCTION_BLOCK",
+                "END_METHOD",
+                "END_ACTION",
+                "END_CLASS",
+                "END_GET",
+                "END_SET",
+                "METHOD",
+                "PROPERTY",
+                "ACTION"));
+        s.add(Token.EOF);
+        s.setReadonly(true);
+        return s;
+    }
+
     private final TwoStageParser<CodesysStParser> parser;
 
     StParserDriver() {
@@ -91,7 +117,12 @@ final class StParserDriver {
     /** {@code sllFirst = false} skips stage 1 (always full LL): only for benchmarking the two-stage gain. */
     StParserDriver(boolean sllFirst) {
         parser = new TwoStageParser<>(
-                new CodesysStLexer(null), new CodesysStParser(null), AstBuilder.TOKENS, SYNC, sllFirst);
+                new CodesysStLexer(null),
+                new CodesysStParser(null),
+                AstBuilder.TOKENS,
+                SYNC,
+                SEMICOLON_OPTIONAL_BEFORE,
+                sllFirst);
     }
 
     Parsed parse(SourceText text, Entry entry, DiagnosticSink sink) {
