@@ -646,10 +646,16 @@ final class AstBuilder extends BuilderSupport {
             ArrayInitializerContext a = ctx.arrayInitializer();
             List<Initializer.Element> elements = new ArrayList<>();
             for (ArrayInitElementContext e : a.arrayInitElement()) {
-                if (e.INTEGER() != null) {
-                    int repeat = parseIntOr(e.INTEGER().getText(), 1);
-                    elements.add(new Initializer.Element(
-                            repeat, e.initializer() == null ? null : initializer(e.initializer()), span(e)));
+                if (e.expression() != null) {
+                    Initializer value = e.initializer() == null ? null : initializer(e.initializer());
+                    ExpressionContext n = e.expression();
+                    if (n instanceof PrimaryExprContext p
+                            && p.primaryExpression().literal() != null
+                            && p.primaryExpression().literal().INTEGER() != null) {
+                        elements.add(new Initializer.Element(parseIntOr(n.getText(), 1), value, span(e)));
+                    } else {
+                        elements.add(new Initializer.Element(0, expression(n, span(e)), value, span(e)));
+                    }
                 } else {
                     elements.add(new Initializer.Element(1, initializerOrInvalid(e.initializer(), span(e)), span(e)));
                 }

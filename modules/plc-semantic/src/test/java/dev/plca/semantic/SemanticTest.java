@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.plca.ast.Declaration.PouKind;
 import dev.plca.ast.Expression;
+import dev.plca.ast.Initializer;
 import dev.plca.ast.SourceUnit;
 import dev.plca.ast.Statement;
 import dev.plca.core.diag.DiagnosticCollector;
@@ -129,6 +130,23 @@ class SemanticTest {
         assertThat(Type.isUnknown(m.type(value(m, "P", 1)))).isTrue();
         Expression.Call call = (Expression.Call) value(m, "P", 2);
         assertThat(m.symbol(call.callee())).get().isInstanceOf(LibrarySymbol.class);
+        assertThat(m.resolutionStats().unresolved()).isZero();
+    }
+
+    @Test
+    void repetitionCountExpressionsAreBound() {
+        SemanticModel m = model("""
+                PROGRAM P
+                VAR CONSTANT N : INT := 4; END_VAR
+                VAR a : ARRAY[0..N] OF INT := [N + 1(0)]; END_VAR
+                a[0] := 1;
+                END_PROGRAM""");
+        Initializer.Element e = ((Initializer.ArrayInit)
+                        pou(m, "P").variable("a").orElseThrow().initializer())
+                .elements()
+                .getFirst();
+        Expression.NameRef n = (Expression.NameRef) ((Expression.Binary) e.count()).left();
+        assertThat(m.symbol(n)).get().isInstanceOf(VariableSymbol.class);
         assertThat(m.resolutionStats().unresolved()).isZero();
     }
 

@@ -101,7 +101,11 @@ public final class Walk {
         switch (init) {
             case null -> {}
             case Expression e -> deep(e, action);
-            case Initializer.ArrayInit a -> a.elements().forEach(el -> expressions(el.value(), action));
+            case Initializer.ArrayInit a ->
+                a.elements().forEach(el -> {
+                    expressions(el.count(), action);
+                    expressions(el.value(), action);
+                });
             case Initializer.StructInit s -> s.fields().forEach(f -> expressions(f.value(), action));
         }
     }

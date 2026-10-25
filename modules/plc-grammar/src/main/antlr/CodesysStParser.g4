@@ -155,6 +155,15 @@ enumType
     : LPAREN enumValue (COMMA enumValue)* COMMA? RPAREN namedType?
     ;
 
+/**
+ * Repetition `3(0)`; CODESYS also takes a constant expression as the count (M12): `[GVL.N + 1(',')]`,
+ * `[(N - 1)((a := TRUE))]`. The plain initializer comes first, so `[F(1)]`, which reads both ways, stays a call.
+ */
+arrayInitElement
+    : initializer
+    | expression LPAREN initializer? RPAREN
+    ;
+
 /** `fb : FB_X := ();`, `[15(())]` (M12): an empty initialiser leaves every member at its default. */
 structInitializer
     : LPAREN (structInitElement (COMMA structInitElement)*)? RPAREN

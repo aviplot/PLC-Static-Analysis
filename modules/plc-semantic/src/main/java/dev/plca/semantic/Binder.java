@@ -142,7 +142,11 @@ final class Binder {
         switch (init) {
             case null -> {}
             case Expression e -> expression(e, pou);
-            case Initializer.ArrayInit a -> a.elements().forEach(el -> bindInitializer(el.value(), pou));
+            case Initializer.ArrayInit a ->
+                a.elements().forEach(el -> {
+                    bindInitializer(el.count(), pou);
+                    bindInitializer(el.value(), pou);
+                });
             case Initializer.StructInit s -> s.fields().forEach(f -> bindInitializer(f.value(), pou));
         }
     }

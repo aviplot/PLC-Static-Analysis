@@ -1,0 +1,158 @@
+SourceUnit dialect=CODESYS
+  GlobalVars @2:1-4:8
+    block:
+      VarBlock section=GLOBAL qualifiers=[CONSTANT] @2:1-4:8
+        variables:
+          VarDecl name=N referenceInit=false @3:5-3:18
+            type:
+              Named name=INT @3:9-3:12
+            init:
+              Literal kind=INTEGER text="4" @3:16-3:17
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @6:1-14:12
+    varBlocks:
+      VarBlock section=VAR @7:1-12:8
+        variables:
+          VarDecl name=aText referenceInit=false @8:5-8:56
+            type:
+              ArrayType @8:13-8:39
+                dimensions:
+                  Dimension @8:19-8:23
+                    low:
+                      Literal kind=INTEGER text="0" @8:19-8:20
+                    high:
+                      NameRef name=N globalScope=false @8:22-8:23
+                element:
+                  StringType wide=false @8:28-8:39
+                    length:
+                      Literal kind=INTEGER text="255" @8:35-8:38
+            init:
+              ArrayInit @8:43-8:55
+                elements:
+                  Element repeat=0 @8:44-8:54
+                    count:
+                      Binary op=ADD @8:44-8:49
+                        left:
+                          NameRef name=N globalScope=false @8:44-8:45
+                        right:
+                          Literal kind=INTEGER text="1" @8:48-8:49
+                    value:
+                      Literal kind=STRING text="','" @8:50-8:53
+          VarDecl name=aFlags referenceInit=false @9:5-9:112
+            type:
+              ArrayType @9:14-9:40
+                dimensions:
+                  Dimension @9:20-9:28
+                    low:
+                      Literal kind=INTEGER text="0" @9:20-9:21
+                    high:
+                      Binary op=SUB @9:23-9:28
+                        left:
+                          NameRef name=N globalScope=false @9:23-9:24
+                        right:
+                          Literal kind=INTEGER text="1" @9:27-9:28
+                element:
+                  Named name=ST_Flag @9:33-9:40
+            init:
+              ArrayInit @9:44-9:111
+                elements:
+                  Element repeat=0 @9:45-9:80
+                    count:
+                      Binary op=SUB @9:46-9:51
+                        left:
+                          NameRef name=N globalScope=false @9:46-9:47
+                        right:
+                          Literal kind=INTEGER text="1" @9:50-9:51
+                    value:
+                      StructInit @9:53-9:79
+                        fields:
+                          FieldInit name=bOn @9:54-9:65
+                            value:
+                              Literal kind=BOOL text="TRUE" @9:61-9:65
+                          FieldInit name=sName @9:67-9:78
+                            value:
+                              Literal kind=STRING text="''" @9:76-9:78
+                  Element repeat=1 @9:82-9:110
+                    value:
+                      StructInit @9:82-9:110
+                        fields:
+                          FieldInit name=bOn @9:83-9:95
+                            value:
+                              Literal kind=BOOL text="FALSE" @9:90-9:95
+                          FieldInit name=sName @9:97-9:109
+                            value:
+                              Literal kind=STRING text="'x'" @9:106-9:109
+          VarDecl name=aMix referenceInit=false @10:5-10:54
+            type:
+              ArrayType @10:12-10:30
+                dimensions:
+                  Dimension @10:18-10:22
+                    low:
+                      Literal kind=INTEGER text="1" @10:18-10:19
+                    high:
+                      Literal kind=INTEGER text="6" @10:21-10:22
+                element:
+                  Named name=INT @10:27-10:30
+            init:
+              ArrayInit @10:34-10:53
+                elements:
+                  Element repeat=2 @10:35-10:39
+                    value:
+                      Literal kind=INTEGER text="0" @10:37-10:38
+                  Element repeat=1 @10:41-10:49
+                    value:
+                      Call @10:41-10:49
+                        callee:
+                          MemberAccess member=M @10:41-10:46
+                            target:
+                              NameRef name=GVL globalScope=false @10:41-10:44
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @10:47-10:48
+                            value:
+                              Literal kind=INTEGER text="1" @10:47-10:48
+                  Element repeat=1 @10:51-10:52
+                    value:
+                      Literal kind=INTEGER text="3" @10:51-10:52
+          VarDecl name=aCalls referenceInit=false @11:5-11:49
+            type:
+              ArrayType @11:14-11:32
+                dimensions:
+                  Dimension @11:20-11:24
+                    low:
+                      Literal kind=INTEGER text="1" @11:20-11:21
+                    high:
+                      Literal kind=INTEGER text="2" @11:23-11:24
+                element:
+                  Named name=INT @11:29-11:32
+            init:
+              ArrayInit @11:36-11:48
+                elements:
+                  Element repeat=1 @11:37-11:41
+                    value:
+                      Call @11:37-11:41
+                        callee:
+                          NameRef name=F globalScope=false @11:37-11:38
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @11:39-11:40
+                            value:
+                              Literal kind=INTEGER text="1" @11:39-11:40
+                  Element repeat=1 @11:43-11:47
+                    value:
+                      Call @11:43-11:47
+                        callee:
+                          NameRef name=F globalScope=false @11:43-11:44
+                        arguments:
+                          Argument kind=POSITIONAL negated=false @11:45-11:46
+                            value:
+                              Literal kind=INTEGER text="2" @11:45-11:46
+    body:
+      Assignment op=ASSIGN @13:1-13:16
+        target:
+          Index @13:1-13:9
+            target:
+              NameRef name=aText globalScope=false @13:1-13:6
+            indices:
+              Literal kind=INTEGER text="0" @13:7-13:8
+        value:
+          Literal kind=STRING text="''" @13:13-13:15
+  comments: 1
+diagnostics:
