@@ -1,0 +1,35 @@
+# Corpus noise: files that corpusCheck still parses (so a frontend crash on them is still seen) but leaves out of
+# the rates, the baseline and the triage (M12). Only repository names and path patterns, never code.
+#   repo <owner/name>   every file of a GitHub repository (gitlab/<owner/name> for GitLab)
+#   path <regex>        files whose path inside the repository matches (Java regex, find, case-insensitive)
+# Add an entry only after looking at the files: real code that fails to parse is parser work, not noise.
+
+# --- LLM-generated or LLM-benchmark ST (Markdown fences, prose, unfinished code) ---
+repo LuisMC2600/llm-plc-st-eval
+repo iswunistuttgart/generating_plc_code_with_llms
+repo tanushb28/Antarbhukti-LLM
+repo cangkui/AutoPLC
+repo cangkui/AutoPLC-STGuard
+repo cangkui/CheckerGen
+repo gugu-2/Industry-PLC-LLM
+repo 111kevin/plc-generate-evaluate
+repo hkoziolek/Spec2Control
+repo midea-ai/SemaPLC
+repo KyeGuo/PLC_Gen_Frame
+repo Manorstone-NZ/FW-Agents4PLC
+repo FranciscoOsuna/weryfikacja-kodu-plc-llm
+repo SubhikshaPonraj/AI-powered-PLC-Code-Generator
+repo singh-tushar2005/Industrial-automation-using-LLMs
+
+# --- fuzzer corpora ---
+repo tomoveon/SemantiST
+repo momalab/ICSQuartz
+
+# --- this project: its own error-recovery goldens and fuzz inputs are invalid on purpose ---
+repo aviplot/PLC-Static-Analysis
+
+# --- deliberately invalid test inputs of other parsers and linters ---
+path (^|/)(invalid|malformed|negative|broken|error_?recovery|syntax_?errors?)(/|$)
+path (^|/)(malformed|broken|error_recovery)_[^/]*$
+path (^|/)[^/]*_(syntax|semantic)_error\.[^/]*$
+path (^|/)Fail_[^/]*_(Location|Log)_Proj(ect)?/

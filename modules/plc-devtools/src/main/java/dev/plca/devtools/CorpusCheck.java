@@ -147,8 +147,18 @@ public final class CorpusCheck {
         double seconds = (System.nanoTime() - t0) / 1e9;
 
         Files.createDirectories(reportDir);
-        Map<String, Double> rates = report(results, seconds, threads, out, reportDir);
-        rates.putAll(semanticReport(projectResults, out, reportDir));
+        // noise (corpus-noise.txt next to the baseline) is parsed above but left out of rates, baseline and triage
+        CorpusNoise noise = CorpusNoise.load(baseline.resolveSibling("corpus-noise.txt"));
+        List<FileResult> kept =
+                results.stream().filter(r -> !noise.isNoise(r.repo(), r.path())).toList();
+        List<ProjectResult> keptProjects = projectResults.stream()
+                .filter(p -> !noise.isNoiseRepo(p.repo()))
+                .toList();
+        Map<String, Double> rates = report(kept, seconds, threads, out, reportDir);
+        rates.putAll(semanticReport(keptProjects, out, reportDir));
+        noiseReport(results, noise, out, reportDir);
+        writeErrorLogs(results, noise, reportDir);
+        CorpusTriage.write(kept, reportDir);
         long lines = results.stream().mapToLong(FileResult::lines).sum();
         long parseAndModel = projectResults.stream()
                 .mapToLong(p -> p.parseNanos() + p.nanos())
@@ -171,7 +181,7 @@ public final class CorpusCheck {
                 parseAndModel,
                 out,
                 reportDir);
-        boolean ok = partial || checkThresholds(results, rates, baseline, update, out);
+        boolean ok = partial || checkThresholds(kept, rates, baseline, update, out);
         if (ruleFailures > 0) {
             out.println("FAIL: " + ruleFailures + " rule failures (" + RuleEngine.INTERNAL + ")");
             ok = false;
@@ -668,7 +678,6 @@ public final class CorpusCheck {
             }
         }
         Files.writeString(reportDir.resolve("failures.tsv"), tsv);
-        writeErrorLogs(results, messages, examples, reportDir);
         out.println("\nReports: " + reportDir.toAbsolutePath());
         return rates;
     }
@@ -780,17 +789,25 @@ public final class CorpusCheck {
     }
 
     /**
-     * Every error diagnostic of every file ({@code parse-errors.tsv}) and every distinct normalised message with the
-     * number of files it affects ({@code error-messages.tsv}) — the input for grammar and frontend work.
+     * Every error diagnostic of every file, noise included and flagged ({@code parse-errors.tsv}), and every distinct
+     * normalised message of the files that are not noise with the number of files it affects
+     * ({@code error-messages.tsv}) — the input for grammar and frontend work.
      */
-    private static void writeErrorLogs(
-            List<FileResult> results, Map<String, int[]> messages, Map<String, String> examples, Path reportDir)
-            throws IOException {
+    private static void writeErrorLogs(List<FileResult> results, CorpusNoise noise, Path reportDir) throws IOException {
+        Map<String, int[]> messages = new HashMap<>();
+        Map<String, String> examples = new HashMap<>();
         try (var w = Files.newBufferedWriter(reportDir.resolve("parse-errors.tsv"), StandardCharsets.UTF_8)) {
-            w.write("format\trepo\tpath\tline\tcolumn\tcode\tnormalised_message\tmessage\n");
+            w.write("format\trepo\tpath\tline\tcolumn\tcode\tnormalised_message\tmessage\tnoise\n");
             for (FileResult r : results) {
+                boolean isNoise = noise.isNoise(r.repo(), r.path());
                 for (String row : r.errorRows()) {
-                    w.write(r.format() + "\t" + r.repo() + "\t" + r.path() + "\t" + row + "\n");
+                    w.write(r.format() + "\t" + r.repo() + "\t" + r.path() + "\t" + row + "\t" + isNoise + "\n");
+                }
+                if (!isNoise) {
+                    for (String m : r.errors().stream().distinct().toList()) {
+                        messages.computeIfAbsent(m, k -> new int[1])[0]++;
+                        examples.putIfAbsent(m, r.repo() + "/" + r.path());
+                    }
                 }
             }
         }
@@ -807,7 +824,34 @@ public final class CorpusCheck {
         Files.writeString(reportDir.resolve("error-messages.tsv"), tsv, StandardCharsets.UTF_8);
     }
 
-    private static String tsvField(String s) {
+    /** How much the noise list leaves out, and any frontend crash on noise (which still counts as a bug). */
+    private static void noiseReport(List<FileResult> all, CorpusNoise noiseList, PrintStream out, Path reportDir)
+            throws IOException {
+        List<FileResult> noise =
+                all.stream().filter(r -> noiseList.isNoise(r.repo(), r.path())).toList();
+        long failing = noise.stream().filter(r -> !r.clean()).count();
+        long repos = noise.stream().map(FileResult::repo).distinct().count();
+        StringBuilder md = new StringBuilder(String.format(
+                Locale.ROOT,
+                "%n## Noise (corpus-noise.txt)%n%nLeft out of the rates, the baseline and the triage: %,d files"
+                        + " (%,d with errors) in %,d repos.%n",
+                noise.size(),
+                failing,
+                repos));
+        noise.stream()
+                .filter(r -> r.firstError() != null && r.firstError().startsWith("ESCAPED"))
+                .forEach(r -> md.append("- frontend crash on noise: ")
+                        .append(r.repo())
+                        .append('/')
+                        .append(r.path())
+                        .append(": ")
+                        .append(r.firstError())
+                        .append('\n'));
+        out.print(md);
+        Files.writeString(reportDir.resolve("summary.md"), md, java.nio.file.StandardOpenOption.APPEND);
+    }
+
+    static String tsvField(String s) {
         return s.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ');
     }
 
