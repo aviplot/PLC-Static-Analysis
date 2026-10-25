@@ -110,8 +110,8 @@ final class RuleTesting {
                 .toList();
     }
 
-    private static final Pattern MARKER = Pattern.compile("(?://|\\(\\*|<!--).*?\\b(PLCA-[QPS]\\d{3})\\b");
-    private static final Pattern MORE = Pattern.compile("\\b(PLCA-[QPS]\\d{3})\\b");
+    private static final Pattern MARKER = Pattern.compile("(?://|\\(\\*|<!--).*?\\b(PLCA-[QPSL]\\d{3})\\b");
+    private static final Pattern MORE = Pattern.compile("\\b(PLCA-[QPSL]\\d{3})\\b");
 
     /**
      * Expected findings from comments: every rule id inside a {@code //}, {@code (* *)} or XML {@code <!-- -->} comment

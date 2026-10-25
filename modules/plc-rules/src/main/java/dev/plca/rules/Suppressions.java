@@ -52,7 +52,7 @@ public final class Suppressions {
 
     private static final Pattern DIRECTIVE =
             Pattern.compile("(?i)\\bplca-(disable-next-line|disable-line|disable|enable)\\b([^\\r\\n]*)");
-    private static final Pattern SELECTOR = Pattern.compile("(?i)^(PLCA-[QPS]\\d{3}|quality|plc|security|all)$");
+    private static final Pattern SELECTOR = Pattern.compile("(?i)^(PLCA-[QPSL]\\d{3}|quality|plc|security|logic|all)$");
     private static final String ATTRIBUTE = "plca-disable";
 
     /** Lines [from, to] of a file where rules are off. */

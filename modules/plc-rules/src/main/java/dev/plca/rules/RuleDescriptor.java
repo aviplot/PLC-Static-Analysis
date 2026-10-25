@@ -40,7 +40,8 @@ public record RuleDescriptor(
     public enum Category {
         QUALITY,
         PLC,
-        SECURITY;
+        SECURITY,
+        LOGIC;
 
         public String key() {
             return name().toLowerCase(Locale.ROOT);

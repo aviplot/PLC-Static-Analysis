@@ -3,6 +3,7 @@ package dev.plca.rules;
 import dev.plca.ast.Node;
 import dev.plca.core.Dialect;
 import dev.plca.core.diag.Diagnostic;
+import dev.plca.core.diag.Severity;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
 import dev.plca.semantic.PouSymbol;
@@ -41,7 +42,11 @@ public abstract sealed class RuleContext permits PouContext, ProjectContext {
 
     /** The source text of a node, as the lexer saw it (CDATA content for TwinCAT files). */
     public String text(Node node) {
-        Span s = node.span();
+        return text(node.span());
+    }
+
+    /** The source text of a span. */
+    public String text(Span s) {
         return sources.text(s.textId()).text().substring(s.start(), s.end());
     }
 
@@ -62,13 +67,22 @@ public abstract sealed class RuleContext permits PouContext, ProjectContext {
 
     /** Reports a finding in {@code pou} (null outside POUs), with its IDE location where the dialect has one. */
     void report(PouSymbol pou, Span span, String message, List<Diagnostic.Related> related, boolean unused) {
+        report(pou, span, message, related, null);
+    }
+
+    /** As above; {@code atMost}, when not null, caps the severity ({@code INFO} turns a warning into info). */
+    void report(PouSymbol pou, Span span, String message, List<Diagnostic.Related> related, Severity atMost) {
         Dialect d = pou != null && pou.dialect() != null ? pou.dialect() : settings.dialectOf(span);
         if (!settings.enabled(d)) {
             return;
         }
+        Severity severity = settings.severity(d);
+        if (atMost != null && severity.ordinal() < atMost.ordinal()) {
+            severity = atMost;
+        }
         findings.add(new Finding(
                 descriptor.id(),
-                settings.severity(d),
+                severity,
                 message,
                 span,
                 related,

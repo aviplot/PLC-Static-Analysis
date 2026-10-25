@@ -20,13 +20,14 @@ class DescriptorTest {
     @MethodSource("ruleIds")
     void descriptorIsComplete(String id) {
         RuleDescriptor d = RuleTesting.REGISTRY.descriptor(id).orElseThrow();
-        assertThat(d.id()).matches("PLCA-[QPS]\\d{3}");
+        assertThat(d.id()).matches("PLCA-[QPSL]\\d{3}");
         assertThat(d.id().charAt(5))
                 .isEqualTo(
                         switch (d.category()) {
                             case QUALITY -> 'Q';
                             case PLC -> 'P';
                             case SECURITY -> 'S';
+                            case LOGIC -> 'L';
                         });
         assertThat(d.title()).isNotBlank();
         assertThat(d.description()).isNotBlank();

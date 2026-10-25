@@ -3,6 +3,7 @@ package dev.plca.rules;
 import dev.plca.ast.Expression;
 import dev.plca.ast.Statement;
 import dev.plca.core.diag.Diagnostic;
+import dev.plca.core.diag.Severity;
 import dev.plca.core.source.SourceRegistry;
 import dev.plca.core.source.Span;
 import dev.plca.semantic.PouSymbol;
@@ -48,5 +49,10 @@ public final class PouContext extends RuleContext {
 
     public void report(Span span, String message, Diagnostic.Related... related) {
         report(pou, span, message, List.of(related), false);
+    }
+
+    /** Reports with the configured severity, but never more severe than {@code atMost}. */
+    public void report(Span span, String message, Severity atMost, List<Diagnostic.Related> related) {
+        report(pou, span, message, related, atMost);
     }
 }
