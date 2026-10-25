@@ -147,6 +147,8 @@ the vendor documentation was not checked.
 | Pragmas spanning lines / unbalanced quotes | `{attribute 'pytmc' := '⏎ pv: X⏎'}` | a pragma ends at the first `}` |
 | Stray `;` | `x : INT;;`, `END_TYPE;`, `FUNCTION_BLOCK X;` | |
 | Modifiers on PROGRAM / INTERFACE / accessors | `PROGRAM INTERNAL MAIN`, `INTERFACE PUBLIC I`, `PROTECTED VAR … END_VAR` (Set accessor) | |
+| Modifiers on TYPE (M12) | `TYPE INTERNAL E_State : (...); END_TYPE` | library-internal DUTs; 29 files in 10 TwinCAT repos (2026-10-25). Not kept in the AST *(verify the allowed set; the grammar takes any POU modifier)* |
+| Empty structured initialiser (M12) | `fbList : FB_List := ();`, `[15(())]` | all members at their defaults; `Initializer.StructInit` with no fields. ~17 TwinCAT repos. CODESYS grammar only |
 | `VAR PUBLIC` / `VAR PRIVATE` | IEC Ed. 3 classes | `VarBlock.Qualifier` |
 | `FOR` over non-simple variables | `FOR a[0] := …`, `FOR gvl.i := …` | `For.variable` is an expression |
 | `RETURN expr;` | | *(verify)*; not IEC |

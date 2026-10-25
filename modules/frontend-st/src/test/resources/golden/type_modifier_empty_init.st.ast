@@ -1,0 +1,93 @@
+SourceUnit dialect=CODESYS
+  TypeDecl name=E_State @2:15-6:3
+    type:
+      EnumType @3:1-6:2
+        values:
+          EnumValue name=Idle @4:5-4:9
+          EnumValue name=Busy @5:5-5:9
+  TypeDecl name=ST_Row @9:15-13:11
+    type:
+      StructType @10:1-13:11
+        members:
+          VarDecl name=a referenceInit=false @11:5-11:13
+            type:
+              Named name=INT @11:9-11:12
+          VarDecl name=b referenceInit=false @12:5-12:14
+            type:
+              Named name=BOOL @12:9-12:13
+  Pou kind=PROGRAM name=P bodyLanguage="ST" @16:1-25:12
+    varBlocks:
+      VarBlock section=VAR @17:1-23:8
+        variables:
+          VarDecl name=fbList referenceInit=false @18:5-18:28
+            type:
+              Named name=FB_List @18:14-18:21
+            init:
+              StructInit @18:25-18:27
+          VarDecl name=stRow referenceInit=false @19:5-19:26
+            type:
+              Named name=ST_Row @19:13-19:19
+            init:
+              StructInit @19:23-19:25
+          VarDecl name=fbFree referenceInit=false @20:5-20:32
+            type:
+              Named name=FB_Free @20:14-20:25
+                init:
+                  ConstructorArgs @20:21-20:25
+                    arguments:
+                      Argument kind=POSITIONAL negated=false @20:22-20:24
+                        value:
+                          Literal kind=INTEGER text="42" @20:22-20:24
+            init:
+              StructInit @20:29-20:31
+          VarDecl name=aRows referenceInit=false @21:5-21:48
+            type:
+              ArrayType @21:13-21:35
+                dimensions:
+                  Dimension @21:19-21:24
+                    low:
+                      Literal kind=INTEGER text="1" @21:19-21:20
+                    high:
+                      Literal kind=INTEGER text="15" @21:22-21:24
+                element:
+                  Named name=ST_Row @21:29-21:35
+            init:
+              ArrayInit @21:39-21:47
+                elements:
+                  Element repeat=15 @21:40-21:46
+                    value:
+                      StructInit @21:43-21:45
+          VarDecl name=aMixed referenceInit=false @22:5-22:57
+            type:
+              ArrayType @22:14-22:35
+                dimensions:
+                  Dimension @22:20-22:24
+                    low:
+                      Literal kind=INTEGER text="1" @22:20-22:21
+                    high:
+                      Literal kind=INTEGER text="3" @22:23-22:24
+                element:
+                  Named name=ST_Row @22:29-22:35
+            init:
+              ArrayInit @22:39-22:56
+                elements:
+                  Element repeat=1 @22:40-22:48
+                    value:
+                      StructInit @22:40-22:48
+                        fields:
+                          FieldInit name=a @22:41-22:47
+                            value:
+                              Literal kind=INTEGER text="1" @22:46-22:47
+                  Element repeat=2 @22:50-22:55
+                    value:
+                      StructInit @22:52-22:54
+    body:
+      Assignment op=ASSIGN @24:1-24:14
+        target:
+          MemberAccess member=a @24:1-24:8
+            target:
+              NameRef name=stRow globalScope=false @24:1-24:6
+        value:
+          Literal kind=INTEGER text="1" @24:12-24:13
+  comments: 1
+diagnostics:

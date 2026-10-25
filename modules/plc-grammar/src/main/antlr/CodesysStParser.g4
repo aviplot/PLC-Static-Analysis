@@ -140,6 +140,16 @@ primaryExpression
     | LPAREN expression (ASSIGN expression)? RPAREN
     ;
 
+/** `TYPE INTERNAL E_State : (...); END_TYPE` (M12): library-internal DUTs; the modifier is not kept. */
+dataTypeDeclaration
+    : TYPE modifier* typeDefinition+ END_TYPE SEMI?
+    ;
+
+/** `fb : FB_X := ();`, `[15(())]` (M12): an empty initialiser leaves every member at its default. */
+structInitializer
+    : LPAREN (structInitElement (COMMA structInitElement)*)? RPAREN
+    ;
+
 /** `p : REFERENCE TO T REF= x;` initialises a reference in its declaration. */
 variableInit
     : ASSIGN initializer
