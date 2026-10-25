@@ -145,6 +145,11 @@ dataTypeDeclaration
     : TYPE modifier* typeDefinition+ END_TYPE SEMI?
     ;
 
+/** `STRUCT PERSISTENT`, `STRUCT RETAIN`, `STRUCT CONSTANT` (M12): a qualifier on the whole structure; not kept. */
+structType
+    : STRUCT (CONSTANT | RETAIN | NON_RETAIN | PERSISTENT)* (varDeclaration | SEMI)* END_STRUCT
+    ;
+
 /** `(Idle := 0, Busy := 1, ) WORD` (M12): a comma after the last value. */
 enumType
     : LPAREN enumValue (COMMA enumValue)* COMMA? RPAREN namedType?

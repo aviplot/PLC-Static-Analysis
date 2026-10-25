@@ -1,0 +1,36 @@
+SourceUnit dialect=CODESYS
+  TypeDecl name=ST_Parameter @2:6-6:11
+    type:
+      StructType @3:1-6:11
+        members:
+          VarDecl name=rSetpoint referenceInit=false @4:5-4:29
+            type:
+              Named name=REAL @4:17-4:21
+            init:
+              Literal kind=REAL text="1.5" @4:25-4:28
+          VarDecl name=nMode referenceInit=false @5:5-5:17
+            type:
+              Named name=INT @5:13-5:16
+  TypeDecl name=ST_AxisRetain @9:6-12:11
+    type:
+      StructType @10:1-12:11
+        members:
+          VarDecl name=lrPosition referenceInit=false @11:5-11:24
+            type:
+              Named name=LREAL @11:18-11:23
+  TypeDecl name=ST_Steps @15:6-19:11
+    type:
+      StructType @16:1-19:11
+        members:
+          VarDecl name=nStart referenceInit=false @17:5-17:24
+            type:
+              Named name=INT @17:14-17:17
+            init:
+              Literal kind=INTEGER text="10" @17:21-17:23
+          VarDecl name=nStop referenceInit=false @18:5-18:23
+            type:
+              Named name=INT @18:13-18:16
+            init:
+              Literal kind=INTEGER text="20" @18:20-18:22
+  comments: 1
+diagnostics:
