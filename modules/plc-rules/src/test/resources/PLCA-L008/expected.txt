@@ -1,0 +1,7 @@
+noncompliant.st:11:8-11:13 PLCA-L008 warning: Condition 'n > 5' is always true here: the enclosing conditions imply it [P_L008]
+    noncompliant.st:10:4-10:10 enclosing IF condition
+noncompliant.st:18:4-18:9 PLCA-L008 warning: Condition 'm > 0' is always true here: the enclosing conditions imply it [P_L008]
+    noncompliant.st:15:4-15:10 earlier condition, false here
+noncompliant.st:24:12-24:13 PLCA-L008 warning: Condition 'b' is always true here: the enclosing conditions imply it; the branches after it never run [P_L008]
+    noncompliant.st:21:4-21:5 enclosing IF condition
+    noncompliant.st:23:8-23:20 enclosing IF condition

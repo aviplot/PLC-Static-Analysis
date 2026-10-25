@@ -1,0 +1,4 @@
+noncompliant.st:12:7-12:14 PLCA-L009 info: ELSIF condition 'n <= 10' is always true when the earlier conditions are false; write ELSE [P_L009]
+    noncompliant.st:10:4-10:10 earlier condition, false here
+noncompliant.st:17:7-17:13 PLCA-L009 info: ELSIF condition 'm >= n' is always true when the earlier conditions are false; write ELSE [P_L009]
+    noncompliant.st:15:4-15:9 earlier condition, false here

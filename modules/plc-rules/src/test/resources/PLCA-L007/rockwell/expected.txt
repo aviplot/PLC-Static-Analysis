@@ -1,0 +1,1 @@
+rungs.L5X:20:47-20:56 PLCA-L007 warning: This ladder/FBD condition is always true [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}

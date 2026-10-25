@@ -1,0 +1,7 @@
+noncompliant.st:12:4-12:14 PLCA-L012 warning: 'nUsint < 0' is always FALSE: nUsint (USINT) holds only 0..255 [P_L012]
+noncompliant.st:15:6-15:17 PLCA-L012 warning: 'nByte > 255' is always FALSE: nByte (BYTE) holds only 0..255 [P_L012]
+noncompliant.st:16:6-16:16 PLCA-L012 warning: 'nUint >= 0' is always TRUE: nUint (UINT) holds only 0..65535 [P_L012]
+noncompliant.st:17:6-17:17 PLCA-L012 warning: 'nRange > 10' is always FALSE: nRange (INT(0..10)) holds only 0..10 [P_L012]
+noncompliant.st:18:6-18:24 PLCA-L012 warning: 'sName = 'TOO_LONG'' is always FALSE: the text has 8 characters, sName (STRING(4)) holds at most 4 [P_L012]
+noncompliant.st:19:6-19:30 PLCA-L012 warning: 'sName <> 'ALSO_TOO_LONG'' is always TRUE: the text has 13 characters, sName (STRING(4)) holds at most 4 [P_L012]
+noncompliant.st:20:6-20:17 PLCA-L012 warning: 'nSint = 200' is always FALSE: nSint (SINT) holds only -128..127 [P_L012]

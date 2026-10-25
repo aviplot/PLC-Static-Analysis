@@ -1,0 +1,5 @@
+noncompliant.st:10:20-10:26 PLCA-L021 info: Empty THEN branch with no comment saying why [P_L021]
+noncompliant.st:14:23-14:28 PLCA-L021 info: Empty ELSIF branch with no comment saying why [P_L021]
+noncompliant.st:20:17-20:21 PLCA-L021 info: Empty ELSE with no comment saying why [P_L021]
+noncompliant.st:24:21-24:22 PLCA-L021 info: Empty CASE branch with no comment saying why [P_L021]
+noncompliant.st:28:17-28:21 PLCA-L021 info: Empty ELSE with no comment saying why [P_L021]

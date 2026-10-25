@@ -228,6 +228,31 @@ summary h2 { display: inline; }
 <tr><td><a href="#rule-PLCA-S003">PLCA-S003</a></td><td>Suspicious hidden trigger</td><td>warning</td><td></td><td class="num">0</td></tr>
 <tr><td><a href="#rule-PLCA-Q014">PLCA-Q014</a></td><td>Magic number</td><td>info</td><td></td><td class="num">0</td></tr>
 <tr><td><a href="#rule-PLCA-Q015">PLCA-Q015</a></td><td>Naming convention</td><td>info</td><td>N2</td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L001">PLCA-L001</a></td><td>Contradictory nested condition</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L002">PLCA-L002</a></td><td>Unreachable ELSIF</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L003">PLCA-L003</a></td><td>Unreachable ELSE</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L004">PLCA-L004</a></td><td>Self-contradictory condition</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L005">PLCA-L005</a></td><td>Duplicate condition in an IF chain</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L006">PLCA-L006</a></td><td>Duplicate or overlapping CASE label</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L007">PLCA-L007</a></td><td>Tautological condition</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L008">PLCA-L008</a></td><td>Condition always true where it is</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L009">PLCA-L009</a></td><td>ELSIF that should be ELSE</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L010">PLCA-L010</a></td><td>Redundant part of a condition</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L011">PLCA-L011</a></td><td>IF chain that misses a boundary case</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L012">PLCA-L012</a></td><td>Comparison outside the operand&#39;s range</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L013">PLCA-L013</a></td><td>Identical branches</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L014">PLCA-L014</a></td><td>Self-assignment</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L015">PLCA-L015</a></td><td>ELSE that holds only an IF</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L016">PLCA-L016</a></td><td>Nested IF to merge with AND</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L017">PLCA-L017</a></td><td>ELSE after a branch that always leaves</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L018">PLCA-L018</a></td><td>Empty THEN with an ELSE</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L019">PLCA-L019</a></td><td>BOOL set through IF</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L020">PLCA-L020</a></td><td>Same statement in every branch</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L021">PLCA-L021</a></td><td>Empty branch</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L022">PLCA-L022</a></td><td>Loop that ends in its first pass</td><td>warning</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L023">PLCA-L023</a></td><td>Temporary value overwritten before it is read</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L024">PLCA-L024</a></td><td>NOT before a comparison</td><td>info</td><td></td><td class="num">0</td></tr>
+<tr><td><a href="#rule-PLCA-L025">PLCA-L025</a></td><td>BOOL compared with TRUE or FALSE</td><td>info</td><td></td><td class="num">0</td></tr>
 </tbody>
 </table>
 <details class="help" id="rule-PLCA-Q001">
@@ -1130,6 +1155,902 @@ VAR_INPUT
     rSpeed : REAL;
 END_VAR
 END_FUNCTION_BLOCK
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L001">
+<summary>PLCA-L001 Contradictory nested condition</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An IF, ELSIF, WHILE condition or CASE label that can never be true where it stands, given the enclosing conditions (and nothing changed their operands in between): its branch never runs.</p>
+<h4>Rationale</h4>
+<p>The inner test contradicts what the outer test already established: <code>IF nLevel &gt; 100 THEN IF nLevel &lt; 50 THEN</code>. Either the inner condition is wrong (a typo in the limit, the wrong variable) or the code is dead. Both need a look.</p>
+<p>The analysis follows assignments, calls and loops: a write to an operand between the two tests, a call that may change it (a global, a VAR_IN_OUT, an FB output), a pointer or reference to it, or a jump label in between drops what was known. Conditions fixed by constants (<code>IF cSimulation THEN</code>) are configuration switches and are not folded.</p>
+<p>When the proof relies on a global that a task other than this POU&#39;s writes (see PLCA-P004), the finding is reported at <code>info</code>: the other task may change the value between the two tests, so the branch may run after all � itself a sign of a race.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 100 THEN
+    IF nLevel &lt; 50 THEN
+        bAlarm := TRUE;
+    END_IF
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 100 THEN
+    nLevel := 0;
+    IF nLevel &lt; 50 THEN
+        bAlarm := TRUE;
+    END_IF
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L002">
+<summary>PLCA-L002 Unreachable ELSIF</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An ELSIF condition that is false whenever the conditions before it are false: the branch never runs.</p>
+<h4>Rationale</h4>
+<p>In <code>IF nLevel &gt; 10 THEN � ELSIF nLevel &gt; 20 THEN</code> every level above 20 is already above 10, so the second branch is dead. Usually the order is wrong (test the larger limit first) or a limit is mistyped. A branch with the very same condition as an earlier one is PLCA-L005.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSIF nLevel &gt; 20 THEN
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 20 THEN
+    bAlarm := TRUE;
+ELSIF nLevel &gt; 10 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L003">
+<summary>PLCA-L003 Unreachable ELSE</summary>
+<div class="md">
+<h4>Description</h4>
+<p>The conditions of an IF chain cover every possible value, so its ELSE never runs.</p>
+<h4>Rationale</h4>
+<p><code>IF nLevel &lt; 10 THEN � ELSIF nLevel &gt;= 10 THEN � ELSE �</code> leaves nothing for ELSE. The ELSE is dead, and often the case it was meant for (an invalid value, a sensor fault) is not handled at all.</p>
+<p>A CASE ELSE is never reported, even when the labels cover every value of an enumeration: PLCA-Q002 asks for it as a defensive branch against invalid values.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &lt; 10 THEN
+    bPump := TRUE;
+ELSIF nLevel &gt;= 10 THEN
+    bPump := FALSE;
+ELSE
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &lt; 10 THEN
+    bPump := TRUE;
+ELSIF nLevel &lt;= 100 THEN
+    bPump := FALSE;
+ELSE
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L004">
+<summary>PLCA-L004 Self-contradictory condition</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A condition that can never be true by itself: <code>a &gt; 10 AND a &lt; 5</code>, <code>b AND NOT b</code>, <code>a &lt;&gt; a</code>. In ladder: the same tag examined open and closed in series, <code>XIC(A) XIO(A)</code>.</p>
+<h4>Rationale</h4>
+<p>The code it guards never runs, or the value it computes is always FALSE. Typical causes are AND written for OR (<code>nMode = 1 AND nMode = 2</code>) and a swapped limit. Applies to conditions anywhere � IF, WHILE, assignments, call arguments � and to the conditions of ladder rungs and FBD networks. Constant conditions (<code>IF FALSE</code>) are PLCA-Q009, comparisons the operand&#39;s type can never satisfy are PLCA-L012.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel = 1 AND nLevel = 2 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel = 1 OR nLevel = 2 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L005">
+<summary>PLCA-L005 Duplicate condition in an IF chain</summary>
+<div class="md">
+<h4>Description</h4>
+<p>The same condition appears twice in one IF / ELSIF chain (also when written differently, such as <code>a &gt; 5</code> and <code>5 &lt; a</code>): the second branch never runs.</p>
+<h4>Rationale</h4>
+<p>A copied branch whose condition was not edited: the logic meant for the second case is never executed.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 5 THEN
+    bPump := TRUE;
+ELSIF 5 &lt; nLevel THEN
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 50 THEN
+    bAlarm := TRUE;
+ELSIF nLevel &gt; 5 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L006">
+<summary>PLCA-L006 Duplicate or overlapping CASE label</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A CASE label (or range) that repeats values of an earlier label in the same CASE: only the first branch is taken for those values.</p>
+<h4>Rationale</h4>
+<p><code>CASE nStep OF 10: � 5..15: �</code> � step 10 never reaches the second branch. Usually a copied step number in a state machine. Whether a compiler rejects an exact duplicate depends on the vendor and version; overlapping ranges are accepted more often.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+CASE nLevel OF
+    0: bPump := FALSE;
+    10: bPump := TRUE;
+    5..15: bAlarm := TRUE;
+ELSE
+    bAlarm := FALSE;
+END_CASE
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+CASE nLevel OF
+    0: bPump := FALSE;
+    10: bPump := TRUE;
+    11..15: bAlarm := TRUE;
+ELSE
+    bAlarm := FALSE;
+END_CASE
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L007">
+<summary>PLCA-L007 Tautological condition</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A condition that is always true by itself: <code>a &gt; 5 OR a &lt;= 5</code>, <code>b OR NOT b</code>, <code>a = a</code>. In ladder: parallel branches examining the same tag open and closed, <code>[XIC(A), XIO(A)]</code>.</p>
+<h4>Rationale</h4>
+<p>The condition has no effect, so the logic it was meant to gate always runs. Often OR written for AND, or a negation in the wrong place. <code>x = x</code> on a REAL is the NaN test and is not reported.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 5 OR nLevel &lt;= 5 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 5 OR bAlarm THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L008">
+<summary>PLCA-L008 Condition always true where it is</summary>
+<div class="md">
+<h4>Description</h4>
+<p>The enclosing conditions already imply this condition (<code>IF a &gt; 10 THEN IF a &gt; 5 THEN</code>): the test is redundant, and any ELSIF or ELSE after it never runs.</p>
+<h4>Rationale</h4>
+<p>A redundant test misleads the reader into thinking there is a case where it fails, and often the limit was meant to be different. Same follow-up of writes and calls as PLCA-L001; proofs that rely on a global another task writes are reported at <code>info</code>.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    IF nLevel &gt; 5 THEN
+        bPump := TRUE;
+    END_IF
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    IF nLevel &gt; 50 THEN
+        bPump := TRUE;
+    END_IF
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L009">
+<summary>PLCA-L009 ELSIF that should be ELSE</summary>
+<div class="md">
+<h4>Description</h4>
+<p>When the earlier conditions of the chain are false, this ELSIF condition is always true (<code>IF a &gt; b THEN � ELSIF a &lt;= b THEN</code>). Write ELSE; any branch after it never runs.</p>
+<h4>Rationale</h4>
+<p>An ELSIF suggests a remaining case where neither branch runs; there is none. If there was meant to be one, the condition is wrong.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSIF nLevel &lt;= 10 THEN
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSE
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L010">
+<summary>PLCA-L010 Redundant part of a condition</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A part of an AND that the other parts already imply (<code>a &gt; 10 AND a &gt; 5</code>), a part of an OR that the other parts already cover (<code>a &gt; 10 OR a &gt; 5</code>), or the same part twice. In ladder: the same contact twice in series.</p>
+<h4>Rationale</h4>
+<p>The redundant part adds nothing, and frequently one of the limits is a typo for something else. Applies to all conditions, including those of ladder rungs and FBD networks.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 AND nLevel &gt; 5 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 AND nLevel &lt; 50 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L011">
+<summary>PLCA-L011 IF chain that misses a boundary case</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An IF / ELSIF chain without ELSE over one value (or the difference of two) that leaves out only one to three values, typically the boundary: <code>IF a &lt; 0 THEN � ELSIF a &gt; 0 THEN</code> misses <code>a = 0</code>; <code>IF a &gt; b � ELSIF a &lt; b</code> misses <code>a = b</code>.</p>
+<h4>Rationale</h4>
+<p>At exactly the boundary neither branch runs, and the output keeps its last value: a classic source of an intermittent fault that shows only when a sensor reads exactly the limit. Write <code>&gt;=</code> or <code>&lt;=</code>, or add ELSE. Values the enclosing conditions already exclude are not reported.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &lt; 100 THEN
+    bPump := TRUE;
+ELSIF nLevel &gt; 100 THEN
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &lt; 100 THEN
+    bPump := TRUE;
+ELSIF nLevel &gt;= 100 THEN
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L012">
+<summary>PLCA-L012 Comparison outside the operand&#39;s range</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A comparison whose result its operand&#39;s declared type fixes: <code>nByte &gt; 255</code> on a BYTE, <code>nCount &lt; 0</code> on a UINT, a subrange compared with a value outside it, a <code>STRING(n)</code> compared with a literal longer than <code>n</code>.</p>
+<h4>Rationale</h4>
+<p>The comparison is always FALSE (or always TRUE), so the guarded code never runs (or the check never fails). Common after a type change (INT to USINT) or when a negative check is copied to an unsigned variable. Only variables and their members are checked: the type of an arithmetic expression does not bound its value (CODESYS computes <code>INT + INT</code> in 32 bits). Also applies to comparisons in ladder (<code>GRT</code>, <code>LES</code>, �).</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nCount : UINT;
+    bAlarm : BOOL;
+END_VAR
+IF nCount &lt; 0 THEN
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nCount : INT;
+    bAlarm : BOOL;
+END_VAR
+IF nCount &lt; 0 THEN
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L013">
+<summary>PLCA-L013 Identical branches</summary>
+<div class="md">
+<h4>Description</h4>
+<p>Two branches with the same statements: every branch of an IF (ELSE included) doing the same, a branch that repeats the one before it, or two CASE branches with the same statements.</p>
+<h4>Rationale</h4>
+<p>When every branch does the same, the conditions have no effect � usually one branch was copied and not edited. Two adjacent branches doing the same can be merged with OR; two CASE branches doing the same can share one label list (<code>10, 20:</code>). Empty branches are not compared (PLCA-L021).</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSE
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSE
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L014">
+<summary>PLCA-L014 Self-assignment</summary>
+<div class="md">
+<h4>Description</h4>
+<p><code>x := x;</code> changes nothing. In ladder: <code>MOV(A, A)</code>, or an output instruction on the tag its only contact examines (<code>XIC(A) OTE(A)</code>).</p>
+<h4>Rationale</h4>
+<p>Almost always another variable was meant (<code>fbMotor.bRun := bRun;</code> written as <code>bRun := bRun;</code>). Assignments with a call on either side are not reported.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+bPump := bPump;
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+bPump := bAlarm;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L015">
+<summary>PLCA-L015 ELSE that holds only an IF</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An ELSE whose only statement is another IF: write ELSIF.</p>
+<h4>Rationale</h4>
+<p>ELSIF says the same with one level of nesting less, and keeps the chain of cases in one place. Off by default (select <code>PLCA-L015</code> or <code>all</code>): style guides differ.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSE
+    IF bAlarm THEN
+        bPump := FALSE;
+    END_IF
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSIF bAlarm THEN
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L016">
+<summary>PLCA-L016 Nested IF to merge with AND</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An IF without ELSE whose only statement is another IF without ELSE: one IF with AND says the same.</p>
+<h4>Rationale</h4>
+<p>One level less of nesting. Not reported when the inner condition depends on the outer one to be safe � it dereferences a pointer, indexes an array, divides or calls something � because ST&#39;s AND evaluates both sides. Off by default: style guides differ.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF bPump THEN
+    IF nLevel &gt; 10 THEN
+        bAlarm := TRUE;
+    END_IF
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF bPump AND nLevel &gt; 10 THEN
+    bAlarm := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L017">
+<summary>PLCA-L017 ELSE after a branch that always leaves</summary>
+<div class="md">
+<h4>Description</h4>
+<p>Every branch before ELSE ends with RETURN, EXIT, CONTINUE or JMP: the ELSE is not needed, its statements can follow END_IF.</p>
+<h4>Rationale</h4>
+<p>Guard clauses read best flat: <code>IF NOT bEnable THEN RETURN; END_IF</code> followed by the main logic. Off by default: style guides differ.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF bAlarm THEN
+    RETURN;
+ELSE
+    bPump := nLevel &lt; 10;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF bAlarm THEN
+    RETURN;
+END_IF
+bPump := nLevel &lt; 10;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L018">
+<summary>PLCA-L018 Empty THEN with an ELSE</summary>
+<div class="md">
+<h4>Description</h4>
+<p><code>IF c THEN ELSE � END_IF</code>: negate the condition and drop the ELSE. Not reported when THEN holds a comment saying why.</p>
+<h4>Rationale</h4>
+<p>The reader has to negate the condition in their head to see when the code runs. Off by default.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &lt; 10 THEN
+ELSE
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt;= 10 THEN
+    bPump := TRUE;
+END_IF
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L019">
+<summary>PLCA-L019 BOOL set through IF</summary>
+<div class="md">
+<h4>Description</h4>
+<p><code>IF c THEN b := TRUE; ELSE b := FALSE; END_IF</code> is <code>b := c;</code> (or <code>b := NOT c;</code> the other way round).</p>
+<h4>Rationale</h4>
+<p>One line instead of five, and it makes plain that the BOOL follows the condition in every cycle. Off by default.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSE
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+bPump := nLevel &gt; 10;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L020">
+<summary>PLCA-L020 Same statement in every branch</summary>
+<div class="md">
+<h4>Description</h4>
+<p>Every branch of an IF with ELSE (or a CASE with ELSE) ends with the same statement, or starts with it: write it once after (or before) the block.</p>
+<h4>Rationale</h4>
+<p>Duplicated statements drift apart when one copy is edited. &quot;Starts with&quot; is reported only when the statement writes nothing the conditions read, so moving it before the block keeps the meaning. Off by default.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+    bAlarm := FALSE;
+ELSE
+    bPump := FALSE;
+    bAlarm := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF nLevel &gt; 10 THEN
+    bPump := TRUE;
+ELSE
+    bPump := FALSE;
+END_IF
+bAlarm := FALSE;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L021">
+<summary>PLCA-L021 Empty branch</summary>
+<div class="md">
+<h4>Description</h4>
+<p>An IF, ELSIF, ELSE or CASE branch without statements and without a comment saying why. An empty THEN with an ELSE is PLCA-L018.</p>
+<h4>Rationale</h4>
+<p>An empty branch is either unfinished code or a deliberate &quot;do nothing&quot;; a comment tells the reader which. Off by default.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+CASE nLevel OF
+    0: bPump := FALSE;
+    10:
+ELSE
+    bAlarm := TRUE;
+END_CASE
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+CASE nLevel OF
+    0: bPump := FALSE;
+    10: // waiting for the operator: nothing to do
+ELSE
+    bAlarm := TRUE;
+END_CASE
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L022">
+<summary>PLCA-L022 Loop that ends in its first pass</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A FOR, WHILE or REPEAT whose body always ends with EXIT or RETURN: it runs at most once.</p>
+<h4>Rationale</h4>
+<p>Usually the EXIT was meant to sit inside an IF (stop at the first match), or the loop is left over from a change. Not reported when the body has CONTINUE, a conditional EXIT besides the last one (a loop used as a block that can be left early), or labels and jumps.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    i : INT;
+    aValues : ARRAY[1..10] OF INT;
+    nFound : INT;
+END_VAR
+FOR i := 1 TO 10 DO
+    IF aValues[i] &gt; 100 THEN
+        nFound := i;
+    END_IF
+    EXIT;
+END_FOR
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    i : INT;
+    aValues : ARRAY[1..10] OF INT;
+    nFound : INT;
+END_VAR
+FOR i := 1 TO 10 DO
+    IF aValues[i] &gt; 100 THEN
+        nFound := i;
+        EXIT;
+    END_IF
+END_FOR
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L023">
+<summary>PLCA-L023 Temporary value overwritten before it is read</summary>
+<div class="md">
+<h4>Description</h4>
+<p>A VAR_TEMP (or a VAR of a FUNCTION or METHOD) is assigned and then assigned again in the same statement list before anything reads the first value.</p>
+<h4>Rationale</h4>
+<p>The first assignment is wasted, and often the second one was meant for another variable. Static variables are not checked: they keep their value for the next cycle, and another task or the HMI may read it in between. Not reported when the first value comes from a call, when the variable&#39;s address is taken, or across loops, labels and jumps.</p>
+<h4>Noncompliant</h4>
+<pre><code>FUNCTION F_Scale : INT
+VAR_INPUT
+    nRaw : INT;
+END_VAR
+VAR
+    nTmp : INT;
+END_VAR
+nTmp := nRaw * 2;
+nTmp := nRaw * 3;
+F_Scale := nTmp;
+END_FUNCTION
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>FUNCTION F_Scale : INT
+VAR_INPUT
+    nRaw : INT;
+END_VAR
+VAR
+    nTmp : INT;
+END_VAR
+nTmp := nRaw * 2;
+nTmp := nTmp + nRaw;
+F_Scale := nTmp;
+END_FUNCTION
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L024">
+<summary>PLCA-L024 NOT before a comparison</summary>
+<div class="md">
+<h4>Description</h4>
+<p><code>NOT (a = b)</code> reads better as <code>a &lt;&gt; b</code>, <code>NOT (a &lt; b)</code> as <code>a &gt;= b</code>.</p>
+<h4>Rationale</h4>
+<p>The comparison operator says it directly. Off by default: frequent in older code. On REAL operands the two forms differ only for NaN.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+bPump := NOT (nLevel = 10);
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+bPump := nLevel &lt;&gt; 10;
+END_PROGRAM
+</code></pre>
+</div>
+</details>
+<details class="help" id="rule-PLCA-L025">
+<summary>PLCA-L025 BOOL compared with TRUE or FALSE</summary>
+<div class="md">
+<h4>Description</h4>
+<p><code>b = TRUE</code> is <code>b</code>, <code>b = FALSE</code> is <code>NOT b</code>.</p>
+<h4>Rationale</h4>
+<p>The comparison adds nothing; the BOOL is already the condition. Off by default.</p>
+<h4>Noncompliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF bAlarm = TRUE THEN
+    bPump := FALSE;
+END_IF
+END_PROGRAM
+</code></pre>
+<h4>Compliant</h4>
+<pre><code>PROGRAM P_Test
+VAR
+    nLevel : INT;
+    bPump : BOOL;
+    bAlarm : BOOL;
+END_VAR
+IF bAlarm THEN
+    bPump := FALSE;
+END_IF
+END_PROGRAM
 </code></pre>
 </div>
 </details>

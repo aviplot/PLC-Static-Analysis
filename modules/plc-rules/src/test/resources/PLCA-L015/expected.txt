@@ -1,0 +1,1 @@
+noncompliant.st:12:17-12:21 PLCA-L015 info: ELSE holds only an IF; write ELSIF [P_L015]

@@ -180,6 +180,166 @@
     "category" : "quality",
     "plcopen" : "N2",
     "tags" : [ "maintainability", "style", "naming" ]
+  }, {
+    "id" : "PLCA-L001",
+    "title" : "Contradictory nested condition",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-561",
+    "tags" : [ "correctness", "dead-code" ]
+  }, {
+    "id" : "PLCA-L002",
+    "title" : "Unreachable ELSIF",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-561",
+    "tags" : [ "correctness", "dead-code" ]
+  }, {
+    "id" : "PLCA-L003",
+    "title" : "Unreachable ELSE",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-561",
+    "tags" : [ "correctness", "dead-code" ]
+  }, {
+    "id" : "PLCA-L004",
+    "title" : "Self-contradictory condition",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-570",
+    "tags" : [ "correctness" ]
+  }, {
+    "id" : "PLCA-L005",
+    "title" : "Duplicate condition in an IF chain",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-561",
+    "tags" : [ "correctness", "dead-code" ]
+  }, {
+    "id" : "PLCA-L006",
+    "title" : "Duplicate or overlapping CASE label",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-561",
+    "tags" : [ "correctness", "dead-code" ]
+  }, {
+    "id" : "PLCA-L007",
+    "title" : "Tautological condition",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-571",
+    "tags" : [ "correctness" ]
+  }, {
+    "id" : "PLCA-L008",
+    "title" : "Condition always true where it is",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-571",
+    "tags" : [ "correctness", "redundancy" ]
+  }, {
+    "id" : "PLCA-L009",
+    "title" : "ELSIF that should be ELSE",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "clarity", "redundancy" ]
+  }, {
+    "id" : "PLCA-L010",
+    "title" : "Redundant part of a condition",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "clarity", "redundancy" ]
+  }, {
+    "id" : "PLCA-L011",
+    "title" : "IF chain that misses a boundary case",
+    "severity" : "warning",
+    "category" : "logic",
+    "tags" : [ "correctness" ]
+  }, {
+    "id" : "PLCA-L012",
+    "title" : "Comparison outside the operand's range",
+    "severity" : "warning",
+    "category" : "logic",
+    "cwe" : "CWE-570",
+    "tags" : [ "correctness" ]
+  }, {
+    "id" : "PLCA-L013",
+    "title" : "Identical branches",
+    "severity" : "warning",
+    "category" : "logic",
+    "tags" : [ "correctness", "duplication" ]
+  }, {
+    "id" : "PLCA-L014",
+    "title" : "Self-assignment",
+    "severity" : "warning",
+    "category" : "logic",
+    "tags" : [ "correctness" ]
+  }, {
+    "id" : "PLCA-L015",
+    "title" : "ELSE that holds only an IF",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style", "nesting" ]
+  }, {
+    "id" : "PLCA-L016",
+    "title" : "Nested IF to merge with AND",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style", "nesting" ]
+  }, {
+    "id" : "PLCA-L017",
+    "title" : "ELSE after a branch that always leaves",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style", "nesting" ]
+  }, {
+    "id" : "PLCA-L018",
+    "title" : "Empty THEN with an ELSE",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style" ]
+  }, {
+    "id" : "PLCA-L019",
+    "title" : "BOOL set through IF",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style" ]
+  }, {
+    "id" : "PLCA-L020",
+    "title" : "Same statement in every branch",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style", "duplication" ]
+  }, {
+    "id" : "PLCA-L021",
+    "title" : "Empty branch",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style", "clarity" ]
+  }, {
+    "id" : "PLCA-L022",
+    "title" : "Loop that ends in its first pass",
+    "severity" : "warning",
+    "category" : "logic",
+    "tags" : [ "correctness" ]
+  }, {
+    "id" : "PLCA-L023",
+    "title" : "Temporary value overwritten before it is read",
+    "severity" : "info",
+    "category" : "logic",
+    "cwe" : "CWE-563",
+    "tags" : [ "correctness", "dead-store" ]
+  }, {
+    "id" : "PLCA-L024",
+    "title" : "NOT before a comparison",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style" ]
+  }, {
+    "id" : "PLCA-L025",
+    "title" : "BOOL compared with TRUE or FALSE",
+    "severity" : "info",
+    "category" : "logic",
+    "tags" : [ "style" ]
   } ],
   "findings" : [ {
     "ruleId" : "PLCA-P001",

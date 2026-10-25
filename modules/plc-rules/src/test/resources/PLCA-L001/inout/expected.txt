@@ -1,0 +1,2 @@
+fb.st:16:8-16:14 PLCA-L001 warning: Condition 'io < 5' is never true here: the enclosing conditions exclude it; the branch never runs [FB_InOut]
+    fb.st:15:4-15:11 enclosing IF condition

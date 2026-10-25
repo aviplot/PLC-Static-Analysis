@@ -1,5 +1,19 @@
 package dev.plca.rules;
 
+import dev.plca.rules.logic.BoolComparedWithLiteral;
+import dev.plca.rules.logic.BoolThroughIf;
+import dev.plca.rules.logic.ConditionRule;
+import dev.plca.rules.logic.ElseAfterLeave;
+import dev.plca.rules.logic.ElseOnlyIf;
+import dev.plca.rules.logic.EmptyBranch;
+import dev.plca.rules.logic.EmptyThen;
+import dev.plca.rules.logic.IdenticalBranches;
+import dev.plca.rules.logic.LoopEndsInFirstPass;
+import dev.plca.rules.logic.NestedIf;
+import dev.plca.rules.logic.NotBeforeComparison;
+import dev.plca.rules.logic.OverwrittenBeforeRead;
+import dev.plca.rules.logic.SameStatementInBranches;
+import dev.plca.rules.logic.SelfAssignment;
 import dev.plca.rules.plc.CrossTaskWrite;
 import dev.plca.rules.plc.DirectAddressing;
 import dev.plca.rules.plc.DoubleCoil;
@@ -76,7 +90,32 @@ public final class RuleRegistry {
                 new UncheckedExternalInput(),
                 new HiddenTrigger(),
                 new MagicNumber(),
-                new NamingConvention()));
+                new NamingConvention(),
+                new ConditionRule("PLCA-L001"),
+                new ConditionRule("PLCA-L002"),
+                new ConditionRule("PLCA-L003"),
+                new ConditionRule("PLCA-L004"),
+                new ConditionRule("PLCA-L005"),
+                new ConditionRule("PLCA-L006"),
+                new ConditionRule("PLCA-L007"),
+                new ConditionRule("PLCA-L008"),
+                new ConditionRule("PLCA-L009"),
+                new ConditionRule("PLCA-L010"),
+                new ConditionRule("PLCA-L011"),
+                new ConditionRule("PLCA-L012"),
+                new IdenticalBranches(),
+                new SelfAssignment(),
+                new ElseOnlyIf(),
+                new NestedIf(),
+                new ElseAfterLeave(),
+                new EmptyThen(),
+                new BoolThroughIf(),
+                new SameStatementInBranches(),
+                new EmptyBranch(),
+                new LoopEndsInFirstPass(),
+                new OverwrittenBeforeRead(),
+                new NotBeforeComparison(),
+                new BoolComparedWithLiteral()));
     }
 
     public List<RuleDescriptor> descriptors() {

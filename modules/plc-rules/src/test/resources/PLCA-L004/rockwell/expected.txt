@@ -1,0 +1,2 @@
+rungs.L5X:20:46-20:54 PLCA-L004 warning: This ladder/FBD condition is never true: its parts contradict each other [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+rungs.L5X:21:46-21:69 PLCA-L004 warning: This ladder/FBD condition is never true: its parts contradict each other [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:1}

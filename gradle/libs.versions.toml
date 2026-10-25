@@ -16,6 +16,8 @@ lsp4j = "1.0.0"
 gson = "2.14.0"
 jetty = "12.1.14"
 slf4j = "2.0.17"
+java-smt = "6.0.0"
+smtinterpol = "2.5-1242-g5c50fb6d"
 
 [libraries]
 antlr-tool = { module = "org.antlr:antlr4", version.ref = "antlr" }
@@ -34,4 +36,7 @@ jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty
 jetty-websocket-server = { module = "org.eclipse.jetty.websocket:jetty-websocket-jetty-server", version.ref = "jetty" }
 slf4j-jdk14 = { module = "org.slf4j:slf4j-jdk14", version.ref = "slf4j" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+# test only (PLCA-L reasoner differential test); SMTInterpol is LGPL and never shipped
+java-smt = { module = "org.sosy-lab:java-smt", version.ref = "java-smt" }
+smtinterpol = { module = "de.uni-freiburg.informatik.ultimate:smtinterpol", version.ref = "smtinterpol" }
 spotless-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }

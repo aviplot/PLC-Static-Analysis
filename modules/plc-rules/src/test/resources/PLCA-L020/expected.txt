@@ -1,0 +1,2 @@
+noncompliant.st:12:5-12:12 PLCA-L020 info: Every branch of this IF ends with this statement; write it once after END_IF [P_L020]
+noncompliant.st:18:8-18:18 PLCA-L020 info: Every branch of this CASE starts with this statement; write it once before the CASE [P_L020]

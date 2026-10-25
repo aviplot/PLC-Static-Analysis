@@ -1,0 +1,1 @@
+noncompliant.st:11:5-11:14 PLCA-L016 info: IF directly inside an IF without ELSE; merge the two conditions with AND [P_L016]

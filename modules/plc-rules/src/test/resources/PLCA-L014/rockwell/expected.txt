@@ -1,0 +1,2 @@
+rungs.L5X:20:42-20:50 PLCA-L014 warning: 'D' is assigned to itself; this changes nothing [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+rungs.L5X:21:48-21:54 PLCA-L014 warning: 'A' is assigned to itself; this changes nothing [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:1}

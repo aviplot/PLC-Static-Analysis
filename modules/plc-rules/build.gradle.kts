@@ -11,4 +11,14 @@ dependencies {
     testImplementation(project(":frontend-plcopen"))
     testImplementation(testFixtures(project(":plc-core")))
     testImplementation(libs.jazzer.junit)
+    // differential test of the PLCA-L condition reasoner against an SMT solver (test scope only)
+    testImplementation(libs.java.smt)
+    testRuntimeOnly(libs.smtinterpol)
+}
+
+// longer differential runs: ./gradlew :plc-rules:test --tests '*DifferentialTest*' -Plogic.iterations=1000000 -Plogic.seed=7
+tasks.test {
+    for (key in listOf("logic.iterations", "logic.seed")) {
+        providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
+    }
 }

@@ -50,6 +50,22 @@ class SuppressionsTest {
     }
 
     @Test
+    void logicRulesByIdAndCategory() {
+        RuleTesting.Analysis a = RuleTesting.analyze("""
+                PROGRAM P
+                VAR n : INT; b : BOOL; END_VAR
+                b := n > 5 AND n < 3; // plca-disable-line PLCA-L004 kept for the HMI test
+                b := n > 6 AND n < 3; // plca-disable-line logic
+                b := n > 7 AND n < 3;
+                END_PROGRAM
+                """);
+        RuleEngine.Result r = a.run(RuleConfig.only("logic"), 1);
+        assertThat(lines(a, r.findings())).containsExactly("5 PLCA-L004");
+        assertThat(r.suppressed()).hasSize(2);
+        assertThat(r.diagnostics()).isEmpty();
+    }
+
+    @Test
     void regionWithoutEnableRunsToTheEndOfTheFile() {
         RuleTesting.Analysis a = RuleTesting.analyze("""
                 PROGRAM P

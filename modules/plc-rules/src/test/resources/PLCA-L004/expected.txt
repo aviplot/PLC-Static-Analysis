@@ -1,0 +1,6 @@
+noncompliant.st:11:4-11:19 PLCA-L004 warning: Condition 'n = 1 AND n = 2' is never true: its parts contradict each other [P_L004]
+noncompliant.st:14:6-14:22 PLCA-L004 warning: Condition 'n > 10 AND n < 5' is never true: its parts contradict each other [P_L004]
+noncompliant.st:15:6-15:23 PLCA-L004 warning: Condition 'b AND c AND NOT b' is never true: its parts contradict each other [P_L004]
+noncompliant.st:16:7-16:13 PLCA-L004 warning: Condition 'n <> n' is never true: its parts contradict each other [P_L004]
+noncompliant.st:19:6-19:45 PLCA-L004 warning: Condition '(n > 10 AND m > 3) AND (n < 0 OR n < 5)' is never true: its parts contradict each other [P_L004]
+noncompliant.st:20:6-20:33 PLCA-L004 warning: Condition 'sName = 'A' AND sName = 'a'' is never true: its parts contradict each other [P_L004]

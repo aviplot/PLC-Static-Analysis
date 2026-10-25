@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="35.00" TargetName="Cell" TargetType="Controller" ContainsContext="false">
+<Controller Use="Target" Name="Cell">
+<Tags>
+<Tag Name="A" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="B" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="C" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="S" TagType="Base" DataType="SINT" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="D" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Start" TagType="Base" DataType="BOOL" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="E" TagType="Base" DataType="DINT" Constant="false" ExternalAccess="Read/Write"/>
+</Tags>
+<Programs>
+<Program Name="MainProgram" MainRoutineName="Main" Disabled="false">
+<Tags>
+</Tags>
+<Routines>
+<Routine Name="Main" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[MOV(D,D);]]></Text></Rung> <!-- PLCA-L014 -->
+<Rung Number="1" Type="N"><Text><![CDATA[XIC(A)OTE(A);]]></Text></Rung> <!-- PLCA-L014 -->
+<Rung Number="2" Type="N"><Text><![CDATA[MOV(D,E);]]></Text></Rung>
+<Rung Number="3" Type="N"><Text><![CDATA[XIC(B)OTE(A);]]></Text></Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10">
+<ScheduledPrograms>
+<ScheduledProgram Name="MainProgram"/>
+</ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

@@ -1,0 +1,3 @@
+noncompliant.st:10:4-10:12 PLCA-L025 info: BOOL compared with TRUE; write b [P_L025]
+noncompliant.st:13:6-13:16 PLCA-L025 info: BOOL compared with FALSE; write c [P_L025]
+noncompliant.st:14:6-14:21 PLCA-L025 info: BOOL compared with FALSE; write NOT (n > 3) [P_L025]

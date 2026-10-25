@@ -1,0 +1,4 @@
+tasks.st:15:8-15:18 PLCA-L001 info: Condition 'gnMode < 5' is never true here: the enclosing conditions exclude it; the branch never runs (assuming 'gnMode' is not changed by task tFast in between) [P_Slow]
+    tasks.st:14:4-14:15 enclosing IF condition
+tasks.st:20:8-20:18 PLCA-L001 warning: Condition 'nLocal < 5' is never true here: the enclosing conditions exclude it; the branch never runs [P_Slow]
+    tasks.st:19:4-19:15 enclosing IF condition

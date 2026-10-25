@@ -1,0 +1,2 @@
+rungs.L5X:20:42-20:52 PLCA-L012 warning: 'GRT(S,200)' is always FALSE: S (SINT) holds only -128..127 [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+rungs.L5X:21:42-21:53 PLCA-L012 warning: 'GEQ(S,-128)' is always TRUE: S (SINT) holds only -128..127 [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:1}

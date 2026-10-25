@@ -1,0 +1,6 @@
+noncompliant.st:10:1-10:18 PLCA-L023 info: 'nTmp' is assigned again before anything reads this value [F_L023]
+    noncompliant.st:11:1-11:18 assigned again here
+noncompliant.st:12:1-12:13 PLCA-L023 info: 'nOther' is assigned again before anything reads this value [F_L023]
+    noncompliant.st:16:1-16:13 assigned again here
+noncompliant.st:30:1-30:14 PLCA-L023 info: 'nTmp' is assigned again before anything reads this value [FB_L023]
+    noncompliant.st:31:1-31:18 assigned again here

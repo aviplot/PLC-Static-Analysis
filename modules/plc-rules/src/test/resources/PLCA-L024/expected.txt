@@ -1,0 +1,2 @@
+noncompliant.st:10:6-10:18 PLCA-L024 info: NOT before a comparison; write n <> 10 [P_L024]
+noncompliant.st:11:4-11:15 PLCA-L024 info: NOT before a comparison; write n >= m [P_L024]

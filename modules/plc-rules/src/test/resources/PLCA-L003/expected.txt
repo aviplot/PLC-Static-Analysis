@@ -1,0 +1,10 @@
+noncompliant.st:14:1-14:5 PLCA-L003 warning: ELSE never runs: the conditions before it cover every case [P_L003]
+    noncompliant.st:12:7-12:14 always true when reached
+    noncompliant.st:10:4-10:10 earlier condition, false here
+noncompliant.st:21:1-21:5 PLCA-L003 warning: ELSE never runs: the conditions before it cover every case [P_L003]
+    noncompliant.st:19:7-19:12 always true when reached
+    noncompliant.st:17:4-17:5 earlier condition, false here
+noncompliant.st:29:5-29:9 PLCA-L003 warning: ELSE never runs: the conditions before it cover every case [P_L003]
+    noncompliant.st:27:11-27:17 always true when reached
+    noncompliant.st:24:4-24:9 enclosing IF condition
+    noncompliant.st:25:8-25:13 earlier condition, false here

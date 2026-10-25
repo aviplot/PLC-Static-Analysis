@@ -1,0 +1,1 @@
+noncompliant.st:10:17-10:26 PLCA-L018 info: Empty THEN with an ELSE; negate the condition and drop the ELSE [P_L018]

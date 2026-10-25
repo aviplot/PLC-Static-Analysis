@@ -1,0 +1,7 @@
+noncompliant.st:10:1-10:10 PLCA-L013 warning: Every branch of this IF does the same; its conditions have no effect [P_L013]
+noncompliant.st:17:7-17:12 PLCA-L013 warning: This branch does the same as the one before it; merge the two conditions with OR [P_L013]
+    noncompliant.st:15:4-15:10 same statements
+noncompliant.st:26:1-26:5 PLCA-L013 warning: ELSE does the same as the branch before it; that branch's condition has no effect [P_L013]
+    noncompliant.st:24:7-24:12 same statements
+noncompliant.st:32:5-32:7 PLCA-L013 warning: Same statements as the branch for 10; list the labels together [P_L013]
+    noncompliant.st:30:5-30:7 same statements

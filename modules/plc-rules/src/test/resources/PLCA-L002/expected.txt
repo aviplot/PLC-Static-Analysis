@@ -1,0 +1,8 @@
+noncompliant.st:12:7-12:13 PLCA-L002 warning: ELSIF condition 'n > 20' is never true when the earlier conditions are false; the branch never runs [P_L002]
+    noncompliant.st:10:4-10:10 earlier condition, false here
+noncompliant.st:19:7-19:12 PLCA-L002 warning: ELSIF never runs: the ELSIF before it is always true when reached [P_L002]
+    noncompliant.st:17:7-17:14 always true when reached
+    noncompliant.st:15:4-15:10 earlier condition, false here
+noncompliant.st:26:7-26:24 PLCA-L002 warning: ELSIF condition 'b AND c AND n > 0' is never true when the earlier conditions are false; the branch never runs [P_L002]
+    noncompliant.st:22:4-22:11 earlier condition, false here
+    noncompliant.st:24:7-24:8 earlier condition, false here

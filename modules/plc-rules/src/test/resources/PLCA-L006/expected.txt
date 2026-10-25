@@ -1,0 +1,6 @@
+noncompliant.st:16:5-16:10 PLCA-L006 warning: CASE label 5..15 overlaps an earlier label; the shared values never reach this branch [P_L006]
+    noncompliant.st:15:5-15:7 earlier label
+noncompliant.st:17:5-17:6 PLCA-L006 warning: CASE label 0 is already handled by an earlier label; it never matches [P_L006]
+    noncompliant.st:14:5-14:6 earlier label
+noncompliant.st:24:5-24:16 PLCA-L006 warning: CASE label E_Color.Red is already handled by an earlier label; it never matches [P_L006]
+    noncompliant.st:22:5-22:16 earlier label

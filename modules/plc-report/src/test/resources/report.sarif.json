@@ -478,6 +478,481 @@
             "tags" : [ "quality", "maintainability", "style", "naming" ],
             "plcopen" : "N2"
           }
+        }, {
+          "id" : "PLCA-L001",
+          "name" : "ContradictoryNestedCondition",
+          "shortDescription" : {
+            "text" : "Contradictory nested condition"
+          },
+          "fullDescription" : {
+            "text" : "An IF, ELSIF, WHILE condition or CASE label that can never be true where it stands, given the enclosing conditions (and nothing changed their operands in between): its branch never runs."
+          },
+          "help" : {
+            "text" : "An IF, ELSIF, WHILE condition or CASE label that can never be true where it stands, given the enclosing conditions (and nothing changed their operands in between): its branch never runs.",
+            "markdown" : "## Description\n\nAn IF, ELSIF, WHILE condition or CASE label that can never be true where it stands, given the enclosing\nconditions (and nothing changed their operands in between): its branch never runs.\n\n## Rationale\n\nThe inner test contradicts what the outer test already established: `IF nLevel > 100 THEN IF nLevel < 50 THEN`.\nEither the inner condition is wrong (a typo in the limit, the wrong variable) or the code is dead. Both need a look.\n\nThe analysis follows assignments, calls and loops: a write to an operand between the two tests, a call that may\nchange it (a global, a VAR_IN_OUT, an FB output), a pointer or reference to it, or a jump label in between drops what\nwas known. Conditions fixed by constants (`IF cSimulation THEN`) are configuration switches and are not folded.\n\nWhen the proof relies on a global that a task other than this POU's writes (see PLCA-P004), the finding is reported at\n`info`: the other task may change the value between the two tests, so the branch may run after all � itself a\nsign of a race.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 100 THEN\n    IF nLevel < 50 THEN\n        bAlarm := TRUE;\n    END_IF\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 100 THEN\n    nLevel := 0;\n    IF nLevel < 50 THEN\n        bAlarm := TRUE;\n    END_IF\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "dead-code", "external/cwe/cwe-561" ]
+          }
+        }, {
+          "id" : "PLCA-L002",
+          "name" : "UnreachableElsif",
+          "shortDescription" : {
+            "text" : "Unreachable ELSIF"
+          },
+          "fullDescription" : {
+            "text" : "An ELSIF condition that is false whenever the conditions before it are false: the branch never runs."
+          },
+          "help" : {
+            "text" : "An ELSIF condition that is false whenever the conditions before it are false: the branch never runs.",
+            "markdown" : "## Description\n\nAn ELSIF condition that is false whenever the conditions before it are false: the branch never runs.\n\n## Rationale\n\nIn `IF nLevel > 10 THEN � ELSIF nLevel > 20 THEN` every level above 20 is already above 10, so the second branch\nis dead. Usually the order is wrong (test the larger limit first) or a limit is mistyped. A branch with the very\nsame condition as an earlier one is PLCA-L005.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSIF nLevel > 20 THEN\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 20 THEN\n    bAlarm := TRUE;\nELSIF nLevel > 10 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "dead-code", "external/cwe/cwe-561" ]
+          }
+        }, {
+          "id" : "PLCA-L003",
+          "name" : "UnreachableElse",
+          "shortDescription" : {
+            "text" : "Unreachable ELSE"
+          },
+          "fullDescription" : {
+            "text" : "The conditions of an IF chain cover every possible value, so its ELSE never runs."
+          },
+          "help" : {
+            "text" : "The conditions of an IF chain cover every possible value, so its ELSE never runs.",
+            "markdown" : "## Description\n\nThe conditions of an IF chain cover every possible value, so its ELSE never runs.\n\n## Rationale\n\n`IF nLevel < 10 THEN � ELSIF nLevel >= 10 THEN � ELSE �` leaves nothing for ELSE. The ELSE is dead, and often the\ncase it was meant for (an invalid value, a sensor fault) is not handled at all.\n\nA CASE ELSE is never reported, even when the labels cover every value of an enumeration: PLCA-Q002 asks for it as\na defensive branch against invalid values.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel < 10 THEN\n    bPump := TRUE;\nELSIF nLevel >= 10 THEN\n    bPump := FALSE;\nELSE\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel < 10 THEN\n    bPump := TRUE;\nELSIF nLevel <= 100 THEN\n    bPump := FALSE;\nELSE\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "dead-code", "external/cwe/cwe-561" ]
+          }
+        }, {
+          "id" : "PLCA-L004",
+          "name" : "SelfContradictoryCondition",
+          "shortDescription" : {
+            "text" : "Self-contradictory condition"
+          },
+          "fullDescription" : {
+            "text" : "A condition that can never be true by itself: `a > 10 AND a < 5`, `b AND NOT b`, `a <> a`. In ladder: the same tag examined open and closed in series, `XIC(A) XIO(A)`."
+          },
+          "help" : {
+            "text" : "A condition that can never be true by itself: `a > 10 AND a < 5`, `b AND NOT b`, `a <> a`. In ladder: the same tag examined open and closed in series, `XIC(A) XIO(A)`.",
+            "markdown" : "## Description\n\nA condition that can never be true by itself: `a > 10 AND a < 5`, `b AND NOT b`, `a <> a`. In ladder: the same\ntag examined open and closed in series, `XIC(A) XIO(A)`.\n\n## Rationale\n\nThe code it guards never runs, or the value it computes is always FALSE. Typical causes are AND written for OR\n(`nMode = 1 AND nMode = 2`) and a swapped limit. Applies to conditions anywhere � IF, WHILE, assignments, call\narguments � and to the conditions of ladder rungs and FBD networks. Constant conditions (`IF FALSE`) are PLCA-Q009,\ncomparisons the operand's type can never satisfy are PLCA-L012.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel = 1 AND nLevel = 2 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel = 1 OR nLevel = 2 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "external/cwe/cwe-570" ]
+          }
+        }, {
+          "id" : "PLCA-L005",
+          "name" : "DuplicateConditionInAnIfChain",
+          "shortDescription" : {
+            "text" : "Duplicate condition in an IF chain"
+          },
+          "fullDescription" : {
+            "text" : "The same condition appears twice in one IF / ELSIF chain (also when written differently, such as `a > 5` and `5 < a`): the second branch never runs."
+          },
+          "help" : {
+            "text" : "The same condition appears twice in one IF / ELSIF chain (also when written differently, such as `a > 5` and `5 < a`): the second branch never runs.",
+            "markdown" : "## Description\n\nThe same condition appears twice in one IF / ELSIF chain (also when written differently, such as `a > 5` and\n`5 < a`): the second branch never runs.\n\n## Rationale\n\nA copied branch whose condition was not edited: the logic meant for the second case is never executed.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 5 THEN\n    bPump := TRUE;\nELSIF 5 < nLevel THEN\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 50 THEN\n    bAlarm := TRUE;\nELSIF nLevel > 5 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "dead-code", "external/cwe/cwe-561" ]
+          }
+        }, {
+          "id" : "PLCA-L006",
+          "name" : "DuplicateOrOverlappingCaseLabel",
+          "shortDescription" : {
+            "text" : "Duplicate or overlapping CASE label"
+          },
+          "fullDescription" : {
+            "text" : "A CASE label (or range) that repeats values of an earlier label in the same CASE: only the first branch is taken for those values."
+          },
+          "help" : {
+            "text" : "A CASE label (or range) that repeats values of an earlier label in the same CASE: only the first branch is taken for those values.",
+            "markdown" : "## Description\n\nA CASE label (or range) that repeats values of an earlier label in the same CASE: only the first branch is\ntaken for those values.\n\n## Rationale\n\n`CASE nStep OF 10: � 5..15: �` � step 10 never reaches the second branch. Usually a copied step number in a\nstate machine. Whether a compiler rejects an exact duplicate depends on the vendor and version; overlapping ranges\nare accepted more often.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nCASE nLevel OF\n    0: bPump := FALSE;\n    10: bPump := TRUE;\n    5..15: bAlarm := TRUE;\nELSE\n    bAlarm := FALSE;\nEND_CASE\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nCASE nLevel OF\n    0: bPump := FALSE;\n    10: bPump := TRUE;\n    11..15: bAlarm := TRUE;\nELSE\n    bAlarm := FALSE;\nEND_CASE\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "dead-code", "external/cwe/cwe-561" ]
+          }
+        }, {
+          "id" : "PLCA-L007",
+          "name" : "TautologicalCondition",
+          "shortDescription" : {
+            "text" : "Tautological condition"
+          },
+          "fullDescription" : {
+            "text" : "A condition that is always true by itself: `a > 5 OR a <= 5`, `b OR NOT b`, `a = a`. In ladder: parallel branches examining the same tag open and closed, `[XIC(A), XIO(A)]`."
+          },
+          "help" : {
+            "text" : "A condition that is always true by itself: `a > 5 OR a <= 5`, `b OR NOT b`, `a = a`. In ladder: parallel branches examining the same tag open and closed, `[XIC(A), XIO(A)]`.",
+            "markdown" : "## Description\n\nA condition that is always true by itself: `a > 5 OR a <= 5`, `b OR NOT b`, `a = a`. In ladder: parallel\nbranches examining the same tag open and closed, `[XIC(A), XIO(A)]`.\n\n## Rationale\n\nThe condition has no effect, so the logic it was meant to gate always runs. Often OR written for AND, or a\nnegation in the wrong place. `x = x` on a REAL is the NaN test and is not reported.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 5 OR nLevel <= 5 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 5 OR bAlarm THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "external/cwe/cwe-571" ]
+          }
+        }, {
+          "id" : "PLCA-L008",
+          "name" : "ConditionAlwaysTrueWhereItIs",
+          "shortDescription" : {
+            "text" : "Condition always true where it is"
+          },
+          "fullDescription" : {
+            "text" : "The enclosing conditions already imply this condition (`IF a > 10 THEN IF a > 5 THEN`): the test is redundant, and any ELSIF or ELSE after it never runs."
+          },
+          "help" : {
+            "text" : "The enclosing conditions already imply this condition (`IF a > 10 THEN IF a > 5 THEN`): the test is redundant, and any ELSIF or ELSE after it never runs.",
+            "markdown" : "## Description\n\nThe enclosing conditions already imply this condition (`IF a > 10 THEN IF a > 5 THEN`): the test is redundant,\nand any ELSIF or ELSE after it never runs.\n\n## Rationale\n\nA redundant test misleads the reader into thinking there is a case where it fails, and often the limit was meant\nto be different. Same follow-up of writes and calls as PLCA-L001; proofs that rely on a global another task writes are\nreported at `info`.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    IF nLevel > 5 THEN\n        bPump := TRUE;\n    END_IF\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    IF nLevel > 50 THEN\n        bPump := TRUE;\n    END_IF\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "redundancy", "external/cwe/cwe-571" ]
+          }
+        }, {
+          "id" : "PLCA-L009",
+          "name" : "ElsifThatShouldBeElse",
+          "shortDescription" : {
+            "text" : "ELSIF that should be ELSE"
+          },
+          "fullDescription" : {
+            "text" : "When the earlier conditions of the chain are false, this ELSIF condition is always true (`IF a > b THEN � ELSIF a <= b THEN`). Write ELSE; any branch after it never runs."
+          },
+          "help" : {
+            "text" : "When the earlier conditions of the chain are false, this ELSIF condition is always true (`IF a > b THEN � ELSIF a <= b THEN`). Write ELSE; any branch after it never runs.",
+            "markdown" : "## Description\n\nWhen the earlier conditions of the chain are false, this ELSIF condition is always true\n(`IF a > b THEN � ELSIF a <= b THEN`). Write ELSE; any branch after it never runs.\n\n## Rationale\n\nAn ELSIF suggests a remaining case where neither branch runs; there is none. If there was meant to be one, the\ncondition is wrong.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSIF nLevel <= 10 THEN\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSE\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "clarity", "redundancy" ]
+          }
+        }, {
+          "id" : "PLCA-L010",
+          "name" : "RedundantPartOfACondition",
+          "shortDescription" : {
+            "text" : "Redundant part of a condition"
+          },
+          "fullDescription" : {
+            "text" : "A part of an AND that the other parts already imply (`a > 10 AND a > 5`), a part of an OR that the other parts already cover (`a > 10 OR a > 5`), or the same part twice. In ladder: the same contact twice in series."
+          },
+          "help" : {
+            "text" : "A part of an AND that the other parts already imply (`a > 10 AND a > 5`), a part of an OR that the other parts already cover (`a > 10 OR a > 5`), or the same part twice. In ladder: the same contact twice in series.",
+            "markdown" : "## Description\n\nA part of an AND that the other parts already imply (`a > 10 AND a > 5`), a part of an OR that the other parts\nalready cover (`a > 10 OR a > 5`), or the same part twice. In ladder: the same contact twice in series.\n\n## Rationale\n\nThe redundant part adds nothing, and frequently one of the limits is a typo for something else. Applies to all\nconditions, including those of ladder rungs and FBD networks.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 AND nLevel > 5 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 AND nLevel < 50 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "clarity", "redundancy" ]
+          }
+        }, {
+          "id" : "PLCA-L011",
+          "name" : "IfChainThatMissesABoundaryCase",
+          "shortDescription" : {
+            "text" : "IF chain that misses a boundary case"
+          },
+          "fullDescription" : {
+            "text" : "An IF / ELSIF chain without ELSE over one value (or the difference of two) that leaves out only one to three values, typically the boundary: `IF a < 0 THEN � ELSIF a > 0 THEN` misses `a = 0`; `IF a > b � ELSIF a < b` misses `a = b`."
+          },
+          "help" : {
+            "text" : "An IF / ELSIF chain without ELSE over one value (or the difference of two) that leaves out only one to three values, typically the boundary: `IF a < 0 THEN � ELSIF a > 0 THEN` misses `a = 0`; `IF a > b � ELSIF a < b` misses `a = b`.",
+            "markdown" : "## Description\n\nAn IF / ELSIF chain without ELSE over one value (or the difference of two) that leaves out only one to three\nvalues, typically the boundary: `IF a < 0 THEN � ELSIF a > 0 THEN` misses `a = 0`; `IF a > b � ELSIF a < b` misses\n`a = b`.\n\n## Rationale\n\nAt exactly the boundary neither branch runs, and the output keeps its last value: a classic source of an\nintermittent fault that shows only when a sensor reads exactly the limit. Write `>=` or `<=`, or add ELSE. Values the\nenclosing conditions already exclude are not reported.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel < 100 THEN\n    bPump := TRUE;\nELSIF nLevel > 100 THEN\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel < 100 THEN\n    bPump := TRUE;\nELSIF nLevel >= 100 THEN\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness" ]
+          }
+        }, {
+          "id" : "PLCA-L012",
+          "name" : "ComparisonOutsideTheOperandSRange",
+          "shortDescription" : {
+            "text" : "Comparison outside the operand's range"
+          },
+          "fullDescription" : {
+            "text" : "A comparison whose result its operand's declared type fixes: `nByte > 255` on a BYTE, `nCount < 0` on a UINT, a subrange compared with a value outside it, a `STRING(n)` compared with a literal longer than `n`."
+          },
+          "help" : {
+            "text" : "A comparison whose result its operand's declared type fixes: `nByte > 255` on a BYTE, `nCount < 0` on a UINT, a subrange compared with a value outside it, a `STRING(n)` compared with a literal longer than `n`.",
+            "markdown" : "## Description\n\nA comparison whose result its operand's declared type fixes: `nByte > 255` on a BYTE, `nCount < 0` on a UINT,\na subrange compared with a value outside it, a `STRING(n)` compared with a literal longer than `n`.\n\n## Rationale\n\nThe comparison is always FALSE (or always TRUE), so the guarded code never runs (or the check never fails).\nCommon after a type change (INT to USINT) or when a negative check is copied to an unsigned variable. Only variables\nand their members are checked: the type of an arithmetic expression does not bound its value (CODESYS computes\n`INT + INT` in 32 bits). Also applies to comparisons in ladder (`GRT`, `LES`, �).\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nCount : UINT;\n    bAlarm : BOOL;\nEND_VAR\nIF nCount < 0 THEN\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nCount : INT;\n    bAlarm : BOOL;\nEND_VAR\nIF nCount < 0 THEN\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "external/cwe/cwe-570" ]
+          }
+        }, {
+          "id" : "PLCA-L013",
+          "name" : "IdenticalBranches",
+          "shortDescription" : {
+            "text" : "Identical branches"
+          },
+          "fullDescription" : {
+            "text" : "Two branches with the same statements: every branch of an IF (ELSE included) doing the same, a branch that repeats the one before it, or two CASE branches with the same statements."
+          },
+          "help" : {
+            "text" : "Two branches with the same statements: every branch of an IF (ELSE included) doing the same, a branch that repeats the one before it, or two CASE branches with the same statements.",
+            "markdown" : "## Description\n\nTwo branches with the same statements: every branch of an IF (ELSE included) doing the same, a branch that\nrepeats the one before it, or two CASE branches with the same statements.\n\n## Rationale\n\nWhen every branch does the same, the conditions have no effect � usually one branch was copied and not edited.\nTwo adjacent branches doing the same can be merged with OR; two CASE branches doing the same can share one label\nlist (`10, 20:`). Empty branches are not compared (PLCA-L021).\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSE\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSE\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "duplication" ]
+          }
+        }, {
+          "id" : "PLCA-L014",
+          "name" : "SelfAssignment",
+          "shortDescription" : {
+            "text" : "Self-assignment"
+          },
+          "fullDescription" : {
+            "text" : "`x := x;` changes nothing. In ladder: `MOV(A, A)`, or an output instruction on the tag its only contact examines (`XIC(A) OTE(A)`)."
+          },
+          "help" : {
+            "text" : "`x := x;` changes nothing. In ladder: `MOV(A, A)`, or an output instruction on the tag its only contact examines (`XIC(A) OTE(A)`).",
+            "markdown" : "## Description\n\n`x := x;` changes nothing. In ladder: `MOV(A, A)`, or an output instruction on the tag its only contact\nexamines (`XIC(A) OTE(A)`).\n\n## Rationale\n\nAlmost always another variable was meant (`fbMotor.bRun := bRun;` written as `bRun := bRun;`). Assignments with a\ncall on either side are not reported.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nbPump := bPump;\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nbPump := bAlarm;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness" ]
+          }
+        }, {
+          "id" : "PLCA-L015",
+          "name" : "ElseThatHoldsOnlyAnIf",
+          "shortDescription" : {
+            "text" : "ELSE that holds only an IF"
+          },
+          "fullDescription" : {
+            "text" : "An ELSE whose only statement is another IF: write ELSIF."
+          },
+          "help" : {
+            "text" : "An ELSE whose only statement is another IF: write ELSIF.",
+            "markdown" : "## Description\n\nAn ELSE whose only statement is another IF: write ELSIF.\n\n## Rationale\n\nELSIF says the same with one level of nesting less, and keeps the chain of cases in one place. Off by default\n(select `PLCA-L015` or `all`): style guides differ.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSE\n    IF bAlarm THEN\n        bPump := FALSE;\n    END_IF\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSIF bAlarm THEN\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style", "nesting" ]
+          }
+        }, {
+          "id" : "PLCA-L016",
+          "name" : "NestedIfToMergeWithAnd",
+          "shortDescription" : {
+            "text" : "Nested IF to merge with AND"
+          },
+          "fullDescription" : {
+            "text" : "An IF without ELSE whose only statement is another IF without ELSE: one IF with AND says the same."
+          },
+          "help" : {
+            "text" : "An IF without ELSE whose only statement is another IF without ELSE: one IF with AND says the same.",
+            "markdown" : "## Description\n\nAn IF without ELSE whose only statement is another IF without ELSE: one IF with AND says the same.\n\n## Rationale\n\nOne level less of nesting. Not reported when the inner condition depends on the outer one to be safe � it\ndereferences a pointer, indexes an array, divides or calls something � because ST's AND evaluates both sides. Off by\ndefault: style guides differ.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF bPump THEN\n    IF nLevel > 10 THEN\n        bAlarm := TRUE;\n    END_IF\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF bPump AND nLevel > 10 THEN\n    bAlarm := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style", "nesting" ]
+          }
+        }, {
+          "id" : "PLCA-L017",
+          "name" : "ElseAfterABranchThatAlwaysLeaves",
+          "shortDescription" : {
+            "text" : "ELSE after a branch that always leaves"
+          },
+          "fullDescription" : {
+            "text" : "Every branch before ELSE ends with RETURN, EXIT, CONTINUE or JMP: the ELSE is not needed, its statements can follow END_IF."
+          },
+          "help" : {
+            "text" : "Every branch before ELSE ends with RETURN, EXIT, CONTINUE or JMP: the ELSE is not needed, its statements can follow END_IF.",
+            "markdown" : "## Description\n\nEvery branch before ELSE ends with RETURN, EXIT, CONTINUE or JMP: the ELSE is not needed, its statements can\nfollow END_IF.\n\n## Rationale\n\nGuard clauses read best flat: `IF NOT bEnable THEN RETURN; END_IF` followed by the main logic. Off by default:\nstyle guides differ.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF bAlarm THEN\n    RETURN;\nELSE\n    bPump := nLevel < 10;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF bAlarm THEN\n    RETURN;\nEND_IF\nbPump := nLevel < 10;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style", "nesting" ]
+          }
+        }, {
+          "id" : "PLCA-L018",
+          "name" : "EmptyThenWithAnElse",
+          "shortDescription" : {
+            "text" : "Empty THEN with an ELSE"
+          },
+          "fullDescription" : {
+            "text" : "`IF c THEN ELSE � END_IF`: negate the condition and drop the ELSE. Not reported when THEN holds a comment saying why."
+          },
+          "help" : {
+            "text" : "`IF c THEN ELSE � END_IF`: negate the condition and drop the ELSE. Not reported when THEN holds a comment saying why.",
+            "markdown" : "## Description\n\n`IF c THEN ELSE � END_IF`: negate the condition and drop the ELSE. Not reported when THEN holds a comment saying\nwhy.\n\n## Rationale\n\nThe reader has to negate the condition in their head to see when the code runs. Off by default.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel < 10 THEN\nELSE\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel >= 10 THEN\n    bPump := TRUE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style" ]
+          }
+        }, {
+          "id" : "PLCA-L019",
+          "name" : "BoolSetThroughIf",
+          "shortDescription" : {
+            "text" : "BOOL set through IF"
+          },
+          "fullDescription" : {
+            "text" : "`IF c THEN b := TRUE; ELSE b := FALSE; END_IF` is `b := c;` (or `b := NOT c;` the other way round)."
+          },
+          "help" : {
+            "text" : "`IF c THEN b := TRUE; ELSE b := FALSE; END_IF` is `b := c;` (or `b := NOT c;` the other way round).",
+            "markdown" : "## Description\n\n`IF c THEN b := TRUE; ELSE b := FALSE; END_IF` is `b := c;` (or `b := NOT c;` the other way round).\n\n## Rationale\n\nOne line instead of five, and it makes plain that the BOOL follows the condition in every cycle. Off by\ndefault.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSE\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nbPump := nLevel > 10;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style" ]
+          }
+        }, {
+          "id" : "PLCA-L020",
+          "name" : "SameStatementInEveryBranch",
+          "shortDescription" : {
+            "text" : "Same statement in every branch"
+          },
+          "fullDescription" : {
+            "text" : "Every branch of an IF with ELSE (or a CASE with ELSE) ends with the same statement, or starts with it: write it once after (or before) the block."
+          },
+          "help" : {
+            "text" : "Every branch of an IF with ELSE (or a CASE with ELSE) ends with the same statement, or starts with it: write it once after (or before) the block.",
+            "markdown" : "## Description\n\nEvery branch of an IF with ELSE (or a CASE with ELSE) ends with the same statement, or starts with it: write it\nonce after (or before) the block.\n\n## Rationale\n\nDuplicated statements drift apart when one copy is edited. \"Starts with\" is reported only when the statement\nwrites nothing the conditions read, so moving it before the block keeps the meaning. Off by default.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\n    bAlarm := FALSE;\nELSE\n    bPump := FALSE;\n    bAlarm := FALSE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF nLevel > 10 THEN\n    bPump := TRUE;\nELSE\n    bPump := FALSE;\nEND_IF\nbAlarm := FALSE;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style", "duplication" ]
+          }
+        }, {
+          "id" : "PLCA-L021",
+          "name" : "EmptyBranch",
+          "shortDescription" : {
+            "text" : "Empty branch"
+          },
+          "fullDescription" : {
+            "text" : "An IF, ELSIF, ELSE or CASE branch without statements and without a comment saying why. An empty THEN with an ELSE is PLCA-L018."
+          },
+          "help" : {
+            "text" : "An IF, ELSIF, ELSE or CASE branch without statements and without a comment saying why. An empty THEN with an ELSE is PLCA-L018.",
+            "markdown" : "## Description\n\nAn IF, ELSIF, ELSE or CASE branch without statements and without a comment saying why. An empty THEN with an\nELSE is PLCA-L018.\n\n## Rationale\n\nAn empty branch is either unfinished code or a deliberate \"do nothing\"; a comment tells the reader which. Off\nby default.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nCASE nLevel OF\n    0: bPump := FALSE;\n    10:\nELSE\n    bAlarm := TRUE;\nEND_CASE\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nCASE nLevel OF\n    0: bPump := FALSE;\n    10: // waiting for the operator: nothing to do\nELSE\n    bAlarm := TRUE;\nEND_CASE\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style", "clarity" ]
+          }
+        }, {
+          "id" : "PLCA-L022",
+          "name" : "LoopThatEndsInItsFirstPass",
+          "shortDescription" : {
+            "text" : "Loop that ends in its first pass"
+          },
+          "fullDescription" : {
+            "text" : "A FOR, WHILE or REPEAT whose body always ends with EXIT or RETURN: it runs at most once."
+          },
+          "help" : {
+            "text" : "A FOR, WHILE or REPEAT whose body always ends with EXIT or RETURN: it runs at most once.",
+            "markdown" : "## Description\n\nA FOR, WHILE or REPEAT whose body always ends with EXIT or RETURN: it runs at most once.\n\n## Rationale\n\nUsually the EXIT was meant to sit inside an IF (stop at the first match), or the loop is left over from a\nchange. Not reported when the body has CONTINUE, a conditional EXIT besides the last one (a loop used as a block that\ncan be left early), or labels and jumps.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    i : INT;\n    aValues : ARRAY[1..10] OF INT;\n    nFound : INT;\nEND_VAR\nFOR i := 1 TO 10 DO\n    IF aValues[i] > 100 THEN\n        nFound := i;\n    END_IF\n    EXIT;\nEND_FOR\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    i : INT;\n    aValues : ARRAY[1..10] OF INT;\n    nFound : INT;\nEND_VAR\nFOR i := 1 TO 10 DO\n    IF aValues[i] > 100 THEN\n        nFound := i;\n        EXIT;\n    END_IF\nEND_FOR\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "warning"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness" ]
+          }
+        }, {
+          "id" : "PLCA-L023",
+          "name" : "TemporaryValueOverwrittenBeforeItIsRead",
+          "shortDescription" : {
+            "text" : "Temporary value overwritten before it is read"
+          },
+          "fullDescription" : {
+            "text" : "A VAR_TEMP (or a VAR of a FUNCTION or METHOD) is assigned and then assigned again in the same statement list before anything reads the first value."
+          },
+          "help" : {
+            "text" : "A VAR_TEMP (or a VAR of a FUNCTION or METHOD) is assigned and then assigned again in the same statement list before anything reads the first value.",
+            "markdown" : "## Description\n\nA VAR_TEMP (or a VAR of a FUNCTION or METHOD) is assigned and then assigned again in the same statement list\nbefore anything reads the first value.\n\n## Rationale\n\nThe first assignment is wasted, and often the second one was meant for another variable. Static variables are\nnot checked: they keep their value for the next cycle, and another task or the HMI may read it in between. Not\nreported when the first value comes from a call, when the variable's address is taken, or across loops, labels and\njumps.\n\n## Noncompliant\n\n```st\nFUNCTION F_Scale : INT\nVAR_INPUT\n    nRaw : INT;\nEND_VAR\nVAR\n    nTmp : INT;\nEND_VAR\nnTmp := nRaw * 2;\nnTmp := nRaw * 3;\nF_Scale := nTmp;\nEND_FUNCTION\n```\n\n## Compliant\n\n```st\nFUNCTION F_Scale : INT\nVAR_INPUT\n    nRaw : INT;\nEND_VAR\nVAR\n    nTmp : INT;\nEND_VAR\nnTmp := nRaw * 2;\nnTmp := nTmp + nRaw;\nF_Scale := nTmp;\nEND_FUNCTION\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "correctness", "dead-store", "external/cwe/cwe-563" ]
+          }
+        }, {
+          "id" : "PLCA-L024",
+          "name" : "NotBeforeAComparison",
+          "shortDescription" : {
+            "text" : "NOT before a comparison"
+          },
+          "fullDescription" : {
+            "text" : "`NOT (a = b)` reads better as `a <> b`, `NOT (a < b)` as `a >= b`."
+          },
+          "help" : {
+            "text" : "`NOT (a = b)` reads better as `a <> b`, `NOT (a < b)` as `a >= b`.",
+            "markdown" : "## Description\n\n`NOT (a = b)` reads better as `a <> b`, `NOT (a < b)` as `a >= b`.\n\n## Rationale\n\nThe comparison operator says it directly. Off by default: frequent in older code. On REAL operands the two forms\ndiffer only for NaN.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nbPump := NOT (nLevel = 10);\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nbPump := nLevel <> 10;\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style" ]
+          }
+        }, {
+          "id" : "PLCA-L025",
+          "name" : "BoolComparedWithTrueOrFalse",
+          "shortDescription" : {
+            "text" : "BOOL compared with TRUE or FALSE"
+          },
+          "fullDescription" : {
+            "text" : "`b = TRUE` is `b`, `b = FALSE` is `NOT b`."
+          },
+          "help" : {
+            "text" : "`b = TRUE` is `b`, `b = FALSE` is `NOT b`.",
+            "markdown" : "## Description\n\n`b = TRUE` is `b`, `b = FALSE` is `NOT b`.\n\n## Rationale\n\nThe comparison adds nothing; the BOOL is already the condition. Off by default.\n\n## Noncompliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF bAlarm = TRUE THEN\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n\n## Compliant\n\n```st\nPROGRAM P_Test\nVAR\n    nLevel : INT;\n    bPump : BOOL;\n    bAlarm : BOOL;\nEND_VAR\nIF bAlarm THEN\n    bPump := FALSE;\nEND_IF\nEND_PROGRAM\n```\n"
+          },
+          "defaultConfiguration" : {
+            "level" : "note"
+          },
+          "properties" : {
+            "tags" : [ "logic", "style" ]
+          }
         } ]
       }
     },

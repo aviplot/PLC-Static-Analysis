@@ -1,0 +1,2 @@
+noncompliant.st:12:1-12:5 PLCA-L017 info: The branches before ELSE always leave (RETURN, EXIT, CONTINUE or JMP); the ELSE is not needed, its statements can follow END_IF [P_L017]
+noncompliant.st:21:5-21:9 PLCA-L017 info: The branches before ELSE always leave (RETURN, EXIT, CONTINUE or JMP); the ELSE is not needed, its statements can follow END_IF [P_L017]

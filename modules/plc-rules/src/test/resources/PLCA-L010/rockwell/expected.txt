@@ -1,0 +1,2 @@
+rungs.L5X:20:52-20:53 PLCA-L010 info: 'A' appears twice in series [MainProgram.Main] {Program:MainProgram/Routine:Main/Rung:0}
+    rungs.L5X:20:46-20:47 first occurrence

@@ -1,0 +1,2 @@
+noncompliant.st:11:1-11:17 PLCA-L022 warning: The loop body always ends with EXIT: the loop runs at most once [P_L022]
+noncompliant.st:17:1-17:8 PLCA-L022 warning: The loop body always ends with RETURN: the loop runs at most once [P_L022]

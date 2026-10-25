@@ -1,0 +1,6 @@
+noncompliant.st:14:7-14:12 PLCA-L005 warning: Same condition as an earlier branch of this IF; this branch never runs [P_L005]
+    noncompliant.st:10:4-10:9 first branch with it
+noncompliant.st:19:7-19:12 PLCA-L005 warning: Same condition as an earlier branch of this IF; this branch never runs [P_L005]
+    noncompliant.st:17:4-17:10 first branch with it
+noncompliant.st:24:7-24:14 PLCA-L005 warning: Same condition as an earlier branch of this IF; this branch never runs [P_L005]
+    noncompliant.st:22:4-22:11 first branch with it

@@ -1,0 +1,2 @@
+noncompliant.st:10:1-10:10 PLCA-L019 info: This IF only sets 'q' to TRUE or FALSE; write q := n > 10; [P_L019]
+noncompliant.st:15:1-15:11 PLCA-L019 info: This IF only sets 'q' to TRUE or FALSE; write q := NOT (b AND c); [P_L019]

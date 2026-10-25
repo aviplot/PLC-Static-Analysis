@@ -1,0 +1,10 @@
+noncompliant.st:11:8-11:14 PLCA-L001 warning: Condition 'n < 50' is never true here: the enclosing conditions exclude it; the branch never runs [P_L001]
+    noncompliant.st:10:4-10:11 enclosing IF condition
+noncompliant.st:18:8-18:14 PLCA-L001 warning: Condition 'n > 20' is never true here: the enclosing conditions exclude it; the branch never runs [P_L001]
+    noncompliant.st:15:4-15:10 earlier condition, false here
+noncompliant.st:25:4-25:10 PLCA-L001 warning: Condition 'm < -5' is never true here: the enclosing conditions exclude it; the branch never runs [P_L001]
+    noncompliant.st:22:4-22:9 earlier condition, false here
+noncompliant.st:30:9-30:10 PLCA-L001 warning: CASE label 5 never matches here: the enclosing conditions exclude it [P_L001]
+    noncompliant.st:28:4-28:10 enclosing IF condition
+noncompliant.st:37:11-37:16 PLCA-L001 warning: WHILE condition 'n > 7' is never true here: the enclosing conditions exclude it; the loop body never runs [P_L001]
+    noncompliant.st:36:4-36:15 enclosing IF condition
