@@ -1,0 +1,34 @@
+SourceUnit dialect=CODESYS
+  TypeDecl name=E_Handshake @2:6-6:3
+    type:
+      EnumType @3:1-6:2
+        values:
+          EnumValue name=Load @4:5-4:14
+            value:
+              Literal kind=INTEGER text="1" @4:13-4:14
+          EnumValue name=CameraCheck @5:5-5:21
+            value:
+              Literal kind=INTEGER text="2" @5:20-5:21
+  TypeDecl name=E_SystemState @9:6-13:8
+    type:
+      EnumType @10:1-13:7
+        values:
+          EnumValue name=IDLE @11:5-11:14
+            value:
+              Literal kind=INTEGER text="0" @11:13-11:14
+          EnumValue name=RUNNING @12:5-12:17
+            value:
+              Literal kind=INTEGER text="1" @12:16-12:17
+        baseType:
+          Named name=WORD @13:3-13:7
+  TypeDecl name=E_Plain @16:6-16:45
+    type:
+      EnumType @16:16-16:35
+        values:
+          EnumValue name=Red @16:17-16:20
+          EnumValue name=Green @16:22-16:27
+          EnumValue name=Blue @16:29-16:33
+    init:
+      NameRef name=Green globalScope=false @16:39-16:44
+  comments: 2
+diagnostics:

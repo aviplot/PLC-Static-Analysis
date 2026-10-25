@@ -145,6 +145,11 @@ dataTypeDeclaration
     : TYPE modifier* typeDefinition+ END_TYPE SEMI?
     ;
 
+/** `(Idle := 0, Busy := 1, ) WORD` (M12): a comma after the last value. */
+enumType
+    : LPAREN enumValue (COMMA enumValue)* COMMA? RPAREN namedType?
+    ;
+
 /** `fb : FB_X := ();`, `[15(())]` (M12): an empty initialiser leaves every member at its default. */
 structInitializer
     : LPAREN (structInitElement (COMMA structInitElement)*)? RPAREN
