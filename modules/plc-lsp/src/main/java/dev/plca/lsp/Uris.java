@@ -85,7 +85,10 @@ public interface Uris {
                 if (text == null) {
                     return null;
                 }
-                return text.replace(rootText + java.io.File.separator, "").replace(rootText, ".");
+                // both separators: on Windows a path in a message may also be written with '/'
+                return text.replace(rootText + java.io.File.separator, "")
+                        .replace(rootText + "/", "")
+                        .replace(rootText, ".");
             }
         };
     }

@@ -22,7 +22,7 @@ val smokeTest by tasks.registering(Exec::class) {
     dependsOn(tasks.named("installDist"))
     val script =
         layout.buildDirectory
-            .file("install/plca/bin/plca")
+            .file(if (System.getProperty("os.name").startsWith("Windows")) "install/plca/bin/plca.bat" else "install/plca/bin/plca")
             .get()
             .asFile
     val project = rootProject.layout.projectDirectory.dir("modules/plc-semantic/src/test/resources/projects/plant")
