@@ -28,7 +28,8 @@ fail-on: warning                   # error (default), warning, info, never
 ```
 
 - **Selection.** `default` is every rule that is on by default; `all` adds the opt-in style rules (PLCA-Q014 magic
-  numbers, PLCA-Q015 naming conventions). A category (`quality`, `plc`, `security`) means its rules that are on by
+  numbers, PLCA-Q015 naming conventions, and the logic style rules PLCA-L015 to L021, L024 and L025). A category
+  (`quality`, `plc`, `security`, `logic`) means its rules that are on by
   default; opt-in rules are selected by id. `plca rules` lists the rules, whether each is on by default and its PLCopen
   rule.
 - **Per dialect.** `dialects.<dialect>` takes `select`, `disable`, `severity` and `parameters`, applied to POUs of that

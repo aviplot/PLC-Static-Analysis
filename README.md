@@ -23,7 +23,7 @@ too. They are also drawn as SVG, in the HTML report and in the workbench, with t
 
 ## Rules
 
-24 rules in three categories. Where a PLCopen Coding Guidelines rule applies, its id is given:
+49 rules in four categories. Where a PLCopen Coding Guidelines rule applies, its id is given:
 
 - **Quality**: unused variables and POUs, unreachable code, CASE without ELSE, REAL equality, division by zero, FOR
   variable written in the loop, writes to VAR_INPUT, recursion, loops without an evident exit, temporaries read before
@@ -32,6 +32,10 @@ too. They are also drawn as SVG, in the HTML report and in the workbench, with t
   pointer dereference without a check, jumps.
 - **Security**: hard-coded credentials and IP addresses, externally writable values used without a check, suspicious
   hidden triggers (time bombs, magic values).
+- **Logic**: conditions that are never or always true, nested or in an IF chain (ranges, enums and string lengths
+  included), unreachable ELSIF / ELSE / CASE labels, duplicate and redundant conditions, boundary gaps, identical
+  branches, self-assignment, loops that end in the first pass, overwritten temporaries; style rules (ELSE IF, nested
+  IF, BOOL through IF, NOT before a comparison and others) are opt-in.
 
 `plca rules` lists them; `plca rules PLCA-P001` shows a rule's documentation. Rules, severities, parameters,
 suppressions and baselines are configured in `plca.yaml` ([docs/configuration.md](docs/configuration.md)).
