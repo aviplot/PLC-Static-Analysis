@@ -2,7 +2,7 @@
   "name": "plca",
   "displayName": "plca — PLC static analysis",
   "description": "Diagnostics, navigation and highlighting for IEC 61131-3 Structured Text (CODESYS, TwinCAT), Siemens SCL, Rockwell L5X/L5K and PLCopen XML, from the plca language server.",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "publisher": "AvrahamPlotnitzky",
   "repository": {
     "type": "git",
@@ -18,8 +18,23 @@
   "engines": {
     "vscode": "^1.100.0"
   },
-  "categories": ["Programming Languages", "Linters"],
-  "keywords": ["PLC", "IEC 61131-3", "Structured Text", "TwinCAT", "CODESYS", "SCL", "TIA Portal", "Studio 5000", "L5X", "L5K", "PLCopen"],
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "PLC",
+    "IEC 61131-3",
+    "Structured Text",
+    "TwinCAT",
+    "CODESYS",
+    "SCL",
+    "TIA Portal",
+    "Studio 5000",
+    "L5X",
+    "L5K",
+    "PLCopen"
+  ],
   "main": "./dist/extension.js",
   "activationEvents": [
     "workspaceContains:**/*.{st,ST,TcPOU,TcDUT,TcGVL,TcIO,TcTTO,scl,SCL,db,udt,L5X,l5x,L5K,l5k}",
@@ -29,37 +44,71 @@
     "languages": [
       {
         "id": "iec-st",
-        "aliases": ["Structured Text (IEC 61131-3)", "st"],
-        "extensions": [".st", ".ST"],
+        "aliases": [
+          "Structured Text (IEC 61131-3)",
+          "st"
+        ],
+        "extensions": [
+          ".st",
+          ".ST"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "siemens-scl",
-        "aliases": ["Siemens SCL", "scl"],
-        "extensions": [".scl", ".SCL", ".db", ".udt"],
+        "aliases": [
+          "Siemens SCL",
+          "scl"
+        ],
+        "extensions": [
+          ".scl",
+          ".SCL",
+          ".db",
+          ".udt"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "twincat-xml",
-        "aliases": ["TwinCAT PLC object"],
-        "extensions": [".TcPOU", ".TcDUT", ".TcGVL", ".TcIO", ".TcTTO"],
+        "aliases": [
+          "TwinCAT PLC object"
+        ],
+        "extensions": [
+          ".TcPOU",
+          ".TcDUT",
+          ".TcGVL",
+          ".TcIO",
+          ".TcTTO"
+        ],
         "configuration": "./language-configuration-xml.json"
       },
       {
         "id": "rockwell-l5x",
-        "aliases": ["Rockwell L5X export"],
-        "extensions": [".L5X", ".l5x"],
+        "aliases": [
+          "Rockwell L5X export"
+        ],
+        "extensions": [
+          ".L5X",
+          ".l5x"
+        ],
         "configuration": "./language-configuration-xml.json"
       },
       {
         "id": "plcopen-xml",
-        "aliases": ["PLCopen XML"],
+        "aliases": [
+          "PLCopen XML"
+        ],
         "configuration": "./language-configuration-xml.json"
       },
       {
         "id": "rockwell-l5k",
-        "aliases": ["Rockwell L5K export"],
-        "extensions": [".L5K", ".l5k"],
+        "aliases": [
+          "Rockwell L5K export"
+        ],
+        "extensions": [
+          ".L5K",
+          ".l5k"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -162,7 +211,11 @@
         },
         "plca.trace.server": {
           "type": "string",
-          "enum": ["off", "messages", "verbose"],
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
           "default": "off",
           "description": "Traces the communication between VS Code and the plca language server."
         }
