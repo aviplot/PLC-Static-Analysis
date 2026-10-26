@@ -2,6 +2,7 @@ package dev.plca.rules.logic;
 
 import dev.plca.ast.Expression;
 import dev.plca.ast.Expression.BinaryOp;
+import dev.plca.ast.Identifier;
 import dev.plca.ast.Statement;
 import dev.plca.core.diag.Diagnostic;
 import dev.plca.core.source.Span;
@@ -186,10 +187,13 @@ public final class LogicAnalysis {
     }
 
     private void root(Expression e) {
+        if (e instanceof Expression.Binary b && Normalizer.isComparison(b.op()) && plain(b)) {
+            return;
+        }
         if (readOnce(e, new HashSet<>())) {
             return; // AND / OR / NOT over distinct BOOL names: satisfiable, not valid, every part needed
         }
-        if (model.constant(e).isPresent() || hasInvalid(e)) {
+        if (norm.constant(e).isPresent() || hasInvalid(e)) {
             return;
         }
         boolean fixed = rangeChecks(e);
@@ -202,6 +206,9 @@ public final class LogicAnalysis {
         }
         if (c.size() == 1 && !selfComparison(c) && !hasChain(e)) {
             return; // one literal: nothing to contradict or repeat (most lowered ladder contacts)
+        }
+        if (independent(e)) {
+            return;
         }
         if (Reasoner.unsat(c)) {
             if (c.size() > 1 || selfComparison(c)) {
@@ -234,11 +241,44 @@ public final class LogicAnalysis {
             case Expression.Binary b
             when Normalizer.isLogical(b) && !Normalizer.isComparison(b.op()) ->
                 readOnce(b.left(), seen) && readOnce(b.right(), seen);
+            case Expression.NameRef n
+            when n.name().form() == Identifier.Form.SYNTHETIC -> seen.add(path(n)); // ladder power flow
             case Expression.NameRef n -> variable(n) && seen.add(path(n));
+            case Expression.Call c -> true; // a call is a value of its own each time (see Normalizer)
             case Expression.MemberAccess m -> variable(base(m)) && seen.add(path(m));
             case Expression.BitAccess b -> variable(base(b)) && seen.add(path(b));
             default -> false;
         };
+    }
+
+    /**
+     * A comparison of two values that are neither constants nor enum values, different from each other, with no
+     * condition inside: one literal over a difference, which none of L004, L007, L010, L012 can report. Most compare
+     * two tags ({@code Stn.Cnt > Stn.Sp}).
+     */
+    private boolean plain(Expression.Binary b) {
+        return !fixed(b.left())
+                && !fixed(b.right())
+                && !hasCondition(b.left())
+                && !hasCondition(b.right())
+                && !Structural.equal(b.left(), b.right());
+    }
+
+    private boolean fixed(Expression e) {
+        return e instanceof Expression.Literal
+                || norm.constant(e).isPresent()
+                || model.symbol(e).orElse(null) instanceof EnumValueSymbol;
+    }
+
+    private static boolean hasCondition(Expression e) {
+        boolean[] r = {false};
+        Walk.deep(
+                e,
+                x -> r[0] |=
+                        x instanceof Expression.Binary b && (Normalizer.isLogical(b) || Normalizer.isComparison(b.op()))
+                                || x instanceof Expression.Unary u && u.op() == Expression.UnaryOp.NOT
+                                || x instanceof Expression.Invalid);
+        return r[0];
     }
 
     /** A name that is a variable, not a constant. */
@@ -273,6 +313,39 @@ public final class LogicAnalysis {
             }
             default -> null;
         };
+    }
+
+    /**
+     * Whether the parts of {@code e}'s AND / OR / XOR / NOT structure talk about different operands, and each of their
+     * literals can be both true and false. The reasoner links literals only through shared operands, so such a
+     * condition is neither contradictory nor always true and no part of it is redundant. Typical of lowered ladder:
+     * {@code $rc16 AND Tag.Ready AND ONS(Tag.Ons)}.
+     */
+    private boolean independent(Expression e) {
+        Set<String> keys = new HashSet<>();
+        boolean[] ok = {true};
+        parts(e, part -> {
+            Cond c = ok[0] ? norm.cond(part) : null;
+            if (c == null || c instanceof Cond.Const) {
+                ok[0] = false;
+                return;
+            }
+            c.literals(l -> ok[0] &= keys.add(l.atom().operand().key()) && !Reasoner.unsat(l) && !Reasoner.valid(l));
+        });
+        return ok[0];
+    }
+
+    /** The operands of the logical operators in {@code e}, down to the first part that is not AND / OR / XOR / NOT. */
+    private static void parts(Expression e, java.util.function.Consumer<Expression> action) {
+        switch (e) {
+            case Expression.Unary u when u.op() == Expression.UnaryOp.NOT -> parts(u.operand(), action);
+            case Expression.Binary b
+            when Normalizer.isLogical(b) && !Normalizer.isComparison(b.op()) -> {
+                parts(b.left(), action);
+                parts(b.right(), action);
+            }
+            default -> action.accept(e);
+        }
     }
 
     private static boolean hasChain(Expression e) {
@@ -384,7 +457,7 @@ public final class LogicAnalysis {
 
     /** Why the comparison {@code b} has the same result for every value its operand's type can hold, or null. */
     private String fixedByType(Expression.Binary b) {
-        if (model.constant(b).isPresent()) {
+        if (norm.constant(b).isPresent()) {
             return null;
         }
         if (!(norm.cond(b) instanceof Cond.Lit l)) {
@@ -680,7 +753,7 @@ public final class LogicAnalysis {
     /** Not decided by itself (L004 / L007 / L012 report those) and not fixed by constants. */
     private boolean checkable(Expression e, Cond c) {
         return !(c instanceof Cond.Const)
-                && model.constant(e).isEmpty()
+                && norm.constant(e).isEmpty()
                 && !hasInvalid(e)
                 && !Reasoner.unsat(c)
                 && !Reasoner.valid(c);
@@ -820,7 +893,7 @@ public final class LogicAnalysis {
         if (model.symbol(e).orElse(null) instanceof EnumValueSymbol v) {
             return new BigDecimal(v.value());
         }
-        return model.constant(e).orElse(null) instanceof Constant.Int i ? new BigDecimal(i.value()) : null;
+        return norm.constant(e).orElse(null) instanceof Constant.Int i ? new BigDecimal(i.value()) : null;
     }
 
     // ---------------------------------------------------------------- proofs

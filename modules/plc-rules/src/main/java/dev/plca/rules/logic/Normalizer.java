@@ -20,6 +20,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -45,6 +46,7 @@ final class Normalizer {
     private final Set<VariableSymbol> aliased;
     private final Map<Expression, Cond> conds = new IdentityHashMap<>();
     private final Map<Expression, Operand> operands = new IdentityHashMap<>();
+    private final Map<Expression, Optional<Constant>> constants = new IdentityHashMap<>();
     private int unique;
 
     /** {@code aliased}: variables whose address the POU takes; a write through a pointer may change them. */
@@ -59,6 +61,24 @@ final class Normalizer {
     }
 
     /** The condition {@code e} (a BOOL expression). */
+    /**
+     * {@link SemanticModel#constant}, remembered per node. An operator is constant only when its operands are (the
+     * evaluator does not short-circuit), so a deep condition is evaluated once, not once per level.
+     */
+    Optional<Constant> constant(Expression e) {
+        Optional<Constant> c = constants.get(e);
+        if (c == null) {
+            c = switch (e) {
+                case Expression.Binary b
+                when constant(b.left()).isEmpty() || constant(b.right()).isEmpty() -> Optional.empty();
+                case Expression.Unary u when constant(u.operand()).isEmpty() -> Optional.empty();
+                default -> model.constant(e);
+            };
+            constants.put(e, c);
+        }
+        return c;
+    }
+
     Cond cond(Expression e) {
         Cond c = conds.get(e);
         if (c == null) {
@@ -72,7 +92,7 @@ final class Normalizer {
     }
 
     private Cond build(Expression e) {
-        if (model.constant(e).orElse(null) instanceof Constant.Bool) {
+        if (constant(e).orElse(null) instanceof Constant.Bool) {
             return switchProp(e);
         }
         return switch (e) {
@@ -120,8 +140,8 @@ final class Normalizer {
 
     private Cond compare(Expression.Binary b) {
         Rel rel = rel(b.op());
-        Constant lc = constant(b.left());
-        Constant rc = constant(b.right());
+        Constant lc = value(b.left());
+        Constant rc = value(b.right());
         String ls = text(b.left());
         String rs = text(b.right());
         if ((lc != null || ls != null) && (rc != null || rs != null)) {
@@ -203,11 +223,11 @@ final class Normalizer {
         };
     }
 
-    private Constant constant(Expression e) {
+    private Constant value(Expression e) {
         if (model.symbol(e).orElse(null) instanceof EnumValueSymbol v) {
             return new Constant.Int(v.value());
         }
-        return model.constant(e).orElse(null);
+        return constant(e).orElse(null);
     }
 
     /** The decoded value of a string literal, or null. */
@@ -390,8 +410,8 @@ final class Normalizer {
                 default -> {}
             }
         });
-        String key = key(e);
         String display = StText.expression(e);
+        String key = keyOf(display);
         if (flags[2]) {
             return new Operand(
                     "#" + (++unique) + ":" + key, display, Operand.Kind.BOOL, null, -1, false, deps, true, true, false);
@@ -492,7 +512,20 @@ final class Normalizer {
 
     /** Normalised text: case and blanks do not matter. */
     static String key(Expression e) {
-        return StText.expression(e).toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+        return keyOf(StText.expression(e));
+    }
+
+    /** {@code text} in lower case without blanks (no regex: this runs for every operand). */
+    private static String keyOf(String text) {
+        String t = text.toLowerCase(Locale.ROOT);
+        StringBuilder sb = new StringBuilder(t.length());
+        for (int i = 0; i < t.length(); i++) {
+            char c = t.charAt(i);
+            if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '\f' && c != '\u000B') {
+                sb.append(c);
+            }
+        }
+        return sb.length() == t.length() ? t : sb.toString();
     }
 
     /** Whether any part of {@code e} is a call or an ExST assignment. */
