@@ -34,8 +34,9 @@ too. They are also drawn as SVG, in the HTML report and in the workbench, with t
   hidden triggers (time bombs, magic values).
 - **Logic**: conditions that are never or always true, nested or in an IF chain (ranges, enums and string lengths
   included), unreachable ELSIF / ELSE / CASE labels, duplicate and redundant conditions, boundary gaps, identical
-  branches, self-assignment, loops that end in the first pass, overwritten temporaries; style rules (ELSE IF, nested
-  IF, BOOL through IF, NOT before a comparison and others) are opt-in.
+  branches, self-assignment, loops that end in the first pass, overwritten temporaries; style findings (ELSE IF,
+  nested IF, BOOL through IF, empty branches and others) at info; NOT before a comparison and BOOL compared with
+  TRUE/FALSE are opt-in.
 
 `plca rules` lists them; `plca rules PLCA-P001` shows a rule's documentation. Rules, severities, parameters,
 suppressions and baselines are configured in `plca.yaml` ([docs/configuration.md](docs/configuration.md)).

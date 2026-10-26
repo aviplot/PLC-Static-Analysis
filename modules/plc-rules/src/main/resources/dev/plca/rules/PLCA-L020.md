@@ -6,7 +6,6 @@ category: logic
 dialects: all
 tags: [style, duplication]
 plcopen: -
-enabled: false
 ---
 ## Description
 

@@ -6,7 +6,6 @@ category: logic
 dialects: all
 tags: [style, clarity]
 plcopen: -
-enabled: false
 ---
 ## Description
 
